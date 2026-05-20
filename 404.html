@@ -1,0 +1,1192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<!-- Cache control: always revalidate index.html — prevents stale PWA -->
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<meta name="app-version" content="54">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Radha Jap">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#060D1F">
+<link rel="manifest" href="./manifest.json">
+<link rel="apple-touch-icon" href="./icon-192.png">
+<link rel="icon" href="./icon-192.png">
+<title>Radha Naam Jap</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Tiro+Devanagari+Hindi&family=Hind+Siliguri:wght@400;600;700&family=Cinzel+Decorative:wght@400;700&family=EB+Garamond:wght@400;600&family=Inter:wght@300;400;500;600&family=Noto+Sans+Devanagari:wght@400;700&family=Noto+Sans+Bengali:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<link rel="stylesheet" href="./style.css">
+</head>
+<body>
+<!-- LOADING -->
+<div class="ls" id="ls">
+  <div class="ls-rings">
+    <div class="glow1"></div>
+    <div class="glow2"></div>
+    <canvas id="ringCanvas" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:5;"></canvas>
+    <script>
+    (function() {
+      var RADHA = 'राधा · ';
+      var raf, rot1 = 0, rot2 = 0, fontReady = false;
+
+      function drawTextOnRing(ctx, cx, cy, radius, rotOffset, color, fs) {
+        ctx.save();
+        ctx.font = '700 ' + fs + 'px "Noto Sans Devanagari", sans-serif';
+        ctx.fillStyle = color;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        var unitW = ctx.measureText(RADHA).width;
+        var circ  = 2 * Math.PI * radius;
+        var reps  = Math.ceil(circ / unitW) + 1;
+        var anglePerUnit = unitW / radius;
+        for (var i = 0; i < reps; i++) {
+          var midAngle = rotOffset + i * anglePerUnit;
+          if (midAngle > rotOffset + 2 * Math.PI) break;
+          ctx.save();
+          ctx.translate(cx + radius * Math.cos(midAngle), cy + radius * Math.sin(midAngle));
+          ctx.rotate(midAngle + Math.PI / 2);
+          ctx.fillText(RADHA, 0, 0);
+          ctx.restore();
+        }
+        ctx.restore();
+      }
+
+      function frame() {
+        var canvas = document.getElementById('ringCanvas');
+        var ls = document.getElementById('ls');
+        if (!canvas || !ls || ls.classList.contains('hide')) return;
+
+        var size = canvas.parentElement.offsetWidth || 320;
+        var dpr  = window.devicePixelRatio || 1;
+        if (canvas.width !== size * dpr) {
+          canvas.width  = size * dpr;
+          canvas.height = size * dpr;
+        }
+        var ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.save();
+        ctx.scale(dpr, dpr);
+
+        var cx = size / 2, cy = size / 2;
+        var r1 = size * 0.42;  // yellow outer ring
+        var r2 = size * 0.38;  // blue inner ring
+        var fs = Math.max(10, Math.round(size * 0.047));
+
+        drawTextOnRing(ctx, cx, cy, r1,  rot1, '#FFD700', fs);
+        drawTextOnRing(ctx, cx, cy, r2, -rot2, '#4A90E2', fs);
+
+        ctx.restore();
+
+        rot1 += 0.003;  // yellow spins forward
+        rot2 += 0.0024; // blue spins backward (negated above)
+        raf = requestAnimationFrame(frame);
+      }
+
+      function startAnim() {
+        cancelAnimationFrame(raf);
+        raf = requestAnimationFrame(frame);
+      }
+
+      function tryDraw() {
+        if (document.fonts && document.fonts.load) {
+          document.fonts.load('700 14px "Noto Sans Devanagari"', 'राधा')
+            .then(startAnim).catch(startAnim);
+        } else {
+          setTimeout(startAnim, 800);
+        }
+      }
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', tryDraw);
+      } else {
+        tryDraw();
+      }
+    })();
+    </script>
+    <img class="ls-img" id="guruImg" src="./guru.jpg" alt="Shri Radha Rani" style="position:relative;z-index:10;box-shadow:0 0 40px 15px rgba(255,215,0,0.4),0 0 80px 30px rgba(255,215,0,0.2);">
+    <img id="appIconImg" style="display:none" src="./icon-192.png" alt="App Icon"/>
+  </div>
+  <div class="ls-title">राधे राधे</div>
+  <div class="ls-sub">Jai Shri Radha</div>
+</div>
+
+<!-- NAV — 6 tabs (no separate Target) -->
+
+<!-- Milestones: removed, will rebuild -->
+
+<nav class="bnav">
+  <button class="nb active" onclick="sv('vj',this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="3"/><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/><path d="M12 6v2M12 16v2M6 12H4M20 12h-2"/></svg>
+    Jap
+  </button>
+  <button class="nb" onclick="sv('v28',this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+    28 Names
+  </button>
+  <button class="nb" onclick="sv('vst',this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+    Stotram
+  </button>
+  <button class="nb" onclick="sv('vb',this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+    B&C
+  </button>
+
+  <button class="nb" onclick="sv('vms',this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 3c-1.5 2-4 4-6 4.5C7 10 9.5 12 12 12c2.5 0 5-2 6-4.5C16 8 13.5 5 12 3z"/><path d="M12 12c-2 2.5-5 4-7 4.5C6.5 19 9 21 12 21s5.5-2 7-4.5C17 16 14 14.5 12 12z"/><path d="M12 3v18"/><path d="M8 21c0-2 1.5-3.5 4-5"/><path d="M16 21c0-2-1.5-3.5-4-5"/></svg>
+    Milestones
+  </button>
+  <button class="nb" onclick="sv('vs',this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
+    Stats
+  </button>
+
+  <button class="nb" onclick="sv('vset',this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+    Settings
+  </button>
+</nav>
+
+<!-- JAP VIEW -->
+<div class="view active" id="vj">
+  <div class="rh">
+    <!-- Brahma Muhurta card -->
+    <div class="rh-card">
+      <div class="rh-card-title">🌙 Brahma Muhurta</div>
+      <div class="rh-row"><span class="rh-lbl">Start</span><span class="rh-val" id="bm-start">--:--</span></div>
+      <div class="rh-row"><span class="rh-lbl">End</span><span class="rh-val" id="bm-end">--:--</span></div>
+      <div class="rh-row"><span class="rh-lbl">Sunrise</span><span class="rh-val" id="rh-sunrise">--:--</span></div>
+    </div>
+    <!-- राधा center -->
+    <div class="rh-center" style="flex-direction:column;flex:0 0 auto;">
+      <div class="naam-sel-wrap">
+        <button class="naam-sel-btn" id="naamSelBtn" onclick="toggleNaamSel()"><span id="naamSelLabel">▼</span></button>
+        <div class="naam-sel-dd" id="naamSelDd">
+          <div class="naam-sel-opt active" id="naamOptRadha" onclick="switchJapMode('radha')">
+            <span class="ns-check">✓</span> राधा
+          </div>
+          <div class="naam-sel-opt" id="naamOptRV" onclick="switchJapMode('rv')">
+            <span class="ns-check"></span> राधावल्लभ श्री हरिवंश
+          </div>
+        </div>
+      </div>
+      <div class="rn" id="rnTitle">राधा</div>
+    </div>
+    <!-- Sandhya Kal card -->
+    <div class="rh-card" style="padding-left:10px;align-items:flex-end">
+      <div class="rh-card-title">🔔 Sandhya Kal</div>
+      <div class="rh-row"><span class="rh-lbl">Start</span><span class="rh-val" id="sk-start">--:--</span></div>
+      <div class="rh-row"><span class="rh-lbl">Sunset</span><span class="rh-val" id="rh-sunset">--:--</span></div>
+      <div class="rh-row"><span class="rh-lbl">Ends</span><span class="rh-val" id="sk-end">--:--</span></div>
+    </div>
+  </div>
+  <div class="timer-bar">
+    <button class="tbtn reset" onclick="App.resetTimer()">↺</button>
+    <div class="timer-display" id="timerDisplay">00:00:00</div>
+    <button class="tbtn start" id="timerBtn" onclick="App.toggleTimer()">▶ Start</button>
+  </div>
+  <div class="timer-today" id="timerToday">Auto-starts when you tap · pauses after 6s</div>
+  <div class="bead-frame-wrap" id="beadFrameWrap">
+    <svg class="bead-frame" id="beadFrame" aria-hidden="true"></svg>
+    <div class="ps">
+      <!-- Daily: blue bar + jap count + undo -->
+      <div class="pc pc-bar" style="position:relative;">
+        <div class="pc-text" style="width:100%;padding-right:48px">
+          <div style="display:flex;align-items:center;margin-bottom:6px;">
+            <div class="pl" style="flex:1;letter-spacing:2px">Daily</div>
+            <div class="lbar-pct" style="color:var(--a2);font-size:15px;min-width:38px;text-align:right" id="dPct">0%</div>
+          </div>
+          <div class="lbar-wrap">
+            <div class="lbar-fill" id="dbarFill" style="background:linear-gradient(90deg,var(--a2),var(--a))"></div>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px;">
+            <div class="lbar-val" id="dbarDone">0</div>
+            <div class="lbar-val" id="dbarTarget" style="color:var(--td)">/ —</div>
+          </div>
+          <div style="display:flex;align-items:center;margin-top:2px;">
+            <div class="pd" id="dDet">— malas</div>
+          </div>
+        </div>
+        <div style="position:absolute;bottom:6px;right:6px;display:flex;align-items:center;gap:4px;">
+          <div class="jms" id="jms" style="font-size:16px;line-height:1;text-shadow:0 0 8px rgba(255,215,0,0.6);">0</div>
+          <button onclick="App.undo1()" style="background:rgba(232,51,109,0.15);border:1px solid rgba(232,51,109,0.3);border-radius:7px;color:var(--rl);font-size:13px;width:24px;height:24px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;flex-shrink:0;">↩</button>
+        </div>
+      </div>
+      <!-- Lifetime: gold bar -->
+      <div class="pc pc-bar">
+        <div class="pc-text" style="width:100%">
+          <div style="display:flex;align-items:center;margin-bottom:6px;">
+            <div class="pl" style="flex:1;letter-spacing:2px">Lifetime</div>
+            <div class="lbar-pct" id="lPct" style="font-size:15px;min-width:38px;text-align:right">0%</div>
+          </div>
+          <div class="lbar-wrap">
+            <div class="lbar-fill" id="lbarFill"></div>
+          </div>
+          <div style="display:flex;justify-content:space-between;margin-top:4px;">
+            <div class="lbar-val" id="lbarDone">0</div>
+            <div class="lbar-val" id="lbarTarget" style="color:var(--td)">/ —</div>
+          </div>
+          <div class="pd" id="lDet" style="margin-top:2px;">— malas</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="tzr">
+    <div class="tz" id="tz" style="border-radius:18px;" ontouchstart="App.ht(event)" onmousedown="App.ht(event)">
+      <div class="mf" id="mf">
+        <div class="mf-line1">Radha Ballabh</div>
+        <div class="mf-line2">Sri Harivansh</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- 28 NAMES VIEW -->
+<div class="view" id="v28">
+  <div class="v28-header">
+    <div class="v28-title">28 Names of Radha</div>
+    <div style="display:flex;gap:6px;align-items:center">
+      <button id="n28ScriptToggle" onclick="toggle28Script()" style="background:rgba(255,215,0,0.08);border:1px solid rgba(255,215,0,0.3);border-radius:16px;color:var(--gold);font-size:12px;font-weight:600;padding:5px 13px;cursor:pointer;font-family:'Hind Siliguri',serif;letter-spacing:0.3px;transition:all 0.2s;">हिन्दी</button>
+      <button class="sk-icon-btn" id="skToggleBtn" onclick="toggleSankalp()">
+        🙏 Wishes <span class="sk-chevron" id="skChevron">▾</span>
+      </button>
+    </div>
+  </div>
+  <div class="sk-panel" id="skCollapse">
+    <div class="sk-panel-inner">
+      <div class="sk-form" style="margin-bottom:10px">
+        <h3>🌸 Add a Wish / Sankalp</h3>
+        <textarea class="sk-ta" id="skWish" placeholder="রাধা রানীর কাছে আপনার ইচ্ছা লিখুন…"></textarea>
+        <div class="sk-row">
+          <input type="number" class="sk-ni" id="skTarget" min="1" placeholder="10">
+          <span class="sk-lbl">cycles target</span>
+          <button class="sk-add" onclick="addSankalp()">🙏 Add</button>
+        </div>
+      </div>
+      <div id="skList"></div>
+    </div>
+  </div>
+  <div class="n28wrap">
+    <!-- Single line timers: small, left and right -->
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:4px 4px 6px;">
+      <div class="n28timer-box" style="align-items:flex-start">
+        <div class="n28timer-val" id="n28CycleTimer">0:00</div>
+        <div class="n28timer-lbl">Cycle Time</div>
+      </div>
+      <div class="n28timer-box" style="align-items:center">
+        <div class="n28timer-val" id="n28t" style="color:var(--gold);font-size:13px">0</div>
+        <div class="n28timer-lbl">Today</div>
+      </div>
+      <div class="n28timer-box" style="align-items:flex-end">
+        <div class="n28timer-val gold" id="n28TotalTimer">00:00:00</div>
+        <div class="n28timer-lbl">Jap Timer</div>
+      </div>
+    </div>
+
+    <!-- Tap area: Radha name at top, meaning, pause button -->
+    <div class="n28tz" id="tz28" ontouchstart="App.h28(event)" onmousedown="App.h28(event)">
+      <div class="mf" id="mf28" style="border-radius:22px;">
+        <div class="mf-line1">Radha Vallabh</div>
+        <div class="mf-line2">Sri Harivangsa</div>
+      </div>
+      <!-- Sanskrit Radha at top inside tap area -->
+      <div style="position:absolute;top:14px;left:0;right:0;text-align:center;font-family:'Tiro Devanagari Hindi','Hind Siliguri',serif;font-size:clamp(13px,3.5vw,18px);color:rgba(255,215,0,0.55);letter-spacing:3px;pointer-events:none;">राधा</div>
+      <div class="n28name" id="n28name">রাধা</div>
+      <div class="n28meaning" id="n28meaning">The Supreme Beloved</div>
+      <div class="n28timer-box" style="position:absolute;top:10px;right:12px;z-index:5">
+        <button id="n28PauseBtn" onclick="App.toggle28Pause()" style="display:none;background:rgba(109,184,255,0.12);border:1px solid rgba(109,184,255,0.35);border-radius:16px;color:var(--a2);font-size:11px;font-weight:600;padding:5px 12px;cursor:pointer;letter-spacing:0.5px;transition:all 0.2s;font-family:'Inter',sans-serif;">⏸ Pause</button>
+      </div>
+    </div>
+
+    <!-- Cycle status text -->
+    <div class="n28cycle" id="n28cycle" style="text-align:center;margin-top:6px;">Tap to begin · Cycle 1</div>
+
+    <!-- 28 beads in a single line -->
+    <div class="n28prog" id="n28prog" style="margin-top:6px;"></div>
+
+    <!-- Undo + Stats buttons -->
+    <div style="display:flex;gap:8px;margin-top:10px">
+      <button class="cb danger" onclick="App.undo28()">↩ Undo</button>
+      <button class="cb" id="n28StatsBtn" onclick="toggle28Stats()" style="border-color:rgba(255,215,0,0.3);color:var(--gold);background:rgba(255,215,0,0.06)">📊 Stats <span id="n28StatsChev" style="font-size:10px;transition:transform 0.25s;display:inline-block">▾</span></button>
+    </div>
+
+    <!-- 28 NAMES STATS PANEL -->
+    <div id="n28StatsPanel" style="display:none;margin-top:10px">
+
+      <!-- a) Cycle Counts -->
+      <div class="n28sp-section">
+        <div class="n28sp-title">🔄 Cycle Counts</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:4px">
+          <div class="ns"><div class="nv" id="sp28CyclesTod" style="font-size:18px">0</div><div class="nl">Today</div></div>
+          <div class="ns"><div class="nv" id="sp28CyclesAll" style="font-size:18px">0</div><div class="nl">All Time</div></div>
+        </div>
+      </div>
+
+      <!-- b) Cycle Time -->
+      <div class="n28sp-section">
+        <div class="n28sp-title">⏱ 28 Names Time</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+          <div class="ns"><div class="nv" id="sp28TimeTod" style="font-size:18px">0m</div><div class="nl">Today</div></div>
+          <div class="ns"><div class="nv" id="sp28TimeAll" style="font-size:18px">0m</div><div class="nl">All Time</div></div>
+        </div>
+        <div class="n28sp-row">
+          <input type="number" class="n28sp-in" id="sp28TimeMin" min="0" placeholder="Min" style="width:56px" oninput="prev28Time()">
+          <input type="number" class="n28sp-in" id="sp28TimeSec" min="0" max="59" placeholder="Sec" style="width:56px" oninput="prev28Time()">
+          <button class="n28sp-btn add" onclick="adj28Time(1)">＋ Add</button>
+          <button class="n28sp-btn ded" onclick="adj28Time(-1)">－ Deduct</button>
+        </div>
+        <div style="font-size:10px;color:var(--td);margin-top:4px"><span id="sp28TimePreview" style="color:var(--a2)"></span></div>
+      </div>
+
+      <!-- d) Reset Options -->
+      <div class="n28sp-section" style="border-color:rgba(232,51,109,0.2)">
+        <div class="n28sp-title" style="color:var(--rl)">↺ Reset Options</div>
+        <div style="display:flex;flex-direction:column;gap:7px">
+          <button class="n28sp-reset-btn" onclick="cr2('28today')">Reset Today's Count</button>
+          <button class="n28sp-reset-btn" onclick="reset28Time('today')">Reset Today's Time</button>
+          <button class="n28sp-reset-btn" onclick="reset28Time('all')">Reset All Time (Time only)</button>
+          <button class="n28sp-reset-btn" style="border-color:rgba(232,51,109,0.5);color:var(--rl)" onclick="cr2('28all')">Reset All 28 Names Data</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- STOTRAM VIEW -->
+<div class="view" id="vst">
+  <div class="vt">Stotram Tracker</div>
+  <div class="asf">
+    <!-- Header — always visible, tap to toggle -->
+    <div class="asf-header" onclick="toggleAsfForm()">
+      <h3>➕ Add Your Stotram</h3>
+      <span class="asf-chevron" id="asfChevron">▾</span>
+    </div>
+    <!-- Form body — collapsible -->
+    <div class="asf-body" id="asfBody">
+      <input type="text" class="sti" id="snIn" placeholder="Stotram name (required)" style="margin-top:4px">
+      <input type="text" class="sti" id="ssIn" placeholder="Short description (optional)">
+      <textarea class="sti" id="slIn" rows="6" placeholder="Paste or type full lyrics here (optional)&#10;Stored in your account — visible only to you" style="resize:vertical;min-height:110px;font-family:Hind Siliguri,serif;font-size:14px;line-height:1.8"></textarea>
+      <button class="asb" onclick="addSt()">Add Stotram</button>
+    </div>
+  </div>
+  <!-- Developer Panel (visible only to developer accounts) -->
+  <div id="devStSection" style="margin-bottom:10px">
+    <button id="devStBtn" onclick="toggleDevPanel()" style="display:none;width:100%;padding:10px;border-radius:11px;border:1px solid rgba(255,215,0,0.3);background:rgba(255,215,0,0.06);color:var(--gold);font-size:13px;font-weight:600;cursor:pointer;font-family:Inter,sans-serif;margin-bottom:6px">🛠 Developer: Edit/Add Global Stotrams ▾</button>
+    <div id="devStPanel" style="display:none;background:rgba(0,0,0,0.3);border:1px solid rgba(255,215,0,0.2);border-radius:11px;padding:12px;margin-bottom:10px">
+      <!-- Add Global Stotram Form -->
+      <div style="font-size:12px;color:var(--gold);letter-spacing:1px;margin-bottom:8px;text-transform:uppercase">🌍 Add Global Stotram (visible to all users)</div>
+      <input type="text" id="devStName" placeholder="Stotram name (required)" style="width:100%;background:rgba(0,0,0,0.3);border:1px solid rgba(255,215,0,0.2);border-radius:8px;padding:8px 11px;color:var(--tl);font-size:13px;font-family:Hind Siliguri,serif;box-sizing:border-box;margin-bottom:6px">
+      <input type="text" id="devStSub" placeholder="Description (optional)" style="width:100%;background:rgba(0,0,0,0.3);border:1px solid rgba(255,215,0,0.2);border-radius:8px;padding:8px 11px;color:var(--tl);font-size:13px;font-family:Hind Siliguri,serif;box-sizing:border-box;margin-bottom:6px">
+      <textarea id="devStLyrics" rows="5" placeholder="Full lyrics (optional)" style="width:100%;background:rgba(0,0,0,0.3);border:1px solid rgba(255,215,0,0.2);border-radius:8px;padding:8px 11px;color:var(--tl);font-size:13px;font-family:Hind Siliguri,serif;resize:vertical;box-sizing:border-box;margin-bottom:6px"></textarea>
+      <button onclick="devAddGlobalStotram()" style="width:100%;padding:9px;border-radius:9px;border:none;background:linear-gradient(135deg,rgba(255,215,0,0.4),rgba(255,180,0,0.25));color:var(--gold);font-size:13px;font-weight:600;cursor:pointer;margin-bottom:12px">🌍 Add for All Users</button>
+      <hr style="border:none;border-top:1px solid rgba(255,215,0,0.15);margin:8px 0 12px">
+      <!-- Edit inbuilt stotrams + global list -->
+      <div id="devStList"></div>
+    </div>
+  </div>
+  <div id="stList"></div>
+</div>
+
+<!-- BRAHMACHARYA VIEW -->
+<div class="view" id="vb">
+  <div class="vt">📅 Jap & Brahmacharya Calendar</div>
+
+  <!-- Brahmacharya Start Date Picker -->
+  <div style="padding:8px 14px 6px;display:flex;align-items:center;gap:10px;justify-content:center;">
+    <label style="font-size:11px;color:var(--gold);letter-spacing:1px;font-weight:600;">🛡️ Brahmacharya Start Date</label>
+    <input type="date" id="brahmaStartInput" style="background:rgba(0,0,0,0.4);border:1px solid rgba(255,215,0,0.3);border-radius:9px;padding:6px 12px;color:var(--gold);font-size:13px;font-family:'Inter',sans-serif;outline:none;" onchange="confirmBrahmaStartChange(this.value)">
+  </div>
+
+  <!-- Brahmacharya Status Bar -->
+  <div class="bsr">
+    <div class="bsb g"><div class="bv" id="bcs">0</div><div class="bl">Current Streak</div></div>
+    <div class="bsb g"><div class="bv" id="bbs">0</div><div class="bl">Best Streak</div></div>
+    <div class="bsb r"><div class="bv" id="bbc">0</div><div class="bl">Total Breaks</div></div>
+  </div>
+
+  <!-- Brahmacharya Summary Grid -->
+  <div class="n2s" style="margin-bottom:14px">
+    <div class="ns"><div class="nv" style="color:var(--green)" id="bmd">0</div><div class="nl">Maintained</div></div>
+    <div class="ns"><div class="nv" style="color:var(--red)" id="bbd">0</div><div class="nl">Broken Days</div></div>
+    <div class="ns"><div class="nv" style="color:var(--red)" id="btm">0</div><div class="nl">Total Count</div></div>
+    <div class="ns"><div class="nv" style="color:var(--a2)" id="bmp">0%</div><div class="nl">Success Rate</div></div>
+  </div>
+
+  <!-- Unified Calendar -->
+  <div class="ch">
+    <button class="cnb" onclick="chm(-1)">&#8249;</button>
+    <div class="cmy" id="cmy"></div>
+    <button class="cnb" onclick="chm(1)">&#8250;</button>
+  </div>
+  <div class="cg" id="cg">
+    <div class="cdl">Sun</div><div class="cdl">Mon</div><div class="cdl">Tue</div>
+    <div class="cdl">Wed</div><div class="cdl">Thu</div><div class="cdl">Fri</div><div class="cdl">Sat</div>
+  </div>
+  <div style="padding:6px 14px 4px;display:flex;justify-content:center;gap:14px;font-size:10px;color:var(--td)">
+    <span>🟢 Maintained</span><span>🔴 Broken</span><span style="color:var(--gold)">🟡 Occasion</span>
+  </div>
+  <div style="padding:4px 14px 6px;font-size:11px;color:var(--td);text-align:center;letter-spacing:1px;">Tap a date to see details</div>
+
+  <!-- Brahmacharya Progress Graph — dedicated area below calendar -->
+  <div class="bc-graph-section">
+    <div class="bc-graph-section-title">📈 Brahmacharya Streak</div>
+    <div class="bc-graph-legend-row">
+      <span class="bc-legend-dot" style="background:#22c55e"></span><span class="bc-legend-text">Maintained</span>
+      <span class="bc-legend-dot" style="background:#ef4444;margin-left:18px"></span><span class="bc-legend-text">Broken</span>
+    </div>
+    <div class="bc-range-row" id="bcRangeRow">
+      <button class="bc-range-btn" onclick="bcShiftRange(-90)">&#8249; Prev 90d</button>
+      <span class="bc-range-label" id="bcRangeLabel">Last 90 days</span>
+      <button class="bc-range-btn" id="bcRangeNext" onclick="bcShiftRange(90)">Next 90d &#8250;</button>
+    </div>
+    <div class="bc-graph-scroll-wrap">
+      <canvas id="bcGraph" class="bc-graph-canvas" width="300" height="360"></canvas>
+    </div>
+  </div>
+</div>
+
+
+
+<!-- CALENDAR DAY BOTTOM SHEET -->
+<div class="cdmo" id="cdmo" onclick="if(event.target===this)closeDaySheet()">
+  <div class="cdmd">
+    <div class="cdmo-hdr">
+      <div class="cdmo-title" id="cdmoTitle">—</div>
+      <button class="cdmo-close" onclick="closeDaySheet()">✕ Close</button>
+    </div>
+    <!-- Panchang Section -->
+    <div class="cdmo-panchang" id="cdmoPanchang">
+      <div class="cdmo-panchang-label">🪷 Panchang</div>
+      <div class="cdmo-panchang-month" id="cdmoPanchangMonth">—</div>
+      <div class="cdmo-panchang-grid">
+        <div class="cdmp-row">
+          <span class="cdmp-key">Paksha</span>
+          <span class="cdmp-val" id="cdmpPaksha">—</span>
+        </div>
+        <div class="cdmp-row">
+          <span class="cdmp-key">Tithi</span>
+          <span class="cdmp-val" id="cdmpTithi">—</span>
+        </div>
+        <div class="cdmp-row">
+          <span class="cdmp-key">Nakshatra</span>
+          <span class="cdmp-val" id="cdmpNakshatra">—</span>
+        </div>
+        <div class="cdmp-row">
+          <span class="cdmp-key">Yoga</span>
+          <span class="cdmp-val" id="cdmpYoga">—</span>
+        </div>
+        <div class="cdmp-row">
+          <span class="cdmp-key">Karana</span>
+          <span class="cdmp-val" id="cdmpKarana">—</span>
+        </div>
+        <div class="cdmp-row">
+          <span class="cdmp-key">Vaara</span>
+          <span class="cdmp-val" id="cdmpVaara">—</span>
+        </div>
+      </div>
+    </div>
+    <!-- Jap + Timer stats -->
+    <div class="cdmo-stat" id="cdmoStat">
+      <div class="cdmo-stat-row">🕉️ Radha Jap <span class="cdmo-stat-val" id="cdmoRadhaJap">—</span></div>
+      <div class="cdmo-stat-row">🌸 Radha Vallabh Sri Harivangsa Jap <span class="cdmo-stat-val" id="cdmoRvJap">—</span></div>
+      <div class="cdmo-stat-row">⏱ Radha Jap Time <span class="cdmo-stat-val" id="cdmoRadhaTime">—</span></div>
+      <div class="cdmo-stat-row">⏱ Radha Vallabh Sri Harivangsa Jap Time <span class="cdmo-stat-val" id="cdmoRvTime">—</span></div>
+      <div class="cdmo-stat-row">✨ 28 Names <span class="cdmo-stat-val" id="cdmo28Names">—</span></div>
+      <div class="cdmo-stat-row">⏱ 28 Names Time <span class="cdmo-stat-val" style="color:var(--a2)" id="cdmoTime28">—</span></div>
+      <div style="border-top:1px solid rgba(74,144,226,0.15);margin:8px 0"></div>
+      <div class="cdmo-stat-row">📿 Total Count <span class="cdmo-stat-val gold" id="cdmoTotalCount">—</span></div>
+      <div class="cdmo-stat-row">⏳ Total Time <span class="cdmo-stat-val" id="cdmoTotalTime">—</span></div>
+      <div class="cdmo-stat-row" id="cdmoTargetRow" style="color:var(--td);font-size:11px">Target: <span id="cdmoPct" style="margin-left:auto;color:var(--td)">—</span></div>
+    </div>
+    <!-- Occasion -->
+    <div class="cdmo-occ">
+      <div class="cdmo-occ-label">🪔 Occasion</div>
+      <div class="cdmo-occ-cur" id="cdmoOccCur">
+        <span id="cdmoOccName" style="color:var(--td);font-style:italic">None</span>
+      </div>
+      <div class="cdmo-occ-row">
+        <input type="text" class="cdmo-occ-in" id="cdmoOccIn" placeholder="e.g. Janmashtami, Ekadashi…">
+        <button class="cdmo-occ-add" onclick="addOccasionFromSheet()">Add</button>
+      </div>
+    </div>
+    <!-- Brahmacharya Controls -->
+    <div class="cdmo-bc" id="cdmoBcSection" style="background:rgba(46,204,113,0.05);border:1px solid rgba(46,204,113,0.2);border-radius:14px;padding:13px 14px;margin-bottom:10px;">
+      <div style="font-size:10px;color:var(--green);letter-spacing:2px;text-transform:uppercase;margin-bottom:8px;font-weight:600">🛡️ Brahmacharya Status</div>
+      <div id="cdmoBcStatus" style="font-size:13px;color:var(--tl);margin-bottom:10px">—</div>
+      <div style="display:flex;gap:8px;margin-bottom:8px">
+        <button class="blb gb" id="cdmoBcMaint" onclick="sheetMarkBc('m')" style="flex:1;padding:10px;font-size:13px">✅ Mark Maintained</button>
+        <button class="blb rb2" id="cdmoBcBrk" onclick="sheetMarkBc('b')" style="flex:1;padding:10px;font-size:13px">❌ Mark Broken</button>
+      </div>
+      <div id="cdmoBcCntRow" style="display:none;align-items:center;gap:10px;margin-bottom:6px">
+        <label style="font-size:12px;color:var(--tl);flex:1">Break count:</label>
+        <input type="number" id="cdmoBcCnt" value="1" min="1" style="width:70px;background:rgba(0,0,0,0.3);border:1px solid rgba(231,76,60,0.3);border-radius:9px;padding:7px 11px;color:var(--tl);font-size:15px;text-align:center;font-family:'Inter',sans-serif;">
+      </div>
+      <!-- Time inputs — one per break instance -->
+      <div id="bcTimeRows" style="display:none;margin-top:6px"></div>
+    </div>
+  </div>
+</div>
+
+<!-- MILESTONES VIEW — dedicated tab -->
+<div class="view" id="vms">
+  <div class="vt">🪷 Milestones</div>
+  <div class="ms-toggle-wrap">
+    <button class="ms-toggle-btn active" id="msLangHi" onclick="setMsLang('hi')">हिंग्लिश</button>
+    <button class="ms-toggle-btn" id="msLangBn" onclick="setMsLang('bn')">বাংলা</button>
+  </div>
+  <div class="ms-sadhana-bar">
+    <label>🙏 Journey Start:</label>
+    <input type="date" id="msSadhanaStart" onchange="saveSadhanaStartDate(this.value);renderMilestonesTab();">
+  </div>
+  <div class="ms-sadhana-since" id="msSadhanaSince"></div>
+  <div id="msContent"></div>
+  <!-- Detail bottom sheet -->
+  <div class="ms-detail-overlay" id="msDetailOverlay" onclick="if(event.target===this)closeMsDetail()">
+    <div class="ms-detail-sheet" id="msDetailSheet"></div>
+  </div>
+</div>
+
+<!-- STATS VIEW — includes jap entry tools -->
+<div class="view" id="vs">
+  <div class="vt">Jap Summary</div>
+
+
+
+    <!-- Summary Stats Grid — collapsible -->
+  <div class="sg-wrap">
+    <div class="sg-header" onclick="toggleCs('sgStats','sgChev')">
+      <span>📊 Summary Stats</span>
+      <span class="sg-chevron" id="sgChev">▾</span>
+    </div>
+    <div class="sg-body open" id="sgStats">
+      <div class="sg" style="margin-bottom:8px">
+        <!-- Row 1 -->
+        <div class="sb"><div class="sv2" id="sTod">0</div><div class="sl">Today</div><div class="ss" id="sTodM">0 malas</div></div>
+        <div class="sb"><div class="sv2" id="sWk">0</div><div class="sl">This Week</div><div class="ss" id="sWkM">0 malas</div></div>
+        <!-- Row 2 -->
+        <div class="sb"><div class="sv2" id="sMo">0</div><div class="sl">This Month</div><div class="ss" id="sMoM">0 malas</div></div>
+        <div class="sb"><div class="sv2" id="sTot">0</div><div class="sl">Total Jap (Radha + RV)</div><div class="ss" id="sTotM">0 malas</div></div>
+        <!-- Row 3: Radha count + Radha time -->
+        <div class="sb" style="background:rgba(255,215,0,0.05);border-color:rgba(255,215,0,0.18)"><div class="sv2" style="color:var(--gold)" id="sRadhaTot">0</div><div class="sl" style="color:var(--gold)">राधा Lifetime</div><div class="ss" id="sRadhaTotM">0 malas</div><div class="ss" id="sRadhaTotF" style="color:var(--gold);opacity:0.75;font-size:10px;margin-top:2px">0</div></div>
+        <div class="sb" style="background:rgba(255,215,0,0.04);border-color:rgba(255,215,0,0.15)">
+          <div class="sl" style="font-size:9px;color:var(--gold);letter-spacing:1.5px;margin-bottom:6px">⏱ राधा JAP TIME</div>
+          <div style="display:grid;grid-template-columns:1fr;gap:3px;text-align:center">
+            <div><span style="font-family:'EB Garamond',serif;font-size:15px;color:var(--gold)" id="tRadhaTod">0m</span> <span style="font-size:8px;color:var(--td);letter-spacing:1px">TODAY</span></div>
+            <div><span style="font-family:'EB Garamond',serif;font-size:15px;color:var(--gold)" id="tRadhaWk">0m</span> <span style="font-size:8px;color:var(--td);letter-spacing:1px">WEEK</span></div>
+            <div><span style="font-family:'EB Garamond',serif;font-size:15px;color:var(--gold)" id="tRadhaMo">0m</span> <span style="font-size:8px;color:var(--td);letter-spacing:1px">MONTH</span></div>
+            <div><span style="font-family:'EB Garamond',serif;font-size:15px;color:var(--gold)" id="tRadhaLt">0m</span> <span style="font-size:8px;color:var(--td);letter-spacing:1px">LIFETIME</span></div>
+          </div>
+        </div>
+        <!-- Row 4: RV count + RV time -->
+        <div class="sb" style="background:rgba(74,144,226,0.05);border-color:rgba(74,144,226,0.18)"><div class="sv2" style="color:var(--a2)" id="sRVTot">0</div><div class="sl" style="color:var(--a2)">RV Lifetime</div><div class="ss" id="sRVTotM">0 malas</div><div class="ss" id="sRVTotF" style="color:var(--a2);opacity:0.75;font-size:10px;margin-top:2px">0</div></div>
+        <div class="sb" style="background:rgba(74,144,226,0.04);border-color:rgba(74,144,226,0.15)">
+          <div class="sl" style="font-size:9px;color:var(--a2);letter-spacing:1.5px;margin-bottom:6px">⏱ RV JAP TIME</div>
+          <div style="display:grid;grid-template-columns:1fr;gap:3px;text-align:center">
+            <div><span style="font-family:'EB Garamond',serif;font-size:15px;color:var(--a2)" id="tRVTod">0m</span> <span style="font-size:8px;color:var(--td);letter-spacing:1px">TODAY</span></div>
+            <div><span style="font-family:'EB Garamond',serif;font-size:15px;color:var(--a2)" id="tRVWk">0m</span> <span style="font-size:8px;color:var(--td);letter-spacing:1px">WEEK</span></div>
+            <div><span style="font-family:'EB Garamond',serif;font-size:15px;color:var(--a2)" id="tRVMo">0m</span> <span style="font-size:8px;color:var(--td);letter-spacing:1px">MONTH</span></div>
+            <div><span style="font-family:'EB Garamond',serif;font-size:15px;color:var(--a2)" id="tRVLt">0m</span> <span style="font-size:8px;color:var(--td);letter-spacing:1px">LIFETIME</span></div>
+          </div>
+        </div>
+        <!-- Row 5: 28 Names count + time -->
+        <div class="sb" style="background:rgba(46,204,113,0.05);border-color:rgba(46,204,113,0.18)"><div class="sv2" style="color:var(--green)" id="s28Tot">0</div><div class="sl" style="color:var(--green)">28 Names Lifetime</div><div class="ss" id="s28TotM">0 cycles</div><div class="ss" id="s28TotF" style="color:var(--green);opacity:0.75;font-size:10px;margin-top:2px">0</div></div>
+        <div class="sb" style="background:rgba(46,204,113,0.04);border-color:rgba(46,204,113,0.15)">
+          <div class="sl" style="font-size:9px;color:var(--green);letter-spacing:1.5px;margin-bottom:6px">⏱ 28 NAMES JAP TIME</div>
+          <div style="display:grid;grid-template-columns:1fr;gap:3px;text-align:center">
+            <div><span style="font-family:'EB Garamond',serif;font-size:15px;color:var(--green)" id="t28Tod">0m</span> <span style="font-size:8px;color:var(--td);letter-spacing:1px">TODAY</span></div>
+            <div><span style="font-family:'EB Garamond',serif;font-size:15px;color:var(--green)" id="t28Wk">0m</span> <span style="font-size:8px;color:var(--td);letter-spacing:1px">WEEK</span></div>
+            <div><span style="font-family:'EB Garamond',serif;font-size:15px;color:var(--green)" id="t28Mo">0m</span> <span style="font-size:8px;color:var(--td);letter-spacing:1px">MONTH</span></div>
+            <div><span style="font-family:'EB Garamond',serif;font-size:15px;color:var(--green)" id="t28Lt">0m</span> <span style="font-size:8px;color:var(--td);letter-spacing:1px">LIFETIME</span></div>
+          </div>
+        </div>
+        <!-- Row 5b: Combined Lifetime Jap (Radha + RV + 28 names) -->
+        <div class="sb wide" style="background:rgba(255,215,0,0.04);border-color:rgba(255,215,0,0.12)"><div class="sv2" style="color:var(--gold)" id="sLtJapAll">0</div><div class="sl" style="color:var(--gold)">Lifetime Jap (Radha + RV + 28 Names)</div><div class="ss" id="sLtJapAllF" style="color:var(--gold);opacity:0.75;font-size:10px;margin-top:2px">0</div></div>
+        <!-- Row 6: Lifetime jap time -->
+        <div class="sb wide" style="background:rgba(255,215,0,0.04);border-color:rgba(255,215,0,0.12)"><div class="sv2" style="color:var(--gold)" id="sLtTime">0m 0s</div><div class="sl" style="color:var(--gold)">Lifetime Jap Time (Radha + RV + 28 Names)</div></div>
+        <!-- Row 7: Last 7 days -->
+        <div class="sb wide"><div class="sl" style="font-size:11px">Last 7 Days</div><div class="cbrs" id="cbrs"></div></div>
+        <!-- Row 8: streak + best (renamed) -->
+        <div class="sb"><div class="sv2" id="sStr">0</div><div class="sl">🔥 Active Streak</div><div class="ss">Consecutive days</div></div>
+        <div class="sb"><div class="sv2" id="sBest">0</div><div class="sl">🏆 Personal Best</div><div class="ss">Top day jap</div></div>
+        <!-- Hidden compatibility nodes for old wide JAP TIME blocks (kept so legacy IDs resolve) -->
+        <span id="tTod" style="display:none"></span><span id="tWk" style="display:none"></span><span id="tMo" style="display:none"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- HISTORY SECTION — moved up, auto-loads today's view on open -->
+  <div class="cs-wrap" style="background:rgba(255,215,0,0.04);border:1px solid rgba(255,215,0,0.2);margin-top:4px">
+    <div class="cs-header" onclick="toggleCs('historyBody','historyChev'); setTimeout(autoLoadHistory, 50)">
+      <h3 style="color:var(--gold)">📜 History</h3>
+      <span class="cs-chevron" id="historyChev" style="color:var(--gold)">▾</span>
+    </div>
+    <div class="cs-body" id="historyBody">
+      <!-- Date range picker -->
+      <div style="margin-bottom:10px">
+        <div style="font-size:10px;color:var(--td);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px">Date Range</div>
+        <div style="display:flex;gap:8px;margin-bottom:8px">
+          <input type="date" class="di" id="histFrom" style="border-color:rgba(255,215,0,0.25)">
+          <input type="date" class="di" id="histTo" style="border-color:rgba(255,215,0,0.25)">
+        </div>
+        <div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap">
+          <button onclick="histPreset(1)" style="flex:1;padding:6px 4px;border-radius:9px;border:1px solid rgba(255,215,0,0.2);background:rgba(255,215,0,0.06);color:var(--gold);font-size:11px;font-weight:600;cursor:pointer;font-family:Inter,sans-serif">Today</button>
+          <button onclick="histPreset(7)"  style="flex:1;padding:6px 4px;border-radius:9px;border:1px solid rgba(255,215,0,0.2);background:rgba(255,215,0,0.06);color:var(--gold);font-size:11px;font-weight:600;cursor:pointer;font-family:Inter,sans-serif">Last 7d</button>
+          <button onclick="histPreset(30)" style="flex:1;padding:6px 4px;border-radius:9px;border:1px solid rgba(255,215,0,0.2);background:rgba(255,215,0,0.06);color:var(--gold);font-size:11px;font-weight:600;cursor:pointer;font-family:Inter,sans-serif">Last 30d</button>
+          <button onclick="histPreset(90)" style="flex:1;padding:6px 4px;border-radius:9px;border:1px solid rgba(255,215,0,0.2);background:rgba(255,215,0,0.06);color:var(--gold);font-size:11px;font-weight:600;cursor:pointer;font-family:Inter,sans-serif">Last 90d</button>
+          <button onclick="histPresetMonth()" style="flex:1;padding:6px 4px;border-radius:9px;border:1px solid rgba(255,215,0,0.2);background:rgba(255,215,0,0.06);color:var(--gold);font-size:11px;font-weight:600;cursor:pointer;font-family:Inter,sans-serif">This Month</button>
+        </div>
+        <button onclick="renderHistory()" style="width:100%;padding:10px;border-radius:11px;border:none;background:linear-gradient(135deg,rgba(255,215,0,0.35),rgba(255,180,0,0.2));color:var(--gold);font-size:13px;font-weight:700;cursor:pointer;font-family:Inter,sans-serif;letter-spacing:0.5px">🔍 Show History</button>
+      </div>
+
+      <div id="histSummaryLine" style="font-size:11px;color:var(--td);text-align:center;margin-bottom:8px;min-height:16px"></div>
+
+      <div id="histTableWrap" style="display:none">
+        <div style="overflow-x:auto;border-radius:12px;border:1px solid rgba(255,215,0,0.15);margin-bottom:10px">
+          <table id="histTable" style="width:100%;border-collapse:collapse;font-family:Inter,sans-serif;font-size:12px">
+            <thead>
+              <tr style="background:rgba(255,215,0,0.1);color:var(--gold)">
+                <th style="padding:8px 10px;text-align:left;font-size:10px;letter-spacing:1px;white-space:nowrap">Date</th>
+                <th style="padding:8px 6px;text-align:center;font-size:10px;letter-spacing:1px">Radha</th>
+                <th style="padding:8px 6px;text-align:center;font-size:10px;letter-spacing:1px">RV</th>
+                <th style="padding:8px 6px;text-align:center;font-size:10px;letter-spacing:1px">28 Names</th>
+                <th style="padding:8px 6px;text-align:center;font-size:10px;letter-spacing:1px">Total Time</th>
+              </tr>
+            </thead>
+            <tbody id="histTableBody"></tbody>
+          </table>
+        </div>
+        <div id="histTotals" style="background:rgba(255,215,0,0.07);border:1px solid rgba(255,215,0,0.2);border-radius:11px;padding:10px 12px;margin-bottom:10px;font-size:12px;font-family:Inter,sans-serif"></div>
+        <button onclick="copyHistoryText()" style="width:100%;padding:9px;border-radius:11px;border:1px solid rgba(255,215,0,0.25);background:rgba(255,215,0,0.05);color:var(--gold);font-size:12px;font-weight:600;cursor:pointer;font-family:Inter,sans-serif">📋 Copy as Text</button>
+      </div>
+
+      <div id="histDayDetail" style="display:none;margin-top:8px;background:rgba(6,13,31,0.8);border:1px solid rgba(109,184,255,0.25);border-radius:14px;padding:12px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+          <div id="histDayTitle" style="font-size:13px;font-weight:700;color:var(--a2)"></div>
+          <button onclick="document.getElementById('histDayDetail').style.display='none'" style="background:none;border:none;color:var(--td);font-size:18px;cursor:pointer;padding:0 4px">✕</button>
+        </div>
+        <div id="histDayContent"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TODAY'S MALA SESSION LOG — collapsible -->
+  <div class="cs-wrap" style="background:rgba(46,204,113,0.04);border:1px solid rgba(46,204,113,0.18)">
+    <div class="cs-header" onclick="toggleCs('malaLogBody','malaLogChev')">
+      <h3 style="color:var(--green)">📿 Today's Mala Log <span id="malaLogType" style="opacity:0.6;font-weight:400;font-size:10px;color:var(--gold)"></span> <span id="malaLogCount" style="opacity:0.6;font-weight:400;font-size:11px"></span> <span id="malaLogInline" style="opacity:0.7;font-weight:400;font-size:10px;color:var(--gold);margin-left:4px"></span></h3>
+      <span class="cs-chevron" id="malaLogChev" style="color:var(--green)">▾</span>
+    </div>
+    <div class="cs-body open" id="malaLogBody">
+      <div id="malaLogAvg" style="font-size:11px;color:var(--td);margin-bottom:6px;text-align:center;display:none"></div>
+      <div id="malaLogList" style="display:flex;flex-direction:column;gap:5px;margin-top:2px">
+        <div style="font-size:11px;color:var(--td);text-align:center;padding:6px 0">No malas completed yet today</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ADD / DEDUCT JAP MANUALLY — merged collapsible with two-tone header -->
+  <div class="cs-wrap" style="border:1px solid rgba(255,215,0,0.2);background:linear-gradient(90deg,rgba(46,204,113,0.07) 0%,rgba(46,204,113,0.07) 50%,rgba(232,51,109,0.07) 50%,rgba(232,51,109,0.07) 100%)">
+    <div class="cs-header" onclick="toggleCs('addDeductBody','addDeductChev')">
+      <h3 style="background:linear-gradient(90deg,var(--green) 0%,var(--green) 50%,var(--rl) 50%,var(--rl) 100%);-webkit-background-clip:text;background-clip:text;color:transparent">➕ Add ／ ✂️ Deduct Jap Manually</h3>
+      <span class="cs-chevron" id="addDeductChev" style="color:var(--gold)">▾</span>
+    </div>
+    <div class="cs-body" id="addDeductBody">
+
+      <!-- ADD JAP sub-section -->
+      <div class="cs-wrap" style="background:rgba(46,204,113,0.06);border:1px solid rgba(46,204,113,0.25);margin-bottom:10px">
+        <div class="cs-header" onclick="toggleCs('addJapManuallyBody','addJapManuallyChev')">
+          <h3 style="color:var(--green)">➕ Add Jap</h3>
+          <span class="cs-chevron" id="addJapManuallyChev" style="color:var(--green)">▾</span>
+        </div>
+        <div class="cs-body" id="addJapManuallyBody">
+          <p style="font-size:12px;color:var(--td);margin-bottom:12px">Jap done on Mala made of Sacred Tulsi Wood / Mala / Finger counts or other digital counter?</p>
+
+          <!-- Inner: Today -->
+          <div class="cs-wrap" style="background:rgba(46,204,113,0.05);border:1px solid rgba(46,204,113,0.18);margin-bottom:8px">
+            <div class="cs-header" onclick="toggleCs('addJapTodayBody','addJapTodayChev')" style="padding:10px 14px">
+              <h3 style="color:var(--green);font-size:10px">📅 TODAY</h3>
+              <span class="cs-chevron" id="addJapTodayChev" style="color:var(--green)">▾</span>
+            </div>
+            <div class="cs-body" id="addJapTodayBody">
+              <div class="fr"><input type="number" class="fi" id="manualJapIn" placeholder="Number of jap" min="1"><span class="fu">jap</span></div>
+              <div style="font-size:11px;color:var(--td);margin-bottom:8px">= <span id="manualMalaPreview">0</span> malas · Today will become: <span id="manualTodayPreview" style="color:var(--a2)">—</span></div>
+              <div style="margin-top:6px;padding:8px 10px;background:rgba(255,215,0,0.06);border:1px solid rgba(255,215,0,0.18);border-radius:9px">
+                <div style="font-size:10px;color:var(--gold);margin-bottom:4px;letter-spacing:1px;font-weight:600">⏱️ TIME TAKEN (optional)</div>
+                <div style="display:flex;gap:6px;align-items:center">
+                  <input type="number" class="fi" id="manualJapMin" placeholder="Min" min="0" style="width:70px;font-size:13px">
+                  <span style="color:var(--td);font-size:11px">m</span>
+                  <input type="number" class="fi" id="manualJapSec" placeholder="Sec" min="0" max="59" style="width:70px;font-size:13px">
+                  <span style="color:var(--td);font-size:11px">s</span>
+                </div>
+              </div>
+              <button class="pb" onclick="addManualJap()" style="background:linear-gradient(135deg,#27ae60,#2ecc71)">➕ Add to Today</button>
+            </div>
+          </div>
+
+          <!-- Inner: Other Day -->
+          <div class="cs-wrap" style="background:rgba(46,204,113,0.04);border:1px solid rgba(46,204,113,0.14);margin-bottom:8px">
+            <div class="cs-header" onclick="toggleCs('addJapOtherBody','addJapOtherChev')" style="padding:10px 14px">
+              <h3 style="color:var(--green);font-size:10px">📆 OTHER DAY</h3>
+              <span class="cs-chevron" id="addJapOtherChev" style="color:var(--green)">▾</span>
+            </div>
+            <div class="cs-body" id="addJapOtherBody">
+              <div class="fr"><input type="date" class="fi" id="addJapOtherDate" style="font-size:13px"></div>
+              <div class="fr"><input type="number" class="fi" id="addJapOtherIn" placeholder="Number of jap" min="1"><span class="fu">jap</span></div>
+              <div style="font-size:11px;color:var(--td);margin-bottom:8px">That day will become: <span id="addJapOtherPreview" style="color:var(--green)">—</span></div>
+              <div style="margin-top:6px;margin-bottom:8px;padding:8px 10px;background:rgba(255,215,0,0.06);border:1px solid rgba(255,215,0,0.18);border-radius:9px">
+                <div style="font-size:10px;color:var(--gold);margin-bottom:4px;letter-spacing:1px;font-weight:600">⏱️ TIME TAKEN (optional)</div>
+                <div style="display:flex;gap:6px;align-items:center">
+                  <input type="number" class="fi" id="addJapOtherMin" placeholder="Min" min="0" style="width:70px;font-size:13px">
+                  <span style="color:var(--td);font-size:11px">m</span>
+                  <input type="number" class="fi" id="addJapOtherSec" placeholder="Sec" min="0" max="59" style="width:70px;font-size:13px">
+                  <span style="color:var(--td);font-size:11px">s</span>
+                </div>
+              </div>
+              <button class="pb" onclick="addOtherDayJap()" style="background:linear-gradient(135deg,#1a6b3c,#27ae60)">➕ Add to Selected Day</button>
+            </div>
+          </div>
+
+          <!-- Inner: Before This App (Lifetime) -->
+          <div class="cs-wrap" style="background:rgba(109,184,255,0.05);border:1px solid rgba(109,184,255,0.18)">
+            <div class="cs-header" onclick="toggleCs('prevJapBody','prevJapChev')" style="padding:10px 14px">
+              <h3 style="color:var(--a2);font-size:10px">📜 BEFORE THIS APP (LIFETIME)</h3>
+              <span class="cs-chevron" id="prevJapChev" style="color:var(--a2)">▾</span>
+            </div>
+            <div class="cs-body" id="prevJapBody">
+              <p style="font-size:12px;color:var(--td);margin-bottom:10px">Jap done before using this app? Add to lifetime total.</p>
+              <div class="fr"><input type="number" class="fi" id="prevJapIn" placeholder="e.g. 50000" min="1"><span class="fu">jap</span></div>
+              <div style="font-size:11px;color:var(--td);margin-bottom:8px">= <span id="prevMalaPreview">0</span> malas · Lifetime: <span id="prevLifetimePreview" style="color:var(--gold)">—</span></div>
+              <button class="pb" onclick="addPrevJap()" style="background:linear-gradient(135deg,#8B5CF6,#6D28D9)">📿 Add to Lifetime</button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- DEDUCT JAP sub-section -->
+      <div class="cs-wrap" style="background:rgba(232,51,109,0.05);border:1px solid rgba(232,51,109,0.25)">
+        <div class="cs-header" onclick="toggleCs('deductJapMainBody','deductJapMainChev')">
+          <h3 style="color:var(--rl)">✂️ Deduct Jap</h3>
+          <span class="cs-chevron" id="deductJapMainChev" style="color:var(--rl)">▾</span>
+        </div>
+        <div class="cs-body" id="deductJapMainBody">
+          <p style="font-size:12px;color:var(--td);margin-bottom:12px">Jap you want to deduct — for dedicating to someone, wrong entry, or system bug showing false results.</p>
+
+          <div class="cs-wrap" style="background:rgba(232,51,109,0.05);border:1px solid rgba(232,51,109,0.18);margin-bottom:8px">
+            <div class="cs-header" onclick="toggleCs('deductTodayBody','deductTodayChev')" style="padding:10px 14px">
+              <h3 style="color:var(--rl);font-size:10px">📅 TODAY</h3>
+              <span class="cs-chevron" id="deductTodayChev" style="color:var(--rl)">▾</span>
+            </div>
+            <div class="cs-body" id="deductTodayBody">
+              <div class="fr"><input type="number" class="fi" id="deductTodayIn" placeholder="Number to deduct" min="1"><span class="fu">jap</span></div>
+              <div style="font-size:11px;color:var(--td);margin-bottom:8px">Today will become: <span id="deductTodayPreview" style="color:var(--rl)">—</span></div>
+              <div style="margin-top:6px;margin-bottom:8px;padding:8px 10px;background:rgba(232,51,109,0.06);border:1px solid rgba(232,51,109,0.22);border-radius:9px">
+                <div style="font-size:10px;color:var(--rl);margin-bottom:4px;letter-spacing:1px;font-weight:600">⏱️ TIME TO DEDUCT (optional)</div>
+                <div style="display:flex;gap:6px;align-items:center">
+                  <input type="number" class="fi" id="deductTodayMin" placeholder="Min" min="0" style="width:70px;font-size:13px">
+                  <span style="color:var(--td);font-size:11px">m</span>
+                  <input type="number" class="fi" id="deductTodaySec" placeholder="Sec" min="0" max="59" style="width:70px;font-size:13px">
+                  <span style="color:var(--td);font-size:11px">s</span>
+                </div>
+              </div>
+              <button class="pb" onclick="deductTodayJap()" style="background:linear-gradient(135deg,#c0392b,#e74c3c)">✂️ Deduct from Today</button>
+            </div>
+          </div>
+
+          <div class="cs-wrap" style="background:rgba(232,51,109,0.04);border:1px solid rgba(232,51,109,0.14);margin-bottom:8px">
+            <div class="cs-header" onclick="toggleCs('deductOtherBody','deductOtherChev')" style="padding:10px 14px">
+              <h3 style="color:var(--rl);font-size:10px">📆 OTHER DAY</h3>
+              <span class="cs-chevron" id="deductOtherChev" style="color:var(--rl)">▾</span>
+            </div>
+            <div class="cs-body" id="deductOtherBody">
+              <div class="fr"><input type="date" class="fi" id="deductOtherDate" style="font-size:13px"></div>
+              <div class="fr"><input type="number" class="fi" id="deductOtherIn" placeholder="Number to deduct" min="1"><span class="fu">jap</span></div>
+              <div style="font-size:11px;color:var(--td);margin-bottom:8px">That day will become: <span id="deductOtherPreview" style="color:var(--rl)">—</span></div>
+              <div style="margin-top:6px;margin-bottom:8px;padding:8px 10px;background:rgba(232,51,109,0.06);border:1px solid rgba(232,51,109,0.22);border-radius:9px">
+                <div style="font-size:10px;color:var(--rl);margin-bottom:4px;letter-spacing:1px;font-weight:600">⏱️ TIME TO DEDUCT (optional)</div>
+                <div style="display:flex;gap:6px;align-items:center">
+                  <input type="number" class="fi" id="deductOtherMin" placeholder="Min" min="0" style="width:70px;font-size:13px">
+                  <span style="color:var(--td);font-size:11px">m</span>
+                  <input type="number" class="fi" id="deductOtherSec" placeholder="Sec" min="0" max="59" style="width:70px;font-size:13px">
+                  <span style="color:var(--td);font-size:11px">s</span>
+                </div>
+              </div>
+              <button class="pb" onclick="deductOtherJap()" style="background:linear-gradient(135deg,#922b21,#c0392b)">✂️ Deduct from Selected Day</button>
+            </div>
+          </div>
+
+          <div class="cs-wrap" style="background:rgba(232,51,109,0.04);border:1px solid rgba(232,51,109,0.14)">
+            <div class="cs-header" onclick="toggleCs('nameJapDeductBody','nameJapDeductChev')" style="padding:10px 14px">
+              <h3 style="color:var(--rl);font-size:10px">📿 NAME JAP — LIFETIME</h3>
+              <span class="cs-chevron" id="nameJapDeductChev" style="color:var(--rl)">▾</span>
+            </div>
+            <div class="cs-body" id="nameJapDeductBody">
+              <div style="font-size:11px;color:var(--td);margin-bottom:8px">Currently deducted: <span id="nameJapDeductCur" style="color:var(--rl);font-weight:600">0</span> jap (<span id="nameJapDeductMalas" style="color:var(--rl)">0</span> malas)</div>
+              <div style="background:rgba(232,51,109,0.06);border:1px solid rgba(232,51,109,0.18);border-radius:12px;padding:11px;margin-bottom:10px">
+                <div style="font-size:10px;color:var(--rl);letter-spacing:2px;text-transform:uppercase;margin-bottom:8px;font-weight:600">➕ Add to Deduction</div>
+                <div class="fr"><input type="number" class="fi" id="nameJapDeductIn" placeholder="e.g. 5000" min="1" style="border-color:rgba(232,51,109,0.35)"><span class="fu" style="color:var(--rl)">jap</span></div>
+                <div style="font-size:11px;color:var(--td);margin-bottom:8px">New lifetime total will become: <span id="nameJapDeductPreview" style="color:var(--rl)">—</span></div>
+                <button class="pb" onclick="addNameJapDeduct()" style="background:linear-gradient(135deg,#c0392b,#e74c3c)">✂️ Apply Deduction</button>
+              </div>
+              <div style="background:rgba(232,51,109,0.03);border:1px solid rgba(232,51,109,0.12);border-radius:12px;padding:11px">
+                <div style="font-size:10px;color:var(--rl);letter-spacing:2px;text-transform:uppercase;margin-bottom:8px;font-weight:600">↩ Remove Deduction</div>
+                <div class="fr"><input type="number" class="fi" id="nameJapRestoreIn" placeholder="Amount to restore" min="1" style="border-color:rgba(232,51,109,0.25)"><span class="fu" style="color:var(--rl)">jap</span></div>
+                <div style="font-size:11px;color:var(--td);margin-bottom:8px">New lifetime total will become: <span id="nameJapRestorePreview" style="color:var(--a2)">—</span></div>
+                <button class="pb" onclick="removeNameJapDeduct()" style="background:linear-gradient(135deg,#1a5e3e,#27ae60)">↩ Restore to Lifetime</button>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Hidden legacy Jap Time inputs (section removed; nodes kept so JS handlers don't crash) -->
+  <div style="display:none">
+    <input type="number" id="jtAddTodayMin"><input type="number" id="jtAddTodaySec"><span id="jtAddTodayPreview"></span>
+    <input type="date" id="jtAddOtherDate"><input type="number" id="jtAddOtherMin"><input type="number" id="jtAddOtherSec"><span id="jtAddOtherPreview"></span>
+    <input type="number" id="jtDedTodayMin"><input type="number" id="jtDedTodaySec"><span id="jtDedTodayPreview"></span>
+    <input type="date" id="jtDedOtherDate"><input type="number" id="jtDedOtherMin"><input type="number" id="jtDedOtherSec"><span id="jtDedOtherPreview"></span>
+  </div>
+
+  <!-- Reset section — collapsible (last) -->
+  <div class="rs">
+    <div class="cs-header" onclick="toggleCs('resetBody','resetChev')" style="padding:13px 16px">
+      <h3 style="color:var(--rl);margin:0;font-size:11px;letter-spacing:2px;text-transform:uppercase;font-weight:600">🔄 Reset Data</h3>
+      <span class="cs-chevron" id="resetChev" style="color:var(--rl)">▾</span>
+    </div>
+    <div class="cs-body" id="resetBody">
+      <button class="rb" onclick="cr2('today')">🌅 Reset Today's Count</button>
+      <div style="font-size:11px;color:var(--td);margin-bottom:8px">📅 RESET DATE RANGE</div>
+      <div class="drr"><input type="date" class="di" id="rfrom"><input type="date" class="di" id="rto"></div>
+      <button class="rb" onclick="cr2('range')">Delete data between these dates</button>
+      <button class="rb red" style="margin-top:4px" onclick="cr2('all')">⚠️ Reset All Data</button>
+    </div>
+  </div>
+</div>
+
+<!-- SETTINGS VIEW — includes Targets + Cloud Sync + Preferences + Backup -->
+
+<div class="view" id="vset">
+  <div class="vt">Settings</div>
+
+  <!-- SINGLE SIGN-IN WITH GOOGLE -->
+  <div class="sc" id="fbCard">
+    <h3>☁️ Cloud Sync &amp; Backup</h3>
+    <div id="fbLoggedOut">
+      <p style="font-size:12px;color:var(--td);margin-bottom:14px">One sign-in handles real-time sync across all your devices.</p>
+      <button class="google-btn" onclick="fbSignInGoogle()">
+        <svg viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+        Sign in with Google
+      </button>
+      <button class="zoho-btn" onclick="fbSignInZoho()">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="none" stroke="#F7A81B" stroke-width="2"/><text x="12" y="16" text-anchor="middle" fill="#F7A81B" font-size="12" font-weight="bold" font-family="sans-serif">Z</text></svg>
+        Sign in with Zoho
+      </button>
+      <div id="fbErr" style="font-size:12px;color:var(--red);margin-top:6px;text-align:center"></div>
+    </div>
+    <div id="fbLoggedIn" style="display:none">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+        <div style="width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,var(--bg),var(--a));display:flex;align-items:center;justify-content:center;font-size:16px">🙏</div>
+        <div>
+          <div style="font-size:13px;color:var(--tl);font-weight:500" id="fbUserEmail"></div>
+          <div style="font-size:11px;color:var(--green)">✓ Signed in · Sync active</div>
+        </div>
+      </div>
+      <div style="text-align:center;margin-bottom:12px">
+        <span class="sync-pill" id="syncPill"><span class="sync-dot"></span><span id="syncPillText">Ready</span></span>
+      </div>
+      <button onclick="fbSignOut()" style="width:100%;padding:9px;border-radius:11px;border:1px solid rgba(232,51,109,0.3);background:rgba(232,51,109,0.08);color:var(--rl);font-size:13px;cursor:pointer">Sign Out</button>
+    </div>
+  </div>
+
+  <!-- BACKUP & RESTORE -->
+  <div class="sc">
+    <h3>💾 Local Backup &amp; Restore</h3>
+    <p style="font-size:12px;color:var(--td);margin-bottom:14px">Export all your data as a JSON file. Use to transfer to a new device.</p>
+    <button class="pb" onclick="exportAllData()" style="background:linear-gradient(135deg,#1a6b3c,#27ae60);margin-bottom:10px">📥 Export All Data</button>
+    <label style="display:block;width:100%;padding:10px;border-radius:11px;border:1px dashed rgba(74,144,226,0.4);background:rgba(74,144,226,0.06);color:var(--a2);font-size:13px;text-align:center;cursor:pointer;font-family:'Inter',sans-serif;box-sizing:border-box">
+      📤 Choose Backup File to Restore
+      <input type="file" id="restoreFileIn" accept=".json" style="display:none" onchange="importAllData(this)">
+    </label>
+    <div id="restoreStatus" style="font-size:12px;margin-top:8px;text-align:center;color:var(--green);min-height:18px"></div>
+  </div>
+  <!-- TARGETS -->
+  <div class="sc">
+    <h3>📿 Mala Size &amp; Targets</h3>
+    <div class="fr" style="margin-bottom:4px"><input type="number" class="fi" id="msIn" min="1" placeholder="108"><span class="fu">per mala</span></div>
+    <div style="font-size:11px;color:var(--td);margin-bottom:10px">Default 108 beads per mala</div>
+    <button class="pb" onclick="svm()" style="margin-bottom:14px">Save Mala Size</button>
+
+    <div style="font-size:10px;color:var(--td);letter-spacing:1px;margin-bottom:5px;text-transform:uppercase">Daily Target</div>
+    <div class="fr" style="margin-bottom:4px"><input type="number" class="fi" id="dtIn" placeholder="Jap count / day" oninput="syncTargetJapToMala('dt')"><span class="fu">jap</span></div>
+    <div class="fr" style="margin-bottom:4px"><input type="number" class="fi" id="dtMalaIn" placeholder="Or: malas / day" oninput="syncTargetMalaToJap('dt')"><span class="fu" style="color:var(--gold)">malas</span></div>
+    <div style="font-size:11px;color:var(--td);margin-bottom:10px">= <span id="dtMala">0</span> malas per day</div>
+    <button class="pb" onclick="svt('d')" style="margin-bottom:14px">Save Daily Target</button>
+
+    <div style="font-size:10px;color:var(--td);letter-spacing:1px;margin-bottom:5px;text-transform:uppercase">Lifetime Target</div>
+    <div class="fr" style="margin-bottom:4px"><input type="number" class="fi" id="ltIn" placeholder="Jap count lifetime" oninput="syncTargetJapToMala('lt')"><span class="fu">jap</span></div>
+    <div class="fr" style="margin-bottom:4px"><input type="number" class="fi" id="ltMalaIn" placeholder="Or: malas lifetime" oninput="syncTargetMalaToJap('lt')"><span class="fu" style="color:var(--gold)">malas</span></div>
+    <div style="font-size:11px;color:var(--td);margin-bottom:10px">= <span id="ltMala">0</span> malas lifetime</div>
+    <button class="pb" onclick="svt('l')">Save Lifetime Target</button>
+    <div style="margin-top:18px;padding-top:14px;border-top:1px solid rgba(255,215,0,0.15)">
+      <div style="font-size:11px;color:var(--gold);letter-spacing:2px;text-transform:uppercase;margin-bottom:10px;font-weight:600">📿 राधावल्लभ श्री हरिवंश Targets</div>
+      <div class="fr" style="margin-bottom:4px"><input type="number" class="fi" id="dtRVIn" placeholder="Jap count / day" oninput="syncTargetJapToMala('dtRV')"><span class="fu">jap</span></div>
+      <div class="fr" style="margin-bottom:4px"><input type="number" class="fi" id="dtRVMalaIn" placeholder="Or: malas / day" oninput="syncTargetMalaToJap('dtRV')"><span class="fu" style="color:var(--gold)">malas</span></div>
+      <div style="font-size:11px;color:var(--td);margin-bottom:10px">= <span id="dtRVMala">0</span> malas per day</div>
+      <button class="pb" onclick="svtRV('d')" style="margin-bottom:14px;background:linear-gradient(135deg,rgba(255,215,0,0.4),rgba(255,180,0,0.3))">Save RV Daily Target</button>
+      <!-- RV Lifetime Target removed — shared with राधा -->
+    </div>
+  </div>
+
+  <!-- EKADASHI MANAGER -->
+  <div class="sc" style="background:rgba(18,8,40,0.6);border-color:rgba(155,89,182,0.35);">
+    <h3 style="color:#BD93F9;">📅 Ekadashi Manager</h3>
+
+    <!-- Parampara Toggle -->
+    <div style="background:rgba(0,0,0,0.3);border-radius:12px;padding:13px;margin-bottom:14px;">
+      <div style="font-size:10px;color:rgba(189,147,249,0.7);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:10px;font-weight:700;">🔱 Parampara</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
+        <button id="ekParSmarta" onclick="saveEkParampara('smarta')" style="padding:10px 6px;border-radius:10px;border:2px solid rgba(241,196,15,0.5);background:rgba(241,196,15,0.18);color:#F1C40F;font-size:12px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;">☀️ Smarta</button>
+        <button id="ekParVaishnav" onclick="saveEkParampara('vaishnava')" style="padding:10px 6px;border-radius:10px;border:2px solid rgba(155,89,182,0.3);background:transparent;color:rgba(189,147,249,0.6);font-size:12px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;">🌸 Vaishnava</button>
+      </div>
+      <div id="ekParamparaNote" style="font-size:11px;color:rgba(255,255,255,0.4);line-height:1.6;"></div>
+    </div>
+
+    <!-- AUTO-FETCH (Primary) -->
+    <div style="background:rgba(0,0,0,0.35);border:1px solid rgba(46,204,113,0.25);border-radius:12px;padding:14px;margin-bottom:14px;">
+      <div style="font-size:10px;color:rgba(46,204,113,0.8);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px;font-weight:700;">✨ Auto-Fetch from GPS</div>
+      <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:12px;line-height:1.5;">Calculates Ekadashi tithi times astronomically for your exact location for the next 6 months — no manual entry needed. Respects your Parampara.</div>
+      <button id="panchangFetchBtn" onclick="fetchPanchangEkadashis()" style="display:block;width:100%;padding:13px;border-radius:10px;border:none;background:linear-gradient(135deg,rgba(46,204,113,0.75),rgba(22,160,133,0.7));color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;box-shadow:0 3px 14px rgba(46,204,113,0.2);margin-bottom:8px;">🌙 Auto-Fetch from GPS</button>
+      <div id="panchangStatus" style="font-size:11px;color:rgba(255,255,255,0.45);text-align:center;min-height:16px;"></div>
+    </div>
+
+
+    <!-- MANUAL ENTRY (Collapsible) -->
+    <div style="margin-bottom:14px;">
+      <button onclick="(function(){const m=document.getElementById('ekManualBox');m.style.display=m.style.display==='none'?'block':'none';})()" style="display:flex;align-items:center;gap:8px;background:rgba(0,0,0,0.25);border:1px solid rgba(155,89,182,0.2);border-radius:10px;padding:10px 14px;color:rgba(189,147,249,0.7);font-size:12px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;width:100%;box-sizing:border-box;">
+        <span>＋</span><span>Manual Entry</span><span style="margin-left:auto;font-size:10px;opacity:0.5;">tap to expand</span>
+      </button>
+      <div id="ekManualBox" style="display:none;background:rgba(0,0,0,0.3);border:1px solid rgba(155,89,182,0.18);border-radius:0 0 12px 12px;padding:14px;margin-top:-2px;">
+        <div style="font-size:10px;color:rgba(255,255,255,0.35);margin-bottom:10px;line-height:1.5;">Use this only to correct auto-fetched data or add a specific Ekadashi manually.</div>
+
+        <div style="font-size:10px;color:rgba(255,255,255,0.4);letter-spacing:1px;margin-bottom:5px;text-transform:uppercase;">Name</div>
+        <input type="text" id="ekNameIn" placeholder="e.g. Nirjala Ekadashi" style="display:block;width:100%;box-sizing:border-box;background:rgba(0,0,0,0.4);border:1px solid rgba(155,89,182,0.4);border-radius:10px;padding:10px 13px;color:#fff;font-size:13px;font-family:'Inter',sans-serif;outline:none;margin-bottom:12px;">
+
+        <div style="font-size:10px;color:rgba(255,255,255,0.4);letter-spacing:1px;margin-bottom:8px;text-transform:uppercase;">Paksha</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">
+          <label style="display:flex;align-items:center;gap:8px;background:rgba(241,196,15,0.08);border:1px solid rgba(241,196,15,0.3);border-radius:10px;padding:10px 12px;cursor:pointer;">
+            <input type="radio" name="ekPaksha" id="ekPakshaShukla" value="shukla" checked style="accent-color:#F1C40F;">
+            <span style="font-size:13px;color:#F1C40F;font-weight:600;">☀️ Shukla</span>
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;background:rgba(155,89,182,0.08);border:1px solid rgba(155,89,182,0.3);border-radius:10px;padding:10px 12px;cursor:pointer;">
+            <input type="radio" name="ekPaksha" id="ekPakshaKrishna" value="krishna" style="accent-color:#BD93F9;">
+            <span style="font-size:13px;color:#BD93F9;font-weight:600;">🌙 Krishna</span>
+          </label>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
+          <div>
+            <div style="font-size:10px;color:rgba(255,255,255,0.4);letter-spacing:1px;margin-bottom:5px;text-transform:uppercase;">Start Date</div>
+            <input type="date" id="ekStartDateIn" style="display:block;width:100%;box-sizing:border-box;background:rgba(0,0,0,0.4);border:1px solid rgba(155,89,182,0.4);border-radius:10px;padding:10px 8px;color:#fff;font-size:13px;font-family:'Inter',sans-serif;outline:none;">
+          </div>
+          <div>
+            <div style="font-size:10px;color:rgba(255,255,255,0.4);letter-spacing:1px;margin-bottom:5px;text-transform:uppercase;">Start Time</div>
+            <input type="time" id="ekStartTimeIn" style="display:block;width:100%;box-sizing:border-box;background:rgba(0,0,0,0.4);border:1px solid rgba(155,89,182,0.4);border-radius:10px;padding:10px 8px;color:#fff;font-size:13px;font-family:'Inter',sans-serif;outline:none;">
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;">
+          <div>
+            <div style="font-size:10px;color:rgba(255,255,255,0.4);letter-spacing:1px;margin-bottom:5px;text-transform:uppercase;">End Date</div>
+            <input type="date" id="ekEndDateIn" style="display:block;width:100%;box-sizing:border-box;background:rgba(0,0,0,0.4);border:1px solid rgba(155,89,182,0.4);border-radius:10px;padding:10px 8px;color:#fff;font-size:13px;font-family:'Inter',sans-serif;outline:none;">
+          </div>
+          <div>
+            <div style="font-size:10px;color:rgba(255,255,255,0.4);letter-spacing:1px;margin-bottom:5px;text-transform:uppercase;">End Time</div>
+            <input type="time" id="ekEndTimeIn" style="display:block;width:100%;box-sizing:border-box;background:rgba(0,0,0,0.4);border:1px solid rgba(155,89,182,0.4);border-radius:10px;padding:10px 8px;color:#fff;font-size:13px;font-family:'Inter',sans-serif;outline:none;">
+          </div>
+        </div>
+        <button onclick="addEkadashiDate()" style="display:block;width:100%;padding:12px;border-radius:10px;border:none;background:linear-gradient(135deg,rgba(155,89,182,0.75),rgba(90,50,190,0.65));color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;box-shadow:0 3px 14px rgba(155,89,182,0.3);">+ Add Ekadashi</button>
+      </div>
+    </div>
+
+    <!-- Saved list -->
+    <div style="font-size:10px;color:rgba(189,147,249,0.55);letter-spacing:1px;text-transform:uppercase;margin-bottom:10px;font-weight:600;">Saved Ekadashis</div>
+    <div id="ekadashiList"></div>
+  </div>
+
+  <!-- PREFERENCES -->
+  <div class="sc">
+    <h3>🔔 Preferences</h3>
+    <div class="sr">
+      <div><label>Vibration</label><div class="sub">Haptic heartbeat on each tap</div></div>
+      <div class="tg on" id="tgVib" onclick="tgs('vib')"></div>
+    </div>
+    <div class="sr">
+      <div><label>Bell Sound</label><div class="sub">Bell plays after completing a mala</div></div>
+      <div class="tg on" id="tgSnd" onclick="tgs('sound')"></div>
+    </div>
+    <button onclick="testSound()" style="padding:7px 14px;border-radius:20px;border:1px solid rgba(74,144,226,0.3);background:rgba(74,144,226,0.12);color:var(--a2);font-size:12px;cursor:pointer;font-family:Inter,sans-serif;margin-top:6px">🔔 Test Bell</button>
+  </div>
+
+  <!-- DAILY REMINDER -->
+  <div class="sc" style="background:rgba(255,215,0,0.04);border-color:rgba(255,215,0,0.18)">
+    <h3 style="color:var(--gold)">⏰ Daily Reminders</h3>
+    <p style="font-size:12px;color:var(--td);margin-bottom:14px">राधे राधे 🙏 — Get notified before your sacred jap times. All reminders can be active together.</p>
+
+    <!-- Brahma Muhurta -->
+    <div class="rem-card" id="remCardBrahma">
+      <div class="rem-card-top">
+        <div class="rem-card-icon">🌄</div>
+        <div class="rem-card-info">
+          <div class="rem-card-title">Brahma Muhurta</div>
+          <div class="rem-card-sub">5 min before Brahma Muhurta (auto via GPS)</div>
+          <div class="rem-card-time" id="remTimeBrahma">— detecting…</div>
+        </div>
+        <div class="tg" id="tgBrahma" onclick="toggleReminderType('brahma')"></div>
+      </div>
+    </div>
+
+    <!-- Sandhyakal -->
+    <div class="rem-card" id="remCardSandhya">
+      <div class="rem-card-top">
+        <div class="rem-card-icon">🌅</div>
+        <div class="rem-card-info">
+          <div class="rem-card-title">Sandhyakal</div>
+          <div class="rem-card-sub">5 min before sunset (auto via GPS)</div>
+          <div class="rem-card-time" id="remTimeSandhya">— detecting…</div>
+        </div>
+        <div class="tg" id="tgSandhya" onclick="toggleReminderType('sandhya')"></div>
+      </div>
+    </div>
+
+    <!-- Manual -->
+    <div class="rem-card" id="remCardManual">
+      <div class="rem-card-top">
+        <div class="rem-card-icon">🕐</div>
+        <div class="rem-card-info">
+          <div class="rem-card-title">Custom Time</div>
+          <div class="rem-card-sub">Set your own reminder time</div>
+          <div class="rem-card-time" id="remTimeManual">Not set</div>
+        </div>
+        <div class="tg" id="tgManual" onclick="toggleReminderType('manual')"></div>
+      </div>
+      <div class="reminder-time-row" id="reminderTimeRow" style="display:none">
+        <input type="time" class="reminder-time-input" id="reminderTimeIn" value="06:00">
+        <button class="reminder-save-btn" onclick="saveManualReminderTime()">Save</button>
+      </div>
+    </div>
+
+    <!-- Location status -->
+    <div style="font-size:11px;color:var(--td);text-align:center;margin-top:4px" id="remLocStatus"></div>
+  </div>
+
+  <!-- SHARE APP -->
+  <div class="sc" style="background:rgba(255,215,0,0.03);border-color:rgba(255,215,0,0.18)">
+    <h3>🌸 Share This App</h3>
+    <p style="font-size:12px;color:var(--td);margin-bottom:10px">Spread the divine name! Share Radha Naam Jap with friends and family 🙏</p>
+    <div id="appLinkDisplay" style="font-size:11px;color:var(--a2);background:rgba(74,144,226,0.08);border:1px solid rgba(74,144,226,0.2);border-radius:8px;padding:8px 11px;margin-bottom:10px;word-break:break-all;font-family:monospace;cursor:pointer" onclick="shareApp()" title="Tap to copy"></div>
+    <button class="pb" onclick="shareApp()" style="background:linear-gradient(135deg,rgba(255,215,0,0.35),rgba(255,180,0,0.25));color:var(--gold);border:1px solid rgba(255,215,0,0.4)">🌸 Share Radha Naam Jap App</button>
+  </div>
+
+</div>
+
+<!-- MODAL -->
+<div class="mo" id="mo">
+  <div class="md2">
+    <h3 id="moT">Are you sure?</h3>
+    <p class="mdd" id="moD"></p>
+    <button class="mdb cf" id="moCf">Yes, Reset</button>
+    <button class="mdb ca" onclick="cm()">Cancel</button>
+  </div>
+</div>
+
+<!-- LYRICS MODAL -->
+<div class="lmo" id="lmo" onclick="if(event.target===this)closeLyrics()">
+  <div class="lmd">
+    <div class="lmh">
+      <div class="lmt" id="lmTitle"></div>
+      <button class="lmx" onclick="closeLyrics()">✕ Close</button>
+    </div>
+    <div class="lmb" id="lmb"><pre class="lyr" id="lyrBody"></pre></div>
+  </div>
+</div>
+
+<!-- BRAHMACHARYA DAY EDIT MODAL -->
+<div class="bcmo" id="bcmo">
+  <div class="md2">
+    <h3 id="bcmoT">Edit Day</h3>
+    <p class="mdd" id="bcmoD"></p>
+    <div id="bcmoBrkRow" style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+      <label style="font-size:13px;color:var(--tl);flex:1">Count:</label>
+      <input type="number" id="bcmoCnt" value="1" min="1" style="width:70px;background:rgba(0,0,0,0.3);border:1px solid rgba(231,76,60,0.3);border-radius:9px;padding:7px 11px;color:var(--tl);font-size:15px;text-align:center;font-family:'Inter',sans-serif;">
+    </div>
+    <button class="mdb cf" id="bcmoBrk">❌ Mark as Broken</button>
+    <button class="mdb" id="bcmoRst" style="background:rgba(46,204,113,0.15);color:var(--green);border:1px solid rgba(46,204,113,0.3);margin-bottom:9px">✅ Restore as Maintained</button>
+    <button class="mdb ca" onclick="document.getElementById('bcmo').classList.remove('show')">Cancel</button>
+  </div>
+</div>
+
+<!-- PWA INSTALL GUIDE MODAL -->
+<div class="pwa-mo" id="pwaMo" onclick="if(event.target===this)closePwaGuide()">
+  <div class="pwa-sheet">
+    <div class="pwa-title">📲 Install as App</div>
+    <div class="pwa-subtitle">To enable daily reminders, install this app on your home screen</div>
+
+    <div class="pwa-note">
+      🔔 Notifications only work when Radha Jap is installed as a <b style="color:var(--gold)">PWA (home screen app)</b> — not from a browser tab.
+    </div>
+
+    <div class="pwa-step">
+      <div class="pwa-step-num">1</div>
+      <div class="pwa-step-body">
+        <div class="pwa-step-title">Open in Chrome</div>
+        <div class="pwa-step-desc">Make sure you're using <b>Google Chrome</b> on Android. Other browsers may not support installation.</div>
+      </div>
+    </div>
+
+    <div class="pwa-step">
+      <div class="pwa-step-num">2</div>
+      <div class="pwa-step-body">
+        <div class="pwa-step-title">Tap the Menu (⋮)</div>
+        <div class="pwa-step-desc">Tap the <b>three-dot menu</b> (⋮) at the top-right corner of Chrome.</div>
+      </div>
+    </div>
+
+    <div class="pwa-step">
+      <div class="pwa-step-num">3</div>
+      <div class="pwa-step-body">
+        <div class="pwa-step-title">Tap "Add to Home screen"</div>
+        <div class="pwa-step-desc">Select <b>"Add to Home screen"</b> or <b>"Install app"</b> from the menu. Tap <b>Add</b> to confirm.</div>
+      </div>
+    </div>
+
+    <div class="pwa-step">
+      <div class="pwa-step-num">4</div>
+      <div class="pwa-step-body">
+        <div class="pwa-step-title">Open from Home Screen</div>
+        <div class="pwa-step-desc">From now on, always open <b>Radha Naam Jap</b> from your home screen icon — then reminders will work! 🙏</div>
+      </div>
+    </div>
+
+    <button class="pwa-close" onclick="closePwaGuide()">🙏 Got it, I'll install it!</button>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+    <script src="./stotrams.js"></script>
+    <script src="./panchangData.js"></script>
+    <script src="./app.js"></script>
+
+  </body>
+</html>

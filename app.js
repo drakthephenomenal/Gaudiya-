@@ -3597,12 +3597,17 @@ function renderVelocityTracker() {
 function renderMilestonesTab() {
   const el = document.getElementById("msContent");
   if (!el) return;
-  const hist = App.S.history || {};
+  const _isG = App.S.gaudiyaMode || false;
+  const hist   = App.S.history || {};
   const histRV = App.S.historyRV || {};
-  const rawTot =
-    Object.values(hist).reduce((a, b) => a + b, 0) +
-    Object.values(histRV).reduce((a, b) => a + b, 0);
-  const deduct = App.S.nameJapDeduct || 0;
+  const histHK = App.S.historyHK || {};
+  const rawTot = _isG
+    ? Object.values(histHK).reduce((a, b) => a + b, 0)
+    : Object.values(hist).reduce((a, b) => a + b, 0) +
+      Object.values(histRV).reduce((a, b) => a + b, 0);
+  const deduct = _isG
+    ? (App.S.nameJapDeductHK || 0)
+    : (App.S.nameJapDeduct || 0);
   const total = Math.max(0, rawTot - deduct);
   const lang = window._msLang || "hi";
 
@@ -3613,7 +3618,9 @@ function renderMilestonesTab() {
     const d = new Date(today);
     d.setDate(d.getDate() - i);
     const k = _ldk(d);
-    sum7 += (hist[k] || 0) + (histRV[k] || 0);
+    sum7 += _isG
+      ? (histHK[k] || 0)
+      : (hist[k] || 0) + (histRV[k] || 0);
   }
   const avg7 = sum7 / 7;
 
@@ -7514,9 +7521,13 @@ function renderCal() {
       String(mo + 1).padStart(2, "0") +
       "-" +
       String(d).padStart(2, "0");
-    const cnt = (App.S.history[key] || 0) + (App.S.historyRV[key] || 0),
-      timeSec =
-        (App.S.timerHistory[key] || 0) + (App.S.timerHistoryRV[key] || 0),
+    const _isG = App.S.gaudiyaMode || false;
+    const cnt = _isG
+      ? (App.S.historyHK[key] || 0)
+      : (App.S.history[key] || 0) + (App.S.historyRV[key] || 0),
+      timeSec = _isG
+        ? (App.S.timerHistoryHK[key] || 0)
+        : (App.S.timerHistory[key] || 0) + (App.S.timerHistoryRV[key] || 0),
       time28Sec = App.S.timer28History[key] || 0;
     const occ = App.S.occasions && App.S.occasions[key];
     const c = document.createElement("div");
@@ -7724,6 +7735,15 @@ function showDay(key, cnt, timeSec, time28Sec) {
   const rvMalas = Math.floor(rvCount / ms);
   const totalCount = radhaCount + rvCount;
   const totalMalas = Math.floor(totalCount / ms);
+  // HK / Mahamantra counts for Gaudiya mode
+  const hkCount = App.S.historyHK[key] || 0;
+  const hkTime  = App.S.timerHistoryHK[key] || 0;
+  const hkMalas = Math.floor(hkCount / ms);
+  const hkJapEl = document.getElementById("cdmoHkJap");
+  if (hkJapEl) hkJapEl.textContent = hkCount > 0
+    ? hkCount + " jap · " + hkMalas + " malas" : "—";
+  const hkTimeEl = document.getElementById("cdmoHkTime");
+  if (hkTimeEl) hkTimeEl.textContent = hkTime > 0 ? App.fmtTime(hkTime) : "—";
 
   document.getElementById("cdmoRadhaJap").textContent =
     radhaCount > 0 ? radhaCount + " jap · " + radhaMalas + " malas" : "—";
@@ -7914,7 +7934,10 @@ function sheetMarkBc(action) {
   fbDebouncedPush();
   renderCal();
   // Refresh the sheet to show updated status
-  const cnt2 = (App.S.history[key] || 0) + (App.S.historyRV[key] || 0);
+  const _isG2 = App.S.gaudiyaMode || false;
+  const cnt2 = _isG2
+    ? (App.S.historyHK[key] || 0)
+    : (App.S.history[key] || 0) + (App.S.historyRV[key] || 0);
   const timeSec2 =
     (App.S.timerHistory[key] || 0) + (App.S.timerHistoryRV[key] || 0);
   const time28Sec2 = App.S.timer28History[key] || 0;

@@ -1023,61 +1023,61 @@ body:not(.gaudiya-mode) .hk-only-block { display: none !important; }
   background:linear-gradient(135deg,rgba(6,13,31,0.95) 0%,rgba(10,22,40,0.98) 100%) !important;
   border:1px solid rgba(109,184,255,0.25) !important;
   border-radius:20px !important;
-  overflow:hidden;position:relative;
+  overflow:visible !important;
+  position:relative;
+  padding-top:20px !important;
 }
 .gaudiya-mode-card::before{
-  content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  content:'';position:absolute;top:0;left:0;right:0;height:2px;border-radius:20px 20px 0 0;
   background:linear-gradient(90deg,transparent,#6DB8FF,#FFD700,#6DB8FF,transparent);
 }
-.gmc-top{display:flex;align-items:flex-start;gap:14px;margin-bottom:18px;}
-.gmc-icon{font-size:28px;line-height:1;margin-top:2px;}
-.gmc-text{flex:1;}
+.gmc-top{display:flex;align-items:center;gap:14px;margin-bottom:16px;}
+.gmc-icon{font-size:30px;line-height:1;flex-shrink:0;}
+.gmc-text{flex:1;min-width:0;}
 .gmc-title{
-  font-size:18px;font-weight:bold;letter-spacing:1px;
+  font-size:19px;font-weight:bold;letter-spacing:1px;
   background:linear-gradient(135deg,#6DB8FF,#FFD700);
   -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
-  font-family:'EB Garamond','Georgia',serif;margin-bottom:4px;
+  font-family:'EB Garamond','Georgia',serif;margin-bottom:3px;line-height:1.2;
 }
 .gmc-desc{font-size:11px;color:rgba(255,255,255,0.45);line-height:1.5;}
 .gmc-switch-wrap{
-  cursor:pointer;display:flex;align-items:center;justify-content:center;
-  padding:4px 0 2px;
+  cursor:pointer;width:100%;
 }
-.gmc-switch{width:100%;max-width:100%;}
+.gmc-switch{width:100%;}
 .gmc-switch-track{
-  position:relative;height:52px;border-radius:26px;
+  position:relative;height:56px;border-radius:28px;
   background:rgba(255,255,255,0.06);
   border:1.5px solid rgba(109,184,255,0.2);
-  display:flex;align-items:center;
-  transition:background 0.4s ease,border-color 0.4s ease;
-  overflow:hidden;cursor:pointer;
+  display:flex;align-items:center;width:100%;box-sizing:border-box;
+  transition:background 0.4s ease,border-color 0.4s ease,box-shadow 0.4s ease;
+  cursor:pointer;overflow:hidden;
 }
 body.gaudiya-mode .gmc-switch-track{
   background:linear-gradient(135deg,rgba(109,184,255,0.18),rgba(255,215,0,0.12));
   border-color:rgba(109,184,255,0.5);
-  box-shadow:0 0 24px rgba(109,184,255,0.2);
+  box-shadow:0 0 28px rgba(109,184,255,0.25);
 }
 .gmc-switch-thumb{
-  position:absolute;left:6px;
-  width:40px;height:40px;border-radius:50%;
-  background:rgba(255,255,255,0.2);
-  border:1px solid rgba(255,255,255,0.15);
-  transition:left 0.35s cubic-bezier(.4,.0,.2,1),background 0.35s ease;
-  z-index:2;display:flex;align-items:center;justify-content:center;
-  font-size:18px;
+  position:absolute;left:7px;
+  width:42px;height:42px;border-radius:50%;
+  background:rgba(255,255,255,0.18);
+  border:1px solid rgba(255,255,255,0.2);
+  transition:left 0.38s cubic-bezier(.4,.0,.2,1),background 0.38s ease,box-shadow 0.38s ease;
+  z-index:2;display:flex;align-items:center;justify-content:center;font-size:20px;
 }
 .gmc-switch-thumb::after{content:'🪷';}
 body.gaudiya-mode .gmc-switch-thumb{
-  left:calc(100% - 46px);
+  left:calc(100% - 49px);
   background:linear-gradient(135deg,#3a7bd5,#6DB8FF);
-  border-color:rgba(109,184,255,0.6);
-  box-shadow:0 0 16px rgba(109,184,255,0.5);
+  border-color:rgba(109,184,255,0.7);
+  box-shadow:0 0 18px rgba(109,184,255,0.6);
 }
 .gmc-switch-label-off,.gmc-switch-label-on{
-  position:absolute;font-size:11px;letter-spacing:2px;font-weight:bold;
-  font-family:'Inter',sans-serif;transition:opacity 0.3s ease;
+  position:absolute;font-size:12px;letter-spacing:2.5px;font-weight:700;
+  font-family:'Inter',sans-serif;transition:opacity 0.3s ease;pointer-events:none;
 }
-.gmc-switch-label-off{right:16px;color:rgba(255,255,255,0.25);}
-.gmc-switch-label-on{left:56px;color:#6DB8FF;opacity:0;}
+.gmc-switch-label-off{right:18px;color:rgba(255,255,255,0.2);}
+.gmc-switch-label-on{left:60px;color:#6DB8FF;opacity:0;text-shadow:0 0 10px rgba(109,184,255,0.6);}
 body.gaudiya-mode .gmc-switch-label-off{opacity:0;}
 body.gaudiya-mode .gmc-switch-label-on{opacity:1;}

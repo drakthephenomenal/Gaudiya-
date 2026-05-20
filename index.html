@@ -625,7 +625,7 @@
             <div class="hkc-glow"></div>
             <!-- Title -->
             <div class="hkc-title">
-              <div class="hkc-title-lotus">🪷 হরে কৃষ্ণ</div>
+              <div class="hkc-title-lotus" id="hkcTitleLotus">🪷 হরে কৃষ্ণ</div>
               <div class="hkc-title-sub">Mahamantra Sadhana</div>
             </div>
             <!-- Lifetime hero -->
@@ -998,6 +998,32 @@
     </div>
   </div>
 
+  <!-- MAHAMANTRA LANGUAGE TOGGLE — below Gaudiya card -->
+  <div class="sc hk-only-stat" id="hkLangCard" style="background:linear-gradient(135deg,rgba(6,13,31,0.95),rgba(10,22,40,0.98));border:1px solid rgba(109,184,255,0.2);padding-top:18px;position:relative;overflow:hidden;">
+    <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,#6DB8FF,transparent);border-radius:20px 20px 0 0;"></div>
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;">
+      <div style="font-size:24px;flex-shrink:0;">🗣️</div>
+      <div>
+        <div style="font-size:16px;font-weight:bold;font-family:'EB Garamond','Georgia',serif;background:linear-gradient(135deg,#6DB8FF,#a0d4ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;letter-spacing:0.5px;">Mahamantra Language</div>
+        <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-top:2px;">Tap to switch · <span id="hkLangNewLabel">हिंदी</span></div>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+      <div onclick="if(App.S.hkLang!=='hi')tgs('hkLang')" id="hkLangBtnHi"
+        style="padding:14px 10px;border-radius:14px;text-align:center;cursor:pointer;border:1.5px solid rgba(255,165,0,0.4);background:rgba(255,165,0,0.08);transition:all 0.25s;">
+        <div style="font-size:18px;margin-bottom:4px;">🕉️</div>
+        <div style="font-size:15px;color:#FFD700;font-family:'Tiro Devanagari Hindi',serif;font-weight:700;">हिन्दी</div>
+        <div style="font-size:10px;color:rgba(255,215,0,0.5);letter-spacing:1px;margin-top:2px;">HINDI</div>
+      </div>
+      <div onclick="if(App.S.hkLang!=='bn')tgs('hkLang')" id="hkLangBtnBn"
+        style="padding:14px 10px;border-radius:14px;text-align:center;cursor:pointer;border:1.5px solid rgba(109,184,255,0.25);background:rgba(109,184,255,0.05);transition:all 0.25s;">
+        <div style="font-size:18px;margin-bottom:4px;">🪷</div>
+        <div style="font-size:15px;color:#6DB8FF;font-family:'Hind Siliguri',serif;font-weight:700;">বাংলা</div>
+        <div style="font-size:10px;color:rgba(109,184,255,0.5);letter-spacing:1px;margin-top:2px;">BANGLA</div>
+      </div>
+    </div>
+  </div>
+
   <!-- TARGETS -->
   <div class="sc">
     <h3>📿 Mala Size &amp; Targets</h3>
@@ -1025,7 +1051,7 @@
       <!-- RV Lifetime Target removed — shared with राधा -->
     </div>
     <div class="hk-only-block" style="margin-top:18px;padding-top:14px;border-top:1px solid rgba(109,184,255,0.2)">
-      <div style="font-size:11px;color:#6DB8FF;letter-spacing:2px;text-transform:uppercase;margin-bottom:10px;font-weight:600">🪷 हरे कृष्ण महामंत्र Targets</div>
+      <div id="hkDailyTargetLabel" style="font-size:11px;color:#6DB8FF;letter-spacing:2px;text-transform:uppercase;margin-bottom:10px;font-weight:600">🪷 हरे कृष्ण महामंत्र Targets</div>
       <div class="fr" style="margin-bottom:4px"><input type="number" class="fi" id="dtHKIn" placeholder="Jap count / day" oninput="syncTargetJapToMala('dtHK')"><span class="fu">jap</span></div>
       <div class="fr" style="margin-bottom:4px"><input type="number" class="fi" id="dtHKMalaIn" placeholder="Or: malas / day" oninput="syncTargetMalaToJap('dtHK')"><span class="fu" style="color:#6DB8FF">malas</span></div>
       <div style="font-size:11px;color:var(--td);margin-bottom:10px">= <span id="dtHKMala">0</span> malas per day</div>
@@ -1134,13 +1160,8 @@
       <div class="tg on" id="tgSnd" onclick="tgs('sound')"></div>
     </div>
 
-    <div class="sr hk-only-stat" style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(109,184,255,0.12)">
-      <div>
-        <label style="color:#6DB8FF">🪷 Mahamantra Language</label>
-        <div class="sub">Display <span id="hkLangLabel">Hindi</span> · toggle for Bangla (মহামন্ত্র)</div>
-      </div>
-      <div class="tg" id="tgHkLang" onclick="tgs('hkLang')"></div>
-    </div>
+    <!-- Mahamantra Language toggle moved to its own card below Gaudiya -->
+    <span id="hkLangLabel" style="display:none">Hindi</span>
     <button onclick="testSound()" style="padding:7px 14px;border-radius:20px;border:1px solid rgba(74,144,226,0.3);background:rgba(74,144,226,0.12);color:var(--a2);font-size:12px;cursor:pointer;font-family:Inter,sans-serif;margin-top:6px">🔔 Test Bell</button>
   </div>
 

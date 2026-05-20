@@ -1175,6 +1175,33 @@ const HK_SHADOWS_MAP = [
 let _hkColorIdx = 0;
 let _hkMalaBlocked = false; // blocks taps until user taps after mala complete
 
+// Apply all language-sensitive labels for HK/Mahamantra
+function applyHKLangLabels(lang) {
+  const isBn = lang === "bn";
+  // 1. Jap page top dropdown label
+  const naamLbl = document.getElementById("naamHKLabel");
+  if (naamLbl) naamLbl.textContent = isBn ? "হরে কৃষ্ণ মহামন্ত্র" : "हरे कृष्ण महामंत्र";
+  // 2. Settings language toggle label
+  const langLbl = document.getElementById("hkLangLabel");
+  if (langLbl) langLbl.textContent = isBn ? "Bangla" : "Hindi";
+  // 3. Settings language toggle new pill labels
+  const newLangLbl = document.getElementById("hkLangNewLabel");
+  if (newLangLbl) newLangLbl.textContent = isBn ? "বাংলা" : "हिंदी";
+  // 4. Daily target heading
+  const dtLbl = document.getElementById("hkDailyTargetLabel");
+  if (dtLbl) dtLbl.textContent = isBn
+    ? "🪷 হরে কৃষ্ণ মহামন্ত্র Targets"
+    : "🪷 हरे कृष्ण महामंत्र Targets";
+  // 5. Stats card lotus title
+  const statsLotus = document.getElementById("hkcTitleLotus");
+  if (statsLotus) statsLotus.textContent = isBn ? "🪷 হরে কৃষ্ণ" : "🪷 हरे कृष्ण";
+  // 6. Toggle the hkLang toggle visual state
+  const tgH = document.getElementById("tgHkLang");
+  if (tgH) isBn ? tgH.classList.add("on") : tgH.classList.remove("on");
+  // 7. body class drives active button highlight via CSS
+  isBn ? document.body.classList.add("hk-bn") : document.body.classList.remove("hk-bn");
+}
+
 function spawnHK() {
   // If mala-complete overlay is showing, first tap dismisses it and starts new mala
   if (_hkMalaBlocked) {
@@ -1189,7 +1216,6 @@ function spawnHK() {
   const text = lang === "bn" ? HK_TEXT_BN : HK_TEXT;
   const color = HK_COLORS[_hkColorIdx % 7];
   const shadow = HK_SHADOWS_MAP[_hkColorIdx % 7];
-  _hkColorIdx++;
 
   // Spawn floating rise-up copy from center
   const zone = document.getElementById("tz");
@@ -1203,13 +1229,15 @@ function spawnHK() {
     setTimeout(() => floatEl.remove(), 2200);
   }
 
-  // Update persistent centered display (just fade in, no slide)
+  // Update persistent centered display — same color as float (not next color)
   el.innerHTML = text.split("\n").map((l) => "<div>" + l + "</div>").join("");
   el.style.color = color;
   el.style.textShadow = shadow;
   if (!el.classList.contains("hk-visible")) {
     el.classList.add("hk-visible");
   }
+  // Increment AFTER spawning so persistent shows same color as float
+  _hkColorIdx++;
 }
 
 function showHKMalaComplete(line1, line2) {
@@ -1426,6 +1454,8 @@ function initJapModeUI() {
       : tgH.classList.remove("on");
   const lblH = document.getElementById("hkLangLabel");
   if (lblH) lblH.textContent = App.S.hkLang === "bn" ? "Bangla" : "Hindi";
+  // Apply all language-sensitive labels on load
+  applyHKLangLabels(App.S.hkLang || "hi");
 }
 
 // ── Naam Selector Toggle ──
@@ -1727,6 +1757,8 @@ function tgs(k) {
     // Update dropdown label in Jap page
     const naamHKLbl = document.getElementById("naamHKLabel");
     if (naamHKLbl) naamHKLbl.textContent = App.S.hkLang === "bn" ? "হরে কৃষ্ণ মহামন্ত্র" : "हरे कृष्ण महामंत्र";
+    // Update Daily Target section label
+    applyHKLangLabels(App.S.hkLang);
     // Update hkPersist text immediately if visible
     const hkEl = document.getElementById("hkPersist");
     if (hkEl && hkEl.classList.contains("hk-visible")) {

@@ -1083,6 +1083,17 @@ body.gaudiya-mode .gmc-switch-label-off{opacity:0;}
 body.gaudiya-mode .gmc-switch-label-on{opacity:1;}
 
 /* ── Mahamantra Language picker buttons ── */
-#hkLangBtnHi, #hkLangBtnBn{transition:all 0.25s ease;}
-body:not(.hk-bn) #hkLangBtnHi{border-color:rgba(255,215,0,0.7)!important;background:rgba(255,215,0,0.14)!important;box-shadow:0 0 16px rgba(255,215,0,0.2);}
-body.hk-bn #hkLangBtnBn{border-color:rgba(109,184,255,0.7)!important;background:rgba(109,184,255,0.14)!important;box-shadow:0 0 16px rgba(109,184,255,0.2);}
+#hkLangBtnHi, #hkLangBtnBn{transition:all 0.3s ease;}
+body:not(.hk-bn) #hkLangBtnHi{
+  border-color:rgba(255,215,0,0.85)!important;
+  background:rgba(255,215,0,0.15)!important;
+  box-shadow:0 0 20px rgba(255,215,0,0.25),inset 0 0 12px rgba(255,215,0,0.08)!important;
+}
+body.hk-bn #hkLangBtnBn{
+  border-color:rgba(109,184,255,0.85)!important;
+  background:rgba(109,184,255,0.15)!important;
+  box-shadow:0 0 20px rgba(109,184,255,0.25),inset 0 0 12px rgba(109,184,255,0.08)!important;
+}
+/* Inactive button dimmed */
+body:not(.hk-bn) #hkLangBtnBn{opacity:0.55;}
+body.hk-bn #hkLangBtnHi{opacity:0.55;}

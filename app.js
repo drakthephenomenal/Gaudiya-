@@ -1214,30 +1214,33 @@ function spawnHK() {
   if (!el) return;
   const lang = App.S.hkLang || "hi";
   const text = lang === "bn" ? HK_TEXT_BN : HK_TEXT;
-  const color = HK_COLORS[_hkColorIdx % 7];
-  const shadow = HK_SHADOWS_MAP[_hkColorIdx % 7];
+  // CURRENT color → float rises up and disappears (the "old" text leaving)
+  const currentColor  = HK_COLORS[_hkColorIdx % 7];
+  const currentShadow = HK_SHADOWS_MAP[_hkColorIdx % 7];
+  // NEXT color → stays as persistent display (the "new" text arriving)
+  const nextColor  = HK_COLORS[(_hkColorIdx + 1) % 7];
+  const nextShadow = HK_SHADOWS_MAP[(_hkColorIdx + 1) % 7];
+  _hkColorIdx++;
 
-  // Spawn floating rise-up copy from center
+  // Float carries the CURRENT (departing) color — rises and fades away
   const zone = document.getElementById("tz");
   if (zone) {
     const floatEl = document.createElement("div");
     floatEl.className = "hk-float-name";
     floatEl.innerHTML = text.split("\n").map((l) => "<div>" + l + "</div>").join("");
-    floatEl.style.color = color;
-    floatEl.style.textShadow = shadow;
+    floatEl.style.color = currentColor;
+    floatEl.style.textShadow = currentShadow;
     zone.appendChild(floatEl);
     setTimeout(() => floatEl.remove(), 2200);
   }
 
-  // Update persistent centered display — same color as float (not next color)
+  // Persistent display immediately shows NEXT color (arriving text)
   el.innerHTML = text.split("\n").map((l) => "<div>" + l + "</div>").join("");
-  el.style.color = color;
-  el.style.textShadow = shadow;
+  el.style.color = nextColor;
+  el.style.textShadow = nextShadow;
   if (!el.classList.contains("hk-visible")) {
     el.classList.add("hk-visible");
   }
-  // Increment AFTER spawning so persistent shows same color as float
-  _hkColorIdx++;
 }
 
 function showHKMalaComplete(line1, line2) {

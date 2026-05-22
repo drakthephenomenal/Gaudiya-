@@ -13,7 +13,7 @@
 <meta name="apple-mobile-web-app-title" content="Radha Jap">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#060D1F">
-<link rel="manifest" href="./manifest.json">
+<link rel="manifest" href="/manifest.json">
 <link rel="apple-touch-icon" href="./icon-192.png">
 <link rel="icon" href="./icon-192.png">
 <title>Radha Naam Jap</title>
@@ -1033,11 +1033,13 @@
     <div style="font-size:11px;color:var(--td);margin-bottom:10px">Default 108 beads per mala</div>
     <button class="pb" onclick="svm()" style="margin-bottom:14px">Save Mala Size</button>
 
-    <div style="font-size:10px;color:var(--td);letter-spacing:1px;margin-bottom:5px;text-transform:uppercase">Daily Target</div>
-    <div class="fr" style="margin-bottom:4px"><input type="number" class="fi" id="dtIn" placeholder="Jap count / day" oninput="syncTargetJapToMala('dt')"><span class="fu">jap</span></div>
-    <div class="fr" style="margin-bottom:4px"><input type="number" class="fi" id="dtMalaIn" placeholder="Or: malas / day" oninput="syncTargetMalaToJap('dt')"><span class="fu" style="color:var(--gold)">malas</span></div>
-    <div style="font-size:11px;color:var(--td);margin-bottom:10px">= <span id="dtMala">0</span> malas per day</div>
-    <button class="pb" onclick="svt('d')" style="margin-bottom:14px">Save Daily Target</button>
+    <div class="non-gaudiya-setting">
+      <div style="font-size:10px;color:var(--td);letter-spacing:1px;margin-bottom:5px;text-transform:uppercase">Daily Target</div>
+      <div class="fr" style="margin-bottom:4px"><input type="number" class="fi" id="dtIn" placeholder="Jap count / day" oninput="syncTargetJapToMala('dt')"><span class="fu">jap</span></div>
+      <div class="fr" style="margin-bottom:4px"><input type="number" class="fi" id="dtMalaIn" placeholder="Or: malas / day" oninput="syncTargetMalaToJap('dt')"><span class="fu" style="color:var(--gold)">malas</span></div>
+      <div style="font-size:11px;color:var(--td);margin-bottom:10px">= <span id="dtMala">0</span> malas per day</div>
+      <button class="pb" onclick="svt('d')" style="margin-bottom:14px">Save Daily Target</button>
+    </div>
 
     <div style="font-size:10px;color:var(--td);letter-spacing:1px;margin-bottom:5px;text-transform:uppercase">Lifetime Target</div>
     <div class="fr" style="margin-bottom:4px"><input type="number" class="fi" id="ltIn" placeholder="Jap count lifetime" oninput="syncTargetJapToMala('lt')"><span class="fu">jap</span></div>
@@ -1078,7 +1080,7 @@
     <!-- AUTO-FETCH (Primary) -->
     <div style="background:rgba(0,0,0,0.35);border:1px solid rgba(46,204,113,0.25);border-radius:12px;padding:14px;margin-bottom:14px;">
       <div style="font-size:10px;color:rgba(46,204,113,0.8);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px;font-weight:700;">✨ Auto-Fetch from GPS</div>
-      <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:12px;line-height:1.5;">Calculates Ekadashi tithi times astronomically for your exact location for the next 6 months — no manual entry needed. Respects your Parampara.</div>
+      <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:12px;line-height:1.5;">Calculates Ekadashi tithi times astronomically for your exact location — 2 months back &amp; 6 months ahead. No manual entry needed. Respects your Parampara.</div>
       <button id="panchangFetchBtn" onclick="fetchPanchangEkadashis()" style="display:block;width:100%;padding:13px;border-radius:10px;border:none;background:linear-gradient(135deg,rgba(46,204,113,0.75),rgba(22,160,133,0.7));color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;box-shadow:0 3px 14px rgba(46,204,113,0.2);margin-bottom:8px;">🌙 Auto-Fetch from GPS</button>
       <div id="panchangStatus" style="font-size:11px;color:rgba(255,255,255,0.45);text-align:center;min-height:16px;"></div>
     </div>
@@ -1135,20 +1137,6 @@
     <div style="font-size:10px;color:rgba(189,147,249,0.55);letter-spacing:1px;text-transform:uppercase;margin-bottom:10px;font-weight:600;">Saved Ekadashis</div>
     <div id="ekadashiList"></div>
   </div>
-
-  <!-- ANNUAL EKADASHI CALENDAR -->
-  <div class="sc" style="background:rgba(74,144,226,0.04);border-color:rgba(74,144,226,0.18)">
-    <h3 style="color:#6DB8FF;">🗓️ Annual Ekadashi Calendar</h3>
-    <p style="font-size:12px;color:var(--td);margin-bottom:10px;">All Ekadashis for 2025, 2026 &amp; 2027 — computed astronomically. Tap a year to expand.</p>
-    <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
-      <button onclick="toggleAnnualEk(2025)" style="padding:7px 16px;border-radius:20px;border:1px solid rgba(74,144,226,0.35);background:rgba(74,144,226,0.13);color:#6DB8FF;font-size:12px;cursor:pointer;font-family:Inter,sans-serif;font-weight:600;">2025</button>
-      <button onclick="toggleAnnualEk(2026)" style="padding:7px 16px;border-radius:20px;border:1px solid rgba(74,144,226,0.35);background:rgba(74,144,226,0.13);color:#6DB8FF;font-size:12px;cursor:pointer;font-family:Inter,sans-serif;font-weight:600;">2026</button>
-      <button onclick="toggleAnnualEk(2027)" style="padding:7px 16px;border-radius:20px;border:1px solid rgba(74,144,226,0.35);background:rgba(74,144,226,0.13);color:#6DB8FF;font-size:12px;cursor:pointer;font-family:Inter,sans-serif;font-weight:600;">2027</button>
-    </div>
-    <div id="annualEkList" style="display:none;"></div>
-    <div id="annualEkStatus" style="font-size:11px;color:rgba(255,255,255,0.4);text-align:center;padding:4px 0;"></div>
-  </div>
-
 
   <!-- PREFERENCES -->
   <div class="sc">
@@ -1242,11 +1230,26 @@
 <!-- LYRICS MODAL -->
 <div class="lmo" id="lmo" onclick="if(event.target===this)closeLyrics()">
   <div class="lmd">
+    <!-- Header -->
     <div class="lmh">
       <div class="lmt" id="lmTitle"></div>
       <button class="lmx" onclick="closeLyrics()">✕ Close</button>
     </div>
-    <div class="lmb" id="lmb"><pre class="lyr" id="lyrBody"></pre></div>
+    <!-- Verse counter -->
+    <div class="lm-vctr" id="lmVCtr"></div>
+    <!-- Swipeable verse area -->
+    <div class="lmb" id="lmb">
+      <div class="lm-swipe" id="lmSwipe">
+        <pre class="lyr" id="lyrBody"></pre>
+      </div>
+    </div>
+    <!-- Dot indicators -->
+    <div class="lm-dots" id="lmDots"></div>
+    <!-- Prev / Next buttons -->
+    <div class="lm-nav">
+      <button class="lm-nav-btn" id="lmPrev" onclick="verseNav(-1)">&#8592; Prev</button>
+      <button class="lm-nav-btn" id="lmNext" onclick="verseNav(1)">Next &#8594;</button>
+    </div>
   </div>
 </div>
 

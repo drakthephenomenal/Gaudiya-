@@ -1324,17 +1324,19 @@ function _getAppUrl() {
 function shareApp() {
   const url = _getAppUrl();
   const shareText =
-    "🙏 Radha Naam Jap Sadhana App — Track your jap sadhana. Jai Radhe Radhe! 🌸";
+    "Radha Vallabh Sri Harivangsa \uD83D\uDE4F\n\n" +
+    "Boost your Naam Jap experience with this little app —\n" +
+    "track Brahmacharya, Ekadashi, daily Jap & lots of statistics \u2728 \uD83E\uDEB7\n\n" +
+    "\uD83D\uDC49 " + url;
   if (navigator.share) {
     navigator
-      .share({ title: "Radha Naam Jap 🙏", text: shareText, url })
-      .then(() => toast("Shared! 🙏 Jai Radhe!"))
+      .share({ text: shareText })
+      .then(() => toast("Shared! \uD83D\uDE4F Jai Radhe!"))
       .catch((err) => {
-        // User cancelled or share failed — fall back to copy
-        if (err.name !== "AbortError") _copyAppUrl(url);
+        if (err.name !== "AbortError") _copyAppUrl(shareText);
       });
   } else {
-    _copyAppUrl(url);
+    _copyAppUrl(shareText);
   }
 }
 
@@ -6272,7 +6274,51 @@ function _resolveEkFasting(ek, lat, lng, name) {
 }
 
 // Ekadashi names indexed by JS Date.getMonth() (0=Jan … 11=Dec)
-// Shukla Paksha (Bright Fortnight) Ekadashis
+// IMPORTANT: ISKCON / Gaudiya / Purnimanta tradition names an Ekadashi after
+// the lunar month that ENDS at the NEXT Purnima (full moon) following it.
+// Both Shukla (≈3-4 days before Purnima) and Krishna (≈19 days before next
+// Purnima) Ekadashis belong to the lunar month of their upcoming Purnima.
+// Using the Ekadashi's own Gregorian month is WRONG whenever the upcoming
+// Purnima falls in the next Gregorian month (e.g. 29-Mar-2026 Shukla → its
+// Purnima is 1-Apr-2026 → month is Chaitra → name Kamada, not Amalaki).
+function _findNextPurnima(fromDate) {
+  // Purnima = moon elongation crosses 180°. Search up to 30 days ahead.
+  const DAY = 86400000;
+  let prev = _moonElongation(fromDate);
+  const cur = new Date(fromDate);
+  const end = new Date(fromDate.getTime() + 30 * DAY);
+  while (cur <= end) {
+    const next = new Date(cur.getTime() + DAY);
+    const e = _moonElongation(next);
+    if (_didCross(prev, e, 180)) {
+      return _findElongCrossing(180, cur, next);
+    }
+    prev = e;
+    cur.setTime(next.getTime());
+  }
+  return new Date(fromDate.getTime() + 4 * DAY); // fallback
+}
+
+// Returns Gregorian month index of the next NIJA (non-Adhik) Purnima after
+// the Ekadashi. Adhik-month Purnimas are skipped so the name reflects the
+// real solar/lunar month that the Ekadashi belongs to. Adhik Ekadashis
+// themselves (Padmini / Parama) are handled separately at the call site.
+function _getAdjustedMonthIndex(ekDate) {
+  let searchFrom = ekDate;
+  let purnima = _findNextPurnima(searchFrom);
+  // Skip purnimas that fall inside an Adhik Maas window
+  for (let i = 0; i < 3; i++) {
+    const pStr = purnima.toISOString().slice(0, 10);
+    const inAdhik = (_ADHIK_MAAS_WINDOWS || []).some(function(w) {
+      return pStr >= w.start && pStr <= w.end;
+    });
+    if (!inAdhik) break;
+    searchFrom = new Date(purnima.getTime() + 86400000);
+    purnima = _findNextPurnima(searchFrom);
+  }
+  return purnima.getMonth();
+}
+
 const _EK_NAMES_SHUKLA = [
   "Pausha Putrada", // 0 = January   (Month 10 Pausha)
   "Jaya", // 1 = February  (Month 11 Magha)
@@ -6348,7 +6394,6 @@ async function fetchPanchangEkadashis() {
         const wEnd = new Date(cur.getTime() + 17 * DAY);
         const ek = _findEkInWindow(wStart, wEnd, paksha);
         if (ek && ek.ekStart >= today) {
-          const mi = ek.ekStart.getMonth();
           const ekDateStr = ek.ekStart.toISOString().slice(0, 10);
           const adhikWin = _getAdhikMaasWindow(ekDateStr);
           let name;
@@ -6356,6 +6401,8 @@ async function fetchPanchangEkadashis() {
             // Adhik Maas Ekadashis: Padmini (Shukla) / Parama (Krishna)
             name = paksha === "shukla" ? "Padmini" : "Parama";
           } else {
+            // Offset month index by -1 after Adhik Maas to correct lunar month shift
+            const mi = _getAdjustedMonthIndex(ek.ekStart);
             name =
               paksha === "shukla"
                 ? _EK_NAMES_SHUKLA[mi] || "Ekadashi"
@@ -8226,8 +8273,8 @@ function buildPwaManifest() {
         name: "Radha Naam Jap",
         short_name: "Radha Jap",
         description: "Jai Shri Radha",
-        start_url: "./index.html",
-        scope: "./",
+        start_url: "/",
+        scope: "/",
         display: "standalone",
         orientation: "portrait-primary",
         background_color: "#060D1F",
@@ -8405,11 +8452,93 @@ window.addEventListener("load", async () => {
   }, 2800);
 });
 
+// ═══════════════════════════════════════════════════════
+// PWA ONE-CLICK INSTALL BANNER
+// ═══════════════════════════════════════════════════════
+let deferredPrompt = null;
+
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+  // Small delay so app loads first
+  setTimeout(() => {
+    const dismissed = localStorage.getItem('installBannerDismissed');
+    if (dismissed && Date.now() - Number(dismissed) < 3 * 24 * 60 * 60 * 1000) return;
+    if (window.matchMedia('(display-mode: standalone)').matches) return;
+    showInstallBanner();
+  }, 3000);
+});
+
+function showInstallBanner() {
+  if (document.getElementById('installBanner')) return;
+  const banner = document.createElement('div');
+  banner.id = 'installBanner';
+  banner.style.cssText = `
+    position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(100px);
+    background:linear-gradient(135deg,#1a0a2e,#0d1f3c);
+    border:1px solid rgba(255,215,0,0.45);border-radius:18px;
+    padding:14px 16px;display:flex;align-items:center;gap:12px;
+    box-shadow:0 6px 32px rgba(255,215,0,0.25);
+    z-index:9999;width:92%;max-width:370px;
+    transition:transform 0.4s cubic-bezier(0.34,1.56,0.64,1);
+  `;
+  banner.innerHTML = `
+    <img src="/icon-192.png" style="width:46px;height:46px;border-radius:12px;flex-shrink:0;">
+    <div style="flex:1;min-width:0">
+      <div style="color:#FFD700;font-weight:700;font-size:14px;font-family:Inter,sans-serif">📲 Install Radha Jap</div>
+      <div style="color:#aaa;font-size:11px;margin-top:3px;font-family:Inter,sans-serif;line-height:1.4">Add to home screen for daily reminders & offline use 🙏</div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:5px;flex-shrink:0">
+      <button id="installBtn" style="
+        background:linear-gradient(135deg,#FFD700,#FFA500);
+        color:#000;border:none;border-radius:10px;
+        padding:8px 15px;font-weight:700;font-size:13px;
+        cursor:pointer;font-family:Inter,sans-serif;white-space:nowrap;
+      ">Install</button>
+      <button id="dismissInstallBtn" style="
+        background:transparent;color:#666;border:none;
+        font-size:11px;cursor:pointer;font-family:Inter,sans-serif;
+      ">Not now</button>
+    </div>
+  `;
+  document.body.appendChild(banner);
+  // Animate in
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      banner.style.transform = 'translateX(-50%) translateY(0)';
+    });
+  });
+  document.getElementById('installBtn').addEventListener('click', triggerInstall);
+  document.getElementById('dismissInstallBtn').addEventListener('click', dismissInstallBanner);
+}
+
+function triggerInstall() {
+  if (!deferredPrompt) return;
+  deferredPrompt.prompt();
+  deferredPrompt.userChoice.then((result) => {
+    if (result.outcome === 'accepted') dismissInstallBanner();
+    deferredPrompt = null;
+  });
+}
+
+function dismissInstallBanner() {
+  const b = document.getElementById('installBanner');
+  if (b) {
+    b.style.transform = 'translateX(-50%) translateY(100px)';
+    setTimeout(() => b.remove(), 400);
+  }
+  localStorage.setItem('installBannerDismissed', Date.now());
+}
+
+window.addEventListener('appinstalled', () => {
+  dismissInstallBanner();
+});
+
 // Service Worker
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
     navigator.serviceWorker
-      .register("./sw.js", { scope: "./" })
+      .register("/sw.js", { scope: "/" })
       .then((r) => {
         console.log("SW registered:", r.scope);
         // When a new SW takes over, reload the page to get fresh files
@@ -8495,26 +8624,98 @@ window.addEventListener("load", function () {
 
 // ═══════════════════════════════════════════════════════
 
-// ── showLyrics function ──
+// ── showLyrics — swipeable verse reader ──
+let _verses = [], _verseIdx = 0;
+
 function showLyrics(id) {
   const ly = getEffectiveLyrics(id);
-  if (!ly) {
-    toast("পাঠ্য পাওয়া যায়নি 🙏");
-    return;
-  }
-  const allSt = [
-    ...STLIST,
-    ...(_globalStotrams || []),
-    ...(App.S.customSt || []),
-  ];
-  const nm = allSt.find((x) => x.id === id);
+  if (!ly) { toast("পাঠ্য পাওয়া যায়নি 🙏"); return; }
+
+  // Split by blank lines, strip title line (first non-empty block if no verse marker)
+  const blocks = ly.split(/\n{2,}/).map(b => b.trim()).filter(b => b.length > 0);
+  // First block is usually just the title — keep it as verse 0 (intro)
+  _verses = blocks;
+  _verseIdx = 0;
+
+  const allSt = [...STLIST, ...(_globalStotrams||[]), ...(App.S.customSt||[])];
+  const nm = allSt.find(x => x.id === id);
   document.getElementById("lmTitle").textContent = nm ? nm.name : id;
-  document.getElementById("lyrBody").textContent = ly;
+
+  _renderVerse(0, null);
+  _buildDots();
+
   document.getElementById("lmo").classList.add("show");
+
+  // Touch swipe support
+  _initSwipeHandler();
+}
+
+function _renderVerse(idx, dir) {
+  const body = document.getElementById("lyrBody");
+  const ctr  = document.getElementById("lmVCtr");
+  const prev = document.getElementById("lmPrev");
+  const next = document.getElementById("lmNext");
+
+  body.textContent = _verses[idx] || "";
+
+  // Animation
+  body.classList.remove("lyr-slide-enter-left","lyr-slide-enter-right");
+  if (dir === 1)  { void body.offsetWidth; body.classList.add("lyr-slide-enter-left"); }
+  if (dir === -1) { void body.offsetWidth; body.classList.add("lyr-slide-enter-right"); }
+
+  ctr.textContent = "VERSE " + (idx + 1) + " / " + _verses.length;
+  prev.disabled = idx === 0;
+  next.disabled = idx === _verses.length - 1;
+
+  // Update dots
+  document.querySelectorAll(".lm-dot").forEach((d,i) => {
+    d.classList.toggle("active", i === idx);
+  });
+
+  // Scroll verse area to top
   document.getElementById("lmb").scrollTop = 0;
 }
+
+function _buildDots() {
+  const dotsEl = document.getElementById("lmDots");
+  dotsEl.innerHTML = "";
+  // Only show dots if ≤ 25 verses (beyond that too many dots)
+  if (_verses.length <= 25) {
+    _verses.forEach((_, i) => {
+      const d = document.createElement("div");
+      d.className = "lm-dot" + (i === 0 ? " active" : "");
+      d.onclick = () => verseNav(i - _verseIdx);
+      dotsEl.appendChild(d);
+    });
+  }
+}
+
+function verseNav(delta) {
+  const newIdx = _verseIdx + delta;
+  if (newIdx < 0 || newIdx >= _verses.length) return;
+  _verseIdx = newIdx;
+  _renderVerse(_verseIdx, delta > 0 ? 1 : -1);
+}
+
+function _initSwipeHandler() {
+  const area = document.getElementById("lmb");
+  // Remove old listeners by cloning
+  const fresh = area.cloneNode(true);
+  area.parentNode.replaceChild(fresh, area);
+  // Re-attach lyrBody reference after clone
+  // (lyrBody is inside, but we access by id so it's fine)
+
+  let tx = 0;
+  fresh.addEventListener("touchstart", e => { tx = e.touches[0].clientX; }, {passive:true});
+  fresh.addEventListener("touchend", e => {
+    const dx = e.changedTouches[0].clientX - tx;
+    if (Math.abs(dx) > 40) verseNav(dx < 0 ? 1 : -1);
+  }, {passive:true});
+}
+
 function closeLyrics() {
   document.getElementById("lmo").classList.remove("show");
+  _verses = []; _verseIdx = 0;
 }
 
 // ═══════════════════════════════════════════════════════
@@ -9801,7 +10002,6 @@ function _computeYearEkadashis(year, lat, lng) {
       const wEnd = new Date(cur.getTime() + 17 * DAY);
       const ek = _findEkInWindow(wStart, wEnd, paksha);
       if (ek && ek.ekStart.getFullYear() === year) {
-        const mi = ek.ekStart.getMonth();
         const ekDateStr = ek.ekStart.toISOString().slice(0, 10);
         const adhikWin = _getAdhikMaasWindow
           ? _getAdhikMaasWindow(ekDateStr)
@@ -9810,6 +10010,7 @@ function _computeYearEkadashis(year, lat, lng) {
         if (adhikWin) {
           name = paksha === "shukla" ? "Padmini" : "Parama";
         } else {
+          const mi = _getAdjustedMonthIndex(ek.ekStart);
           name =
             paksha === "shukla"
               ? _EK_NAMES_SHUKLA[mi] || "Ekadashi"

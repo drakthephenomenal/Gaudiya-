@@ -1,9 +1,9 @@
 // ═══════════════════════════════════════════════════════
 // Radha Naam Jap — Service Worker
-// v85: Full-screen frame + centred short lyrics
+// v86: True full-screen, player overlaid at bottom
 // ═══════════════════════════════════════════════════════
-const CACHE = 'radha-jap-v85';
-const VER = '?v=85';
+const CACHE = 'radha-jap-v86';
+const VER = '?v=86';
 
 const PRECACHE = [
   './index.html',

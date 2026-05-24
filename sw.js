@@ -1,9 +1,9 @@
 // ═══════════════════════════════════════════════════════
 // Radha Naam Jap — Service Worker
-// v87: Scale-to-height — no distortion, no black bars
+// v84: Embedded ornate frame — no external image file
 // ═══════════════════════════════════════════════════════
-const CACHE = 'radha-jap-v87';
-const VER = '?v=87';
+const CACHE = 'radha-jap-v84';
+const VER = '?v=84';
 
 const PRECACHE = [
   './index.html',

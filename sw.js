@@ -1,15 +1,14 @@
 // ═══════════════════════════════════════════════════════
 // Radha Naam Jap — Service Worker
-// v83: Theme cards + audio player + translation toggle
+// v84: Embedded ornate frame — no external image file
 // ═══════════════════════════════════════════════════════
-const CACHE = 'radha-jap-v83';
-const VER = '?v=83';
+const CACHE = 'radha-jap-v84';
+const VER = '?v=84';
 
 const PRECACHE = [
   './index.html',
   './style.css' + VER,
   './style-stotram.css' + VER,
-  './img/stotram-frame.png',
   './stotrams.js' + VER,
   './app.js' + VER,
   './panchangData.js',
@@ -77,7 +76,7 @@ self.addEventListener('fetch', e => {
     return;
   }
 
-  if (url.pathname.endsWith('app.js') || url.pathname.endsWith('style.css') || url.pathname.endsWith('stotrams.js')) {
+  if (url.pathname.endsWith('app.js') || url.pathname.endsWith('style.css') || url.pathname.endsWith('style-stotram.css') || url.pathname.endsWith('stotrams.js')) {
     e.respondWith(
       fetch(e.request.url.split('?')[0] + VER, { cache: 'no-cache' })
         .then(resp => {

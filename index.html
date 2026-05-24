@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<meta name="app-version" content="54">
+<meta name="app-version" content="83">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -23,7 +23,8 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<link rel="stylesheet" href="./style.css">
+<link rel="stylesheet" href="./style.css?v=83">
+  <link rel="stylesheet" href="./style-stotram.css?v=83">
 </head>
 <body>
 <!-- LOADING -->
@@ -398,6 +399,14 @@
       <!-- Edit inbuilt stotrams + global list -->
       <div id="devStList"></div>
     </div>
+  </div>
+  <!-- Global Translation Toggle — for GMS & NKC -->
+  <div class="st-global-toggle-row" id="st-global-toggle-row">
+    <span id="st-global-toggle-label">অনুবাদ: বন্ধ</span>
+    <button id="st-global-toggle-sw" class="lm-toggle-sw" role="switch" aria-checked="false"
+      onclick="setGlobalTranslation(!_globalTranslationPref)">
+      <span class="lm-toggle-thumb"></span>
+    </button>
   </div>
   <div id="stList"></div>
 </div>
@@ -1044,7 +1053,8 @@
     <div style="font-size:10px;color:var(--td);letter-spacing:1px;margin-bottom:5px;text-transform:uppercase">Lifetime Target</div>
     <div class="fr" style="margin-bottom:4px"><input type="number" class="fi" id="ltIn" placeholder="Jap count lifetime" oninput="syncTargetJapToMala('lt')"><span class="fu">jap</span></div>
     <div class="fr" style="margin-bottom:4px"><input type="number" class="fi" id="ltMalaIn" placeholder="Or: malas lifetime" oninput="syncTargetMalaToJap('lt')"><span class="fu" style="color:var(--gold)">malas</span></div>
-    <div style="font-size:11px;color:var(--td);margin-bottom:10px">= <span id="ltMala">0</span> malas lifetime</div>
+    <div class="fr" style="margin-bottom:4px"><input type="number" step="0.5" min="0" class="fi" id="ltCroreIn" placeholder="Or: crore lifetime" oninput="syncTargetCroreToJap()"><span class="fu" style="color:#ff9933;font-weight:700">crore</span></div>
+    <div style="font-size:11px;color:var(--td);margin-bottom:10px">= <span id="ltMala">0</span> malas · <span id="ltCroreDisp" style="color:#ff9933;font-weight:600">0</span> crore</div>
     <button class="pb" onclick="svt('l')">Save Lifetime Target</button>
     <div class="non-gaudiya-setting" style="margin-top:18px;padding-top:14px;border-top:1px solid rgba(255,215,0,0.15)">
       <div style="font-size:11px;color:var(--gold);letter-spacing:2px;text-transform:uppercase;margin-bottom:10px;font-weight:600">📿 राधावल्लभ श्री हरिवंश Targets</div>
@@ -1229,26 +1239,33 @@
 
 <!-- LYRICS MODAL -->
 <div class="lmo" id="lmo" onclick="if(event.target===this)closeLyrics()">
+  <!-- water ripple rings -->
+  <div class="lmo-ripple r1"></div>
+  <div class="lmo-ripple r2"></div>
+  <div class="lmo-ripple r3"></div>
+
   <div class="lmd">
-    <!-- Header -->
-    <div class="lmh">
-      <div class="lmt" id="lmTitle"></div>
-      <button class="lmx" onclick="closeLyrics()">✕ Close</button>
-    </div>
-    <!-- Verse counter -->
-    <div class="lm-vctr" id="lmVCtr"></div>
-    <!-- Swipeable verse area -->
-    <div class="lmb" id="lmb">
-      <div class="lm-swipe" id="lmSwipe">
-        <pre class="lyr" id="lyrBody"></pre>
+    <!-- close -->
+    <button class="lmx" onclick="closeLyrics()">✕</button>
+
+    <!-- title -->
+    <div class="lmt" id="lmTitle"></div>
+
+
+    <!-- verse card -->
+    <div class="lm-card-wrap" id="lmb">
+      <div class="lm-water-card" id="lmCard">
+        <div class="lm-card-inner">
+          <div class="lyr" id="lyrBody"></div>
+        </div>
       </div>
     </div>
-    <!-- Dot indicators -->
-    <div class="lm-dots" id="lmDots"></div>
-    <!-- Prev / Next buttons -->
-    <div class="lm-nav">
-      <button class="lm-nav-btn" id="lmPrev" onclick="verseNav(-1)">&#8592; Prev</button>
-      <button class="lm-nav-btn" id="lmNext" onclick="verseNav(1)">Next &#8594;</button>
+
+
+    <!-- nav (hidden when audio player renders its own inline arrows) -->
+    <div class="lm-nav" id="lmNav">
+      <button class="lm-nav-btn" id="lmPrev" onclick="verseNav(-1)">&#8592;</button>
+      <button class="lm-nav-btn" id="lmNext" onclick="verseNav(1)">&#8594;</button>
     </div>
   </div>
 </div>
@@ -1315,9 +1332,9 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
-    <script src="./stotrams.js"></script>
+    <script src="./stotrams.js?v=82"></script>
     <script src="./panchangData.js"></script>
-    <script src="./app.js"></script>
+    <script src="./app.js?v=82"></script>
 
   </body>
 </html>

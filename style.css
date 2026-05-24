@@ -60,7 +60,7 @@ body::before{content:'';position:fixed;top:50%;left:50%;transform:translate(-50%
   padding-bottom:calc(56px + env(safe-area-inset-bottom));
 }
 .rh{display:flex;align-items:center;justify-content:space-between;padding:8px 10px 2px;gap:4px;flex-shrink:0;}
-.rh-center{flex:0 0 62px;display:flex;align-items:center;justify-content:center;}
+.rh-center{flex:0 0 62px;display:flex;align-items:safe center;justify-content:safe center;}
 .rn{font-family:'Tiro Devanagari Hindi',serif;font-size:clamp(32px,9vw,48px);color:#FFD700;
   text-shadow:0 0 30px rgba(255,215,0,0.6),0 0 60px rgba(255,215,0,0.25);line-height:1.0;letter-spacing:3px;}
 .rh-card{flex:1;display:flex;flex-direction:column;gap:3px;padding:2px 4px;}
@@ -213,7 +213,7 @@ body::before{content:'';position:fixed;top:50%;left:50%;transform:translate(-50%
 #vc{background:radial-gradient(ellipse at top,#061228 0%,var(--bd) 60%);padding:22px 12px 80px;overflow-y:auto;overflow-x:hidden;}
 .ch{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
 .cnb{background:rgba(74,144,226,0.1);border:1px solid rgba(74,144,226,0.25);border-radius:9px;
-  color:var(--a2);width:34px;height:34px;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;}
+  color:var(--a2);width:34px;height:34px;cursor:pointer;font-size:18px;display:flex;align-items:safe center;justify-content:safe center;}
 .cmy{font-family:'Cinzel Decorative',serif;font-size:13px;color:var(--a2);}
 .cg{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;width:100%;box-sizing:border-box;}
 .cdl{text-align:center;font-size:10px;color:var(--td);padding:4px 0;}
@@ -316,7 +316,7 @@ body::before{content:'';position:fixed;top:50%;left:50%;transform:translate(-50%
 .std2{font-size:11px;color:var(--td);}
 .sbtns{display:flex;gap:7px;margin-left:auto;}
 .sbtn{width:36px;height:36px;border-radius:9px;border:none;cursor:pointer;font-size:20px;
-  display:flex;align-items:center;justify-content:center;}
+  display:flex;align-items:safe center;justify-content:safe center;}
 .sbtn.p{background:rgba(74,144,226,0.2);color:var(--a2);}
 .sbtn.m{background:rgba(232,51,109,0.15);color:var(--rl);}
 .sbtn:active{transform:scale(0.88);}
@@ -335,29 +335,13 @@ body::before{content:'';position:fixed;top:50%;left:50%;transform:translate(-50%
   color:var(--rl);font-size:11px;cursor:pointer;padding:3px 8px;flex-shrink:0;}
 .sbtn.l{background:rgba(255,215,0,0.12);color:var(--gold);font-size:15px;width:auto;padding:0 10px;}
 
-.lmo{position:fixed;inset:0;background:rgba(0,0,0,0.9);z-index:400;display:none;align-items:flex-end;justify-content:center;}
-.lmo.show{display:flex;}
-.lmd{background:var(--bc);border-radius:22px 22px 0 0;padding:16px 16px 20px;width:100%;max-height:92vh;display:flex;flex-direction:column;border-top:2px solid rgba(109,184,255,0.3);}
-.lmh{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:6px;gap:10px;}
-.lmt{font-family:'Hind Siliguri','Tiro Devanagari Hindi',serif;font-size:14px;color:var(--gold);flex:1;font-weight:700;line-height:1.5;}
-.lmx{background:rgba(255,255,255,0.08);border:none;border-radius:9px;padding:7px 14px;color:var(--td);font-size:13px;cursor:pointer;flex-shrink:0;font-family:'Inter',sans-serif;}
-.lm-vctr{text-align:center;font-size:12px;color:var(--td);letter-spacing:1px;margin-bottom:8px;font-family:'Inter',sans-serif;}
-.lmb{flex:1;overflow:hidden;position:relative;min-height:120px;}
-.lm-swipe{width:100%;height:100%;display:flex;align-items:center;justify-content:center;padding:0 4px;box-sizing:border-box;}
-.lyr{font-family:'Hind Siliguri','Tiro Devanagari Hindi',serif;font-size:15.5px;color:var(--tl);line-height:2.1;white-space:pre-wrap;letter-spacing:0.3px;text-align:center;width:100%;}
-.lm-dots{display:flex;justify-content:center;gap:6px;padding:10px 0 6px;flex-wrap:wrap;}
-.lm-dot{width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,0.2);cursor:pointer;transition:background 0.2s,transform 0.2s;flex-shrink:0;}
-.lm-dot.active{background:var(--gold);transform:scale(1.3);}
-.lm-nav{display:flex;gap:10px;margin-top:6px;}
-.lm-nav-btn{flex:1;padding:11px;border-radius:12px;border:1px solid rgba(255,215,0,0.25);background:rgba(255,215,0,0.07);color:var(--gold);font-size:14px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;transition:background 0.15s;}
-.lm-nav-btn:active{background:rgba(255,215,0,0.18);}
-.lm-nav-btn:disabled{opacity:0.3;cursor:default;}
-.lyr-slide-enter-left{animation:slideInLeft 0.22s ease;}
-.lyr-slide-enter-right{animation:slideInRight 0.22s ease;}
-@keyframes slideInLeft{from{opacity:0;transform:translateX(40px)}to{opacity:1;transform:translateX(0)}}
-@keyframes slideInRight{from{opacity:0;transform:translateX(-40px)}to{opacity:1;transform:translateX(0)}}
 
-/* 28 NAMES */
+  /* ════════════════════════════════════════════════════════════
+     Lyrics Modal styles have been moved to style-stotram.css
+     (linked separately in index.html for easier maintenance)
+  ════════════════════════════════════════════════════════════ */
+
+  /* 28 NAMES */
 #v28{background:radial-gradient(ellipse at top,#091A30 0%,var(--bd) 60%);overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;}
 .n28wrap{display:flex;flex-direction:column;flex:1;min-height:0;padding:0 12px 80px;overflow-x:hidden;}
 .v28-header{display:flex;align-items:center;justify-content:space-between;padding:12px 14px 4px;}
@@ -1110,3 +1094,494 @@ body.hk-bn #hkLangBtnBn{
 /* Inactive button dimmed */
 body:not(.hk-bn) #hkLangBtnBn{opacity:0.55;}
 body.hk-bn #hkLangBtnHi{opacity:0.55;}
+
+/* ═══════════════════════════════════════════════
+   HCJ AUDIO PLAYER
+═══════════════════════════════════════════════ */
+#hcj-player-wrap {
+  margin: 4px 8px 4px;
+  padding: 4px 6px;
+  border-radius: 10px;
+  background: rgba(0,0,0,0.4);
+  border: 1px solid rgba(255,200,100,0.18);
+  backdrop-filter: blur(6px);
+  flex-shrink: 0;
+}
+.hcj-player {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  flex-wrap: nowrap;
+}
+.hcj-mini-btn {
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border-radius: 50%;
+  border: 1px solid rgba(255,200,100,0.35);
+  background: rgba(255,255,255,0.07);
+  color: #f0d090;
+  font-size: 0.85rem;
+  line-height: 1;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s, border-color 0.2s, transform 0.1s;
+}
+.hcj-mini-btn:active { transform: scale(0.9); }
+.hcj-mode-active {
+  background: rgba(255,180,50,0.3);
+  border-color: #ffb432;
+  color: #ffe08a;
+}
+.hcj-play-btn {
+  background: linear-gradient(135deg, #e8952a, #c4601a);
+  color: #fff;
+  border-color: transparent;
+  box-shadow: 0 2px 6px rgba(220,120,30,0.4);
+}
+.hcj-play-btn.hcj-playing {
+  background: linear-gradient(135deg, #3a7bd5, #1e4fa0);
+  box-shadow: 0 2px 6px rgba(50,100,200,0.4);
+}
+.hcj-seek-input {
+  width: 42px;
+  height: 28px;
+  padding: 2px 4px;
+  border-radius: 6px;
+  border: 1px solid rgba(255,200,100,0.35);
+  background: rgba(255,255,255,0.1);
+  color: #fff;
+  font-size: 0.8rem;
+  text-align: center;
+  margin-left: 4px;
+  -moz-appearance: textfield;
+}
+.hcj-seek-input::-webkit-outer-spin-button,
+.hcj-seek-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.hcj-seek-input:focus { outline: none; border-color: #ffb432; }
+.hcj-seek-total {
+  color: #c8a96e;
+  font-size: 0.78rem;
+}
+
+
+     HCJ AUDIO PLAYER — PREMIUM GLASS
+═══════════════════════════════════════════════ */
+#hcj-player-wrap{
+  margin: 10px 14px 6px;
+  padding: 10px 14px;
+  border-radius: 18px;
+  background: linear-gradient(135deg, rgba(20,28,55,0.85), rgba(8,14,32,0.85));
+  border: 1px solid rgba(255,255,255,0.08);
+  box-shadow:
+    0 8px 28px rgba(0,0,0,0.45),
+    inset 0 1px 0 rgba(255,255,255,0.06);
+  backdrop-filter: blur(14px);
+}
+.hcj-player{
+  gap: 14px;
+  justify-content: space-evenly;
+}
+
+/* Base premium pill button */
+.hcj-mini-btn{
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  font-size: 1rem;
+  color: rgba(255,255,255,0.85);
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.10);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.08),
+    0 2px 8px rgba(0,0,0,0.35);
+  transition:
+    transform 0.18s cubic-bezier(.2,.7,.3,1.4),
+    background 0.2s, border-color 0.2s, box-shadow 0.2s, color 0.2s;
+}
+.hcj-mini-btn:hover{
+  background: rgba(255,255,255,0.08);
+  border-color: rgba(255,255,255,0.18);
+}
+.hcj-mini-btn:active{
+  transform: scale(0.88);
+  background: rgba(109,184,255,0.20);
+  border-color: rgba(109,184,255,0.55);
+  color: #fff;
+  box-shadow:
+    0 0 0 4px rgba(109,184,255,0.18),
+    0 0 18px rgba(109,184,255,0.45),
+    inset 0 1px 0 rgba(255,255,255,0.18);
+}
+
+/* Active mode — gold highlight */
+.hcj-mode-active{
+  background: linear-gradient(135deg, rgba(255,196,90,0.28), rgba(220,140,30,0.22));
+  border-color: rgba(255,196,90,0.55);
+  color: #ffe6a8;
+  box-shadow:
+    0 0 0 1px rgba(255,196,90,0.25),
+    0 4px 14px rgba(220,140,30,0.30),
+    inset 0 1px 0 rgba(255,255,255,0.18);
+}
+
+/* Play / pause — primary action */
+.hcj-play-btn{
+  width: 46px;
+  height: 46px;
+  font-size: 1rem;
+  background: linear-gradient(135deg, #f0a838, #c4601a);
+  color: #fff;
+  border-color: transparent;
+  box-shadow:
+    0 6px 18px rgba(220,120,30,0.45),
+    inset 0 1px 0 rgba(255,255,255,0.25);
+}
+.hcj-play-btn:hover{
+  background: linear-gradient(135deg, #f5b34a, #d06820);
+  border-color: transparent;
+}
+.hcj-play-btn:active{
+  transform: scale(0.92);
+  box-shadow:
+    0 0 0 5px rgba(240,168,56,0.22),
+    0 0 22px rgba(240,168,56,0.55),
+    inset 0 1px 0 rgba(255,255,255,0.25);
+}
+.hcj-play-btn.hcj-playing{
+  background: linear-gradient(135deg, #4a90e2, #1e4fa0);
+  box-shadow:
+    0 6px 18px rgba(50,110,210,0.50),
+    inset 0 1px 0 rgba(255,255,255,0.25);
+}
+.hcj-play-btn.hcj-playing:active{
+  box-shadow:
+    0 0 0 5px rgba(74,144,226,0.22),
+    0 0 22px rgba(74,144,226,0.55),
+    inset 0 1px 0 rgba(255,255,255,0.25);
+}
+
+/* Seek input — refined */
+.hcj-seek-input{
+  width: 54px;
+  height: 36px;
+  margin-left: 6px;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.14);
+  background: rgba(0,0,0,0.35);
+  color: #fff;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+.hcj-seek-input:focus{
+  border-color: rgba(109,184,255,0.7);
+  box-shadow: 0 0 0 3px rgba(109,184,255,0.18);
+}
+.hcj-seek-total{
+  color: rgba(255,255,255,0.55);
+  font-size: 0.85rem;
+  margin-left: 2px;
+}
+
+/* ====================================================================
+   PLAYER v8 — premium refresh, less congested, refined tap feedback
+   ==================================================================== */
+#hcj-player-wrap{
+  position:sticky; bottom:0; left:0; right:0;
+  padding:14px 18px calc(14px + env(safe-area-inset-bottom,0px));
+  background:linear-gradient(180deg, rgba(20,14,30,.55) 0%, rgba(15,10,24,.92) 55%, rgba(10,6,18,.98) 100%);
+  backdrop-filter:blur(22px) saturate(160%);
+  -webkit-backdrop-filter:blur(22px) saturate(160%);
+  border-top:1px solid rgba(255,255,255,.08);
+  box-shadow:0 -10px 28px rgba(0,0,0,.45);
+  z-index:6;
+}
+.hcj-player{
+  display:flex; align-items:center; justify-content:center;
+  gap:14px;
+  max-width:520px; margin:0 auto;
+  padding:0;
+}
+.hcj-mini-btn{
+  width:46px; height:46px;
+  border-radius:14px;
+  border:1px solid rgba(255,255,255,.10);
+  background:linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.02));
+  color:#e9e3ff;
+  font-size:18px; font-weight:600;
+  display:flex; align-items:center; justify-content:center;
+  cursor:pointer;
+  transition:transform .18s cubic-bezier(.2,.8,.2,1), background .2s, border-color .2s, box-shadow .25s, color .2s;
+  box-shadow:0 2px 6px rgba(0,0,0,.25), inset 0 1px 0 rgba(255,255,255,.06);
+  -webkit-tap-highlight-color:transparent;
+}
+.hcj-mini-btn:hover{
+  background:linear-gradient(180deg, rgba(255,255,255,.14), rgba(255,255,255,.05));
+  border-color:rgba(255,255,255,.18);
+}
+.hcj-mini-btn:active{
+  transform:scale(.92);
+  box-shadow:0 0 0 4px rgba(255,180,80,.18), inset 0 1px 0 rgba(255,255,255,.08);
+}
+.hcj-mode-active{
+  background:linear-gradient(180deg, #ffd175, #d98a1a) !important;
+  color:#1a0e02 !important;
+  border-color:rgba(255,210,120,.55) !important;
+  box-shadow:0 4px 14px rgba(217,138,26,.45), inset 0 1px 0 rgba(255,255,255,.5) !important;
+}
+
+/* Play / Pause — hero button */
+.hcj-play-btn{
+  width:46px; height:46px;
+  border-radius:50%;
+  font-size:18px;
+  color:#fff;
+  background:radial-gradient(circle at 30% 25%, #7b5cff 0%, #4a2bd6 55%, #2a149a 100%);
+  border:1px solid rgba(255,255,255,.22);
+  box-shadow:
+    0 8px 22px rgba(74,43,214,.55),
+    0 2px 6px rgba(0,0,0,.45),
+    inset 0 1px 0 rgba(255,255,255,.3),
+    inset 0 -6px 14px rgba(0,0,0,.25);
+}
+.hcj-play-btn:hover{
+  background:radial-gradient(circle at 30% 25%, #8e72ff 0%, #5a3aea 55%, #3520b0 100%);
+}
+.hcj-play-btn:active{
+  transform:scale(.93);
+  box-shadow:
+    0 0 0 6px rgba(123,92,255,.25),
+    0 4px 12px rgba(74,43,214,.6),
+    inset 0 1px 0 rgba(255,255,255,.35);
+}
+.hcj-play-btn.hcj-playing{
+  background:radial-gradient(circle at 30% 25%, #ff8a4c 0%, #e55a1f 55%, #a83a08 100%);
+  box-shadow:
+    0 8px 22px rgba(229,90,31,.55),
+    0 2px 6px rgba(0,0,0,.45),
+    inset 0 1px 0 rgba(255,255,255,.3),
+    inset 0 -6px 14px rgba(0,0,0,.25);
+}
+.hcj-play-btn.hcj-playing:active{
+  box-shadow:
+    0 0 0 6px rgba(255,138,76,.25),
+    0 4px 12px rgba(229,90,31,.55),
+    inset 0 1px 0 rgba(255,255,255,.35);
+}
+
+/* Verse seek input */
+.hcj-seek-input{
+  width:58px; height:42px;
+  border-radius:12px;
+  border:1px solid rgba(255,255,255,.12);
+  background:rgba(255,255,255,.05);
+  color:#fff;
+  font-size:15px; font-weight:600;
+  text-align:center;
+  margin-left:6px;
+  transition:border-color .2s, background .2s, box-shadow .2s;
+}
+.hcj-seek-input:focus{
+  outline:none;
+  border-color:#ffd175;
+  background:rgba(255,255,255,.08);
+  box-shadow:0 0 0 3px rgba(255,209,117,.22);
+}
+.hcj-seek-total{
+  color:rgba(255,255,255,.6);
+  font-size:14px; font-weight:500;
+  margin-left:2px; letter-spacing:.3px;
+}
+
+
+/* ════════════════════════════════════════════════════════════
+   LYRICS PLAYER — Premium dark-blue buttons, gold when active
+   (overrides earlier v8 purple/orange theme)
+   ════════════════════════════════════════════════════════════ */
+
+/* Generic pill button — dark navy glass */
+.hcj-mini-btn{
+  width: 46px; height: 46px;
+  border-radius: 14px;
+  border: 1px solid rgba(120,170,255,0.18);
+  background: linear-gradient(180deg, #0F2350 0%, #081639 100%);
+  color: #cfe1ff;
+  font-size: 18px; font-weight: 600;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  transition: transform .18s cubic-bezier(.2,.8,.2,1),
+              background .25s, border-color .25s, box-shadow .25s, color .25s;
+  box-shadow:
+    0 2px 6px rgba(0,0,0,.45),
+    inset 0 1px 0 rgba(255,255,255,.06);
+  -webkit-tap-highlight-color: transparent;
+}
+.hcj-mini-btn:hover{
+  background: linear-gradient(180deg, #163571 0%, #0B1E48 100%);
+  border-color: rgba(140,190,255,0.30);
+}
+.hcj-mini-btn:active{
+  transform: scale(.92);
+  box-shadow: 0 0 0 4px rgba(255,215,0,.18),
+              inset 0 1px 0 rgba(255,255,255,.10);
+}
+.hcj-mini-btn:disabled{
+  opacity: .28;
+  cursor: default;
+}
+
+/* Mode active (loop / continue) → gold */
+.hcj-mode-active{
+  background: linear-gradient(180deg, #FFE07A 0%, #E6B12A 100%) !important;
+  color: #1a0e02 !important;
+  border-color: rgba(255,225,140,.65) !important;
+  box-shadow:
+    0 4px 14px rgba(220,160,30,.55),
+    inset 0 1px 0 rgba(255,255,255,.55) !important;
+}
+
+/* Inline arrow buttons inside the player row */
+.hcj-arrow-btn{
+  font-size: 22px;
+  font-weight: 500;
+  letter-spacing: 0;
+}
+
+/* Play / pause — premium dark-blue hero, turns gold when playing */
+.hcj-play-btn{
+  width: 46px; height: 46px;
+  border-radius: 50%;
+  font-size: 18px;
+  color: #fff;
+  background: radial-gradient(circle at 30% 25%, #3F7BD8 0%, #1E47A0 55%, #0B204E 100%);
+  border: 1px solid rgba(160,200,255,.30);
+  box-shadow:
+    0 8px 22px rgba(20,55,140,.55),
+    0 2px 6px rgba(0,0,0,.50),
+    inset 0 1px 0 rgba(255,255,255,.30),
+    inset 0 -6px 14px rgba(0,0,0,.30);
+}
+.hcj-play-btn:hover{
+  background: radial-gradient(circle at 30% 25%, #5491EC 0%, #2A58B6 55%, #11295C 100%);
+}
+.hcj-play-btn:active{
+  transform: scale(.93);
+  box-shadow:
+    0 0 0 6px rgba(255,215,0,.22),
+    0 4px 12px rgba(20,55,140,.55),
+    inset 0 1px 0 rgba(255,255,255,.35);
+}
+.hcj-play-btn.hcj-playing{
+  background: radial-gradient(circle at 30% 25%, #FFE07A 0%, #E6B12A 55%, #8C6610 100%);
+  color: #1a0e02;
+  border-color: rgba(255,225,140,.70);
+  box-shadow:
+    0 8px 22px rgba(220,160,30,.55),
+    0 2px 6px rgba(0,0,0,.45),
+    inset 0 1px 0 rgba(255,255,255,.45),
+    inset 0 -6px 14px rgba(0,0,0,.20);
+}
+.hcj-play-btn.hcj-playing:active{
+  box-shadow:
+    0 0 0 6px rgba(255,215,0,.28),
+    0 4px 12px rgba(220,160,30,.55),
+    inset 0 1px 0 rgba(255,255,255,.45);
+}
+
+/* Seek input — match navy theme */
+.hcj-seek-input{
+  border-color: rgba(160,200,255,.20);
+  background: rgba(8,18,45,.65);
+  color: #e6efff;
+}
+.hcj-seek-input:focus{
+  border-color: #FFD175;
+  background: rgba(15,30,68,.85);
+  box-shadow: 0 0 0 3px rgba(255,209,117,.25);
+}
+
+/* ════════════════════════════════════════════════════════
+   HCJ PROGRESS BAR — slim scrubber above player buttons
+   ════════════════════════════════════════════════════════ */
+.hcj-prog-row{
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  max-width: 520px;
+  margin: 0 auto 10px;
+  padding: 0 2px;
+}
+.hcj-time{
+  font-size: 11px;
+  font-weight: 500;
+  color: rgba(255,255,255,0.55);
+  letter-spacing: 0.3px;
+  min-width: 30px;
+  font-variant-numeric: tabular-nums;
+  font-family: 'Inter', sans-serif;
+}
+.hcj-time:last-child{ text-align: right; }
+
+.hcj-prog-track{
+  flex: 1;
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(255,255,255,0.12);
+  position: relative;
+  cursor: pointer;
+  /* Extend touch target vertically without changing visual height */
+  padding: 10px 0;
+  margin: -10px 0;
+}
+.hcj-prog-fill{
+  height: 4px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, #4a90e2, #FFD175);
+  width: 0%;
+  position: relative;
+  pointer-events: none;
+  transition: width 0.1s linear;
+}
+.hcj-prog-thumb{
+  position: absolute;
+  right: -6px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow:
+    0 0 0 2px rgba(74,144,226,0.6),
+    0 2px 6px rgba(0,0,0,0.45);
+  pointer-events: none;
+  transition: transform 0.15s;
+}
+.hcj-prog-track:active .hcj-prog-thumb{
+  transform: translateY(-50%) scale(1.4);
+}
+
+/* ── Global translation toggle on Stotram list screen ── */
+.st-global-toggle-row{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:10px 16px;
+  margin-bottom:10px;
+  background:rgba(74,144,226,0.07);
+  border:1px solid rgba(74,144,226,0.18);
+  border-radius:12px;
+}
+#st-global-toggle-label{
+  font-family:'Hind Siliguri','Inter',sans-serif;
+  font-size:14px;
+  font-weight:600;
+  color:rgba(255,255,255,0.8);
+}
+
+  

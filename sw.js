@@ -1,14 +1,17 @@
 // ═══════════════════════════════════════════════════════
 // Radha Naam Jap — Service Worker
-// v64: Removed Google Drive backup system
+// v83: Theme cards + audio player + translation toggle
 // ═══════════════════════════════════════════════════════
-const CACHE = 'radha-jap-v75';
+const CACHE = 'radha-jap-v83';
+const VER = '?v=83';
 
 const PRECACHE = [
   './index.html',
-  './style.css',
-  './stotrams.js',
-  './app.js',
+  './style.css' + VER,
+  './style-stotram.css' + VER,
+  './img/stotram-frame.png',
+  './stotrams.js' + VER,
+  './app.js' + VER,
   './panchangData.js',
   './guru.jpg',
   './icon-192.png',
@@ -49,7 +52,10 @@ self.addEventListener('activate', e => {
       .then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k))))
       .then(() => self.clients.claim())
       .then(() => self.clients.matchAll({ type: 'window', includeUncontrolled: true }))
-      .then(clients => clients.forEach(c => c.postMessage({ type: 'SW_UPDATED', version: CACHE })))
+      .then(clients => clients.forEach(c => {
+        c.postMessage({ type: 'SW_UPDATED', version: CACHE });
+        c.postMessage({ type: 'SW_READY' });
+      }))
   );
 });
 
@@ -73,7 +79,7 @@ self.addEventListener('fetch', e => {
 
   if (url.pathname.endsWith('app.js') || url.pathname.endsWith('style.css') || url.pathname.endsWith('stotrams.js')) {
     e.respondWith(
-      fetch(e.request, { cache: 'no-cache' })
+      fetch(e.request.url.split('?')[0] + VER, { cache: 'no-cache' })
         .then(resp => {
           if (resp && resp.status === 200) caches.open(CACHE).then(c => c.put(e.request, resp.clone()));
           return resp;
@@ -108,7 +114,6 @@ self.addEventListener('message', e => {
       })
     );
   }
-
   if (e.data && e.data.type === 'SKIP_WAITING') {
     self.skipWaiting();
   }

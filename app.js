@@ -1416,6 +1416,13 @@ function syncTargetJapToMala(prefix) {
   const jap = parseInt((japEl && japEl.value) || 0) || 0;
   if (malaEl) malaEl.value = jap > 0 ? Math.round(jap / ms) : "";
   if (dispEl) dispEl.textContent = Math.ceil(jap / ms);
+  // sync crore display when prefix is 'lt'
+  if (prefix === "lt") {
+    const croreEl = document.getElementById("ltCroreIn");
+    const croreDisp = document.getElementById("ltCroreDisp");
+    if (croreEl) croreEl.value = jap > 0 ? +(jap / 10000000).toFixed(4) : "";
+    if (croreDisp) croreDisp.textContent = jap > 0 ? (jap / 10000000).toFixed(2) : "0";
+  }
 }
 function syncTargetMalaToJap(prefix) {
   const ms = App.S.ms || 108;
@@ -1425,6 +1432,29 @@ function syncTargetMalaToJap(prefix) {
   const malas = parseInt((malaEl && malaEl.value) || 0) || 0;
   if (japEl) japEl.value = malas > 0 ? malas * ms : "";
   if (dispEl) dispEl.textContent = malas;
+  // sync crore display when prefix is 'lt'
+  if (prefix === "lt") {
+    const jap = malas * ms;
+    const croreEl = document.getElementById("ltCroreIn");
+    const croreDisp = document.getElementById("ltCroreDisp");
+    if (croreEl) croreEl.value = jap > 0 ? +(jap / 10000000).toFixed(4) : "";
+    if (croreDisp) croreDisp.textContent = jap > 0 ? (jap / 10000000).toFixed(2) : "0";
+  }
+}
+function syncTargetCroreToJap() {
+  const ms = App.S.ms || 108;
+  const CRORE_VAL = 10000000;
+  const croreEl = document.getElementById("ltCroreIn");
+  const japEl = document.getElementById("ltIn");
+  const malaEl = document.getElementById("ltMalaIn");
+  const dispEl = document.getElementById("ltMala");
+  const croreDisp = document.getElementById("ltCroreDisp");
+  const crores = parseFloat((croreEl && croreEl.value) || 0) || 0;
+  const jap = Math.round(crores * CRORE_VAL);
+  if (japEl) japEl.value = jap > 0 ? jap : "";
+  if (malaEl) malaEl.value = jap > 0 ? Math.round(jap / ms) : "";
+  if (dispEl) dispEl.textContent = jap > 0 ? Math.ceil(jap / ms).toLocaleString() : "0";
+  if (croreDisp) croreDisp.textContent = crores > 0 ? crores.toFixed(2) : "0";
 }
 
 // ── Init jap mode UI on page load ──
@@ -1655,6 +1685,14 @@ function sv(id, btn) {
     const ltMalaInEl = document.getElementById("ltMalaIn");
     if (ltMalaInEl)
       ltMalaInEl.value = App.S.lt > 0 ? Math.round(App.S.lt / ms) : "";
+    // Populate crore equivalent
+    const ltCroreInEl = document.getElementById("ltCroreIn");
+    const ltCroreDispEl = document.getElementById("ltCroreDisp");
+    if (ltCroreInEl) ltCroreInEl.value = App.S.lt > 0 ? +(App.S.lt / 10000000).toFixed(4) : "";
+    if (ltCroreDispEl) ltCroreDispEl.textContent = App.S.lt > 0 ? (App.S.lt / 10000000).toFixed(2) : "0";
+    // Populate mala display
+    const ltMalaDispEl = document.getElementById("ltMala");
+    if (ltMalaDispEl) ltMalaDispEl.textContent = App.S.lt > 0 ? Math.ceil(App.S.lt / ms).toLocaleString() : "0";
     // Populate RV daily target (fix: was missing, target not showing)
     const dtRVEl = document.getElementById("dtRVIn");
     if (dtRVEl) dtRVEl.value = App.S.dtRV > 0 ? App.S.dtRV : "";
@@ -8456,17 +8494,30 @@ window.addEventListener("load", async () => {
 // PWA ONE-CLICK INSTALL BANNER
 // ═══════════════════════════════════════════════════════
 let deferredPrompt = null;
+let _installBannerShownThisSession = false;
 
 window.addEventListener('beforeinstallprompt', (e) => {
   e.preventDefault();
   deferredPrompt = e;
-  // Small delay so app loads first
+
+  // Already shown this session — just keep the prompt fresh, don't show again
+  if (_installBannerShownThisSession) return;
+
+  // Already installed (standalone mode)
+  if (window.matchMedia('(display-mode: standalone)').matches) return;
+
+  // Dismissed within last 3 days
+  const dismissed = localStorage.getItem('installBannerDismissed');
+  if (dismissed && Date.now() - Number(dismissed) < 3 * 24 * 60 * 60 * 1000) return;
+
+  // Wait for app paint to settle, then show once
   setTimeout(() => {
-    const dismissed = localStorage.getItem('installBannerDismissed');
-    if (dismissed && Date.now() - Number(dismissed) < 3 * 24 * 60 * 60 * 1000) return;
+    // Re-check in case user installed or dismissed while waiting
+    if (_installBannerShownThisSession) return;
     if (window.matchMedia('(display-mode: standalone)').matches) return;
+    _installBannerShownThisSession = true;
     showInstallBanner();
-  }, 3000);
+  }, 2500);
 });
 
 function showInstallBanner() {
@@ -8513,11 +8564,16 @@ function showInstallBanner() {
 }
 
 function triggerInstall() {
-  if (!deferredPrompt) return;
+  if (!deferredPrompt) {
+    // Prompt no longer available — guide user to browser menu
+    toast('ব্রাউজার মেনু থেকে "Add to Home Screen" বেছে নিন 🙏');
+    dismissInstallBanner();
+    return;
+  }
   deferredPrompt.prompt();
   deferredPrompt.userChoice.then((result) => {
-    if (result.outcome === 'accepted') dismissInstallBanner();
     deferredPrompt = null;
+    dismissInstallBanner();
   });
 }
 
@@ -8533,6 +8589,30 @@ function dismissInstallBanner() {
 window.addEventListener('appinstalled', () => {
   dismissInstallBanner();
 });
+
+// ── Hard cache-bust on version change ──
+(function() {
+  const APP_VER = 'v81';
+  if (localStorage.getItem('appVer') !== APP_VER) {
+    localStorage.setItem('appVer', APP_VER);
+    var p1 = navigator.serviceWorker
+      ? navigator.serviceWorker.getRegistrations().then(function(regs){
+          return Promise.all(regs.map(function(r){ return r.unregister(); }));
+        })
+      : Promise.resolve();
+    var p2 = window.caches
+      ? caches.keys().then(function(keys){
+          return Promise.all(keys.map(function(k){ return caches.delete(k); }));
+        })
+      : Promise.resolve();
+    Promise.all([p1, p2]).then(function() {
+      if (location.search.indexOf('bust=81') === -1) {
+        location.replace(location.pathname + '?bust=81');
+      }
+    });
+    return;
+  }
+})();
 
 // Service Worker
 if ("serviceWorker" in navigator) {
@@ -8557,11 +8637,23 @@ if ("serviceWorker" in navigator) {
       })
       .catch((e) => console.warn("SW registration failed:", e.message));
 
-    // Also listen for SW_UPDATED message from the service worker
+    // Also listen for SW messages
     navigator.serviceWorker.addEventListener("message", (e) => {
       if (e.data && e.data.type === "SW_UPDATED") {
         console.log("[SW] Received SW_UPDATED, reloading…", e.data.version);
         window.location.reload();
+      }
+      // SW is active — if we already have a deferred prompt waiting, show the banner now
+      if (e.data && e.data.type === "SW_READY") {
+        if (deferredPrompt && !_installBannerShownThisSession) {
+          if (!window.matchMedia('(display-mode: standalone)').matches) {
+            const dismissed = localStorage.getItem('installBannerDismissed');
+            if (!dismissed || Date.now() - Number(dismissed) >= 3 * 24 * 60 * 60 * 1000) {
+              _installBannerShownThisSession = true;
+              showInstallBanner();
+            }
+          }
+        }
       }
     });
   });
@@ -8624,71 +8716,375 @@ window.addEventListener("load", function () {
 
 // ═══════════════════════════════════════════════════════
 
-// ── showLyrics — swipeable verse reader ──
-let _verses = [], _verseIdx = 0;
+// ── NKC/GMS: detect if a verse is a "prose block" (narrative, not a stotram verse)
+// Prose blocks: no ॥ or । punctuation, or contain verse markers like বললেন / গোস্বামী
+function _isProseBlock(verse) {
+  const hasVerseMarker = /[॥।]/.test(verse) || /\d+\s*[।॥]/.test(verse);
+  const longProse = verse.length > 180 && !hasVerseMarker;
+  return longProse;
+}
+
+// ── IDs that support translation (অনুবাদ) button
+const TRANSLATION_IDS = ['nkc', 'gms'];
+// ── IDs where prose sections need vertical-scroll mode
+const PROSE_IDS = ['nkc'];
+
+// ── showLyrics — watery card swipe reader ──
+let _verses = [], _verseIdx = 0, _currentStotramId = '';
+let _translationVisible = false;
+// Global preference set from the Stotram list screen toggle
+let _globalTranslationPref = false;
+
+function setGlobalTranslation(on) {
+  _globalTranslationPref = on;
+  // Sync the toggle UI on list screen
+  var sw = document.getElementById('st-global-toggle-sw');
+  if (sw) {
+    sw.className = 'lm-toggle-sw' + (on ? ' on' : '');
+    sw.setAttribute('aria-checked', on ? 'true' : 'false');
+  }
+  var lbl = document.getElementById('st-global-toggle-label');
+  if (lbl) lbl.textContent = on ? 'অনুবাদ: চালু' : 'অনুবাদ: বন্ধ';
+}
+
+// ── Devotional SVG decorations ────────────────────────────────
+// Trishul top for Shiv stotrams
+const SVG_TRISHUL_TOP = `<svg width="140" height="54" viewBox="0 0 140 54" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- horizontal vine bar -->
+  <path d="M10 36 Q35 28 60 33 Q70 35 80 33 Q105 28 130 36" stroke="#8B5E00" stroke-width="1.4" fill="none" opacity="0.7"/>
+  <!-- left flourish -->
+  <path d="M10 36 Q4 30 8 24 Q12 18 8 14" stroke="#8B5E00" stroke-width="1.2" fill="none" opacity="0.6"/>
+  <circle cx="8" cy="13" r="2" fill="#8B5E00" opacity="0.5"/>
+  <!-- right flourish mirror -->
+  <path d="M130 36 Q136 30 132 24 Q128 18 132 14" stroke="#8B5E00" stroke-width="1.2" fill="none" opacity="0.6"/>
+  <circle cx="132" cy="13" r="2" fill="#8B5E00" opacity="0.5"/>
+  <!-- OM symbol centre -->
+  <text x="70" y="20" text-anchor="middle" font-size="22" fill="#7a3d00" opacity="0.80" font-family="serif">ॐ</text>
+  <!-- trishul above OM -->
+  <g transform="translate(70,2) scale(0.55)" opacity="0.75">
+    <!-- centre prong -->
+    <line x1="0" y1="-16" x2="0" y2="4" stroke="#7a3d00" stroke-width="2.2" stroke-linecap="round"/>
+    <!-- left prong -->
+    <path d="M0 0 Q-7 -4 -7 -12 Q-7 -18 -3 -16" stroke="#7a3d00" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+    <!-- right prong -->
+    <path d="M0 0 Q7 -4 7 -12 Q7 -18 3 -16" stroke="#7a3d00" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+    <!-- base crossbar -->
+    <line x1="-5" y1="2" x2="5" y2="2" stroke="#7a3d00" stroke-width="1.8" stroke-linecap="round"/>
+  </g>
+  <!-- side leaf pairs -->
+  <path d="M38 30 Q32 22 40 20 Q42 28 38 30Z" fill="#8B5E00" opacity="0.35"/>
+  <path d="M102 30 Q108 22 100 20 Q98 28 102 30Z" fill="#8B5E00" opacity="0.35"/>
+</svg>`;
+
+// Radha symbol (paisley/mor-pankh style) top for Radha/Krishna stotrams
+const SVG_RADHA_TOP = `<svg width="140" height="54" viewBox="0 0 140 54" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- horizontal vine bar -->
+  <path d="M10 38 Q35 30 60 35 Q70 37 80 35 Q105 30 130 38" stroke="#1a3a80" stroke-width="1.4" fill="none" opacity="0.6"/>
+  <!-- left flourish -->
+  <path d="M10 38 Q4 32 8 26 Q12 20 8 16" stroke="#1a3a80" stroke-width="1.2" fill="none" opacity="0.55"/>
+  <circle cx="8" cy="15" r="2" fill="#1a3a80" opacity="0.45"/>
+  <!-- right flourish -->
+  <path d="M130 38 Q136 32 132 26 Q128 20 132 16" stroke="#1a3a80" stroke-width="1.2" fill="none" opacity="0.55"/>
+  <circle cx="132" cy="15" r="2" fill="#1a3a80" opacity="0.45"/>
+  <!-- Radha paisley at centre -->
+  <g transform="translate(70,6)" opacity="0.82">
+    <!-- paisley body -->
+    <path d="M0 0 C6 -8 12 -14 8 -22 C4 -30 -4 -28 -6 -20 C-8 -12 -4 -4 0 0Z" stroke="#1a3a80" stroke-width="1.6" fill="rgba(26,58,128,0.12)"/>
+    <!-- inner curl -->
+    <path d="M0 0 C2 -6 4 -10 2 -16" stroke="#1a3a80" stroke-width="1" fill="none"/>
+    <!-- lotus base -->
+    <path d="M-6 2 Q0 -2 6 2" stroke="#1a3a80" stroke-width="1.4" fill="none"/>
+    <circle cx="0" cy="3" r="2.2" fill="#1a3a80" opacity="0.5"/>
+  </g>
+  <!-- mini peacock eye dots flanking -->
+  <circle cx="46" cy="28" r="3.5" stroke="#1a3a80" stroke-width="1.2" fill="rgba(26,58,128,0.15)" opacity="0.7"/>
+  <circle cx="46" cy="28" r="1.5" fill="#1a3a80" opacity="0.6"/>
+  <circle cx="94" cy="28" r="3.5" stroke="#1a3a80" stroke-width="1.2" fill="rgba(26,58,128,0.15)" opacity="0.7"/>
+  <circle cx="94" cy="28" r="1.5" fill="#1a3a80" opacity="0.6"/>
+  <!-- leaf pairs -->
+  <path d="M38 32 Q32 24 40 22 Q42 30 38 32Z" fill="#1a3a80" opacity="0.30"/>
+  <path d="M102 32 Q108 24 100 22 Q98 30 102 32Z" fill="#1a3a80" opacity="0.30"/>
+</svg>`;
+
+// Peacock feather bottom for Radha/Krishna stotrams
+const SVG_PEACOCK_BOTTOM = `<svg width="160" height="48" viewBox="0 0 160 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- centre lotus divider line -->
+  <line x1="20" y1="12" x2="62" y2="12" stroke="#1a3a80" stroke-width="1" opacity="0.45"/>
+  <line x1="98" y1="12" x2="140" y2="12" stroke="#1a3a80" stroke-width="1" opacity="0.45"/>
+  <!-- lotus centre -->
+  <path d="M80 4 Q74 10 76 16 Q80 14 84 16 Q86 10 80 4Z" fill="rgba(26,58,128,0.35)" opacity="0.75"/>
+  <path d="M73 8 Q70 14 74 18 Q77 16 77 12Z"  fill="rgba(26,58,128,0.25)" opacity="0.65"/>
+  <path d="M87 8 Q90 14 86 18 Q83 16 83 12Z"  fill="rgba(26,58,128,0.25)" opacity="0.65"/>
+  <!-- left peacock feather -->
+  <path d="M62 12 Q48 8 36 20 Q28 30 34 38" stroke="#1a4a20" stroke-width="1.4" fill="none" opacity="0.6"/>
+  <path d="M62 12 Q52 6 44 18 Q40 26 44 34" stroke="#2a6a30" stroke-width="1" fill="none" opacity="0.5"/>
+  <ellipse cx="34" cy="38" rx="5" ry="7" transform="rotate(-20,34,38)" fill="rgba(26,100,50,0.3)" stroke="#1a4a20" stroke-width="1" opacity="0.7"/>
+  <ellipse cx="34" cy="38" rx="2.5" ry="3.5" transform="rotate(-20,34,38)" fill="rgba(10,40,160,0.55)" opacity="0.85"/>
+  <!-- right peacock feather mirror -->
+  <path d="M98 12 Q112 8 124 20 Q132 30 126 38" stroke="#1a4a20" stroke-width="1.4" fill="none" opacity="0.6"/>
+  <path d="M98 12 Q108 6 116 18 Q120 26 116 34" stroke="#2a6a30" stroke-width="1" fill="none" opacity="0.5"/>
+  <ellipse cx="126" cy="38" rx="5" ry="7" transform="rotate(20,126,38)" fill="rgba(26,100,50,0.3)" stroke="#1a4a20" stroke-width="1" opacity="0.7"/>
+  <ellipse cx="126" cy="38" rx="2.5" ry="3.5" transform="rotate(20,126,38)" fill="rgba(10,40,160,0.55)" opacity="0.85"/>
+</svg>`;
+
+// Lotus bottom for Shiv stotrams
+const SVG_SHIV_BOTTOM = `<svg width="160" height="36" viewBox="0 0 160 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <line x1="15" y1="10" x2="64" y2="10" stroke="#8B5E00" stroke-width="1" opacity="0.45"/>
+  <line x1="96" y1="10" x2="145" y2="10" stroke="#8B5E00" stroke-width="1" opacity="0.45"/>
+  <circle cx="80" cy="10" r="3" fill="#8B5E00" opacity="0.4"/>
+  <!-- lotus petals -->
+  <path d="M80 2 Q74 8 76 14 Q80 12 84 14 Q86 8 80 2Z" fill="rgba(139,90,0,0.40)"/>
+  <path d="M73 5 Q68 12 72 16 Q76 14 75 10Z"            fill="rgba(139,90,0,0.28)"/>
+  <path d="M87 5 Q92 12 88 16 Q84 14 85 10Z"            fill="rgba(139,90,0,0.28)"/>
+  <path d="M67 9 Q63 16 68 18 Q72 16 70 12Z"            fill="rgba(139,90,0,0.20)"/>
+  <path d="M93 9 Q97 16 92 18 Q88 16 90 12Z"            fill="rgba(139,90,0,0.20)"/>
+  <!-- side scrollwork -->
+  <path d="M15 10 Q10 6 14 3 Q18 1 16 6" stroke="#8B5E00" stroke-width="1" fill="none" opacity="0.45"/>
+  <path d="M145 10 Q150 6 146 3 Q142 1 144 6" stroke="#8B5E00" stroke-width="1" fill="none" opacity="0.45"/>
+</svg>`;
+// ──────────────────────────────────────────────────────────────
 
 function showLyrics(id) {
   const ly = getEffectiveLyrics(id);
   if (!ly) { toast("পাঠ্য পাওয়া যায়নি 🙏"); return; }
 
-  // Split by blank lines, strip title line (first non-empty block if no verse marker)
-  const blocks = ly.split(/\n{2,}/).map(b => b.trim()).filter(b => b.length > 0);
-  // First block is usually just the title — keep it as verse 0 (intro)
-  _verses = blocks;
+  _currentStotramId = id;
+  // Inherit the global translation preference set on the list screen
+  _translationVisible = TRANSLATION_IDS.includes(id) ? _globalTranslationPref : false;
+
+
+  // Apply devotional theme to the card based on stotram deity
+  (function(){
+    var card = document.querySelector('.lm-water-card');
+    if (!card) return;
+    var shiv  = ['bss','ans','rds','sps'];
+    var radha = ['hcj','rks','gms','nkc','vs2'];
+    var lmo = document.getElementById('lmo');
+    // Remove any previous decoration elements
+    ['lm-deco-top','lm-deco-bottom'].forEach(function(cid){
+      var old = document.getElementById(cid); if(old) old.remove();
+    });
+    var inner = card.querySelector('.lm-card-inner');
+
+    function injectDeco(topSvg, botSvg) {
+      if (inner && topSvg) {
+        var t = document.createElement('div');
+        t.id='lm-deco-top'; t.className='lm-theme-top'; t.innerHTML=topSvg;
+        inner.insertBefore(t, inner.firstChild);
+      }
+      if (inner && botSvg) {
+        var b = document.createElement('div');
+        b.id='lm-deco-bottom'; b.className='lm-theme-bottom'; b.innerHTML=botSvg;
+        inner.appendChild(b);
+      }
+    }
+
+    if (shiv.indexOf(id) !== -1) {
+      card.setAttribute('data-theme','shiv');
+      if (lmo) lmo.setAttribute('data-bg','shiv');
+      injectDeco(SVG_TRISHUL_TOP, SVG_SHIV_BOTTOM);
+    } else if (radha.indexOf(id) !== -1) {
+      card.setAttribute('data-theme','radha');
+      if (lmo) lmo.setAttribute('data-bg','radha');
+      injectDeco(SVG_RADHA_TOP, SVG_PEACOCK_BOTTOM);
+    } else {
+      card.removeAttribute('data-theme');
+      if (lmo) lmo.removeAttribute('data-bg');
+    }
+  })();
+
+  // Split by blank lines into verses
+  let allVerses = ly.split(/\n{2,}/).map(b => b.trim()).filter(b => b.length > 0);
+
+  // Remove first verse if it's just the stotram title (for all except hcj)
+  if (id !== 'hcj' && allVerses.length > 0) {
+    const firstV = allVerses[0];
+    // Title verse: short (< 100 chars), no ।॥ markers, no numbered shloka
+    const isTitle = firstV.length < 100 && !/[।॥]/.test(firstV) && !/শ্লোক/.test(firstV);
+    if (isTitle) allVerses = allVerses.slice(1);
+  }
+
+  // Merge verses that are ONLY অর্থ: lines into the preceding verse.
+  // This prevents standalone translation-only "pages" with no Sanskrit content.
+  const mergedVerses = [];
+  for (let i = 0; i < allVerses.length; i++) {
+    const v = allVerses[i];
+    const linesOnly = v.split('\n').filter(l => l.trim().length > 0);
+    const allArtha = linesOnly.length > 0 && linesOnly.every(l => /^অর্থ\s*:/.test(l.trim()));
+    if (allArtha && mergedVerses.length > 0) {
+      // Append to previous verse with a blank line separator
+      mergedVerses[mergedVerses.length - 1] += '\n\n' + v;
+    } else {
+      mergedVerses.push(v);
+    }
+  }
+  _verses = mergedVerses;
   _verseIdx = 0;
+  _hcjStopAudio();
 
   const allSt = [...STLIST, ...(_globalStotrams||[]), ...(App.S.customSt||[])];
   const nm = allSt.find(x => x.id === id);
   document.getElementById("lmTitle").textContent = nm ? nm.name : id;
 
   _renderVerse(0, null);
-  _buildDots();
-
   document.getElementById("lmo").classList.add("show");
-
-  // Touch swipe support
   _initSwipeHandler();
 }
 
 function _renderVerse(idx, dir) {
   const body = document.getElementById("lyrBody");
-  const ctr  = document.getElementById("lmVCtr");
+  const ctr  = null;
   const prev = document.getElementById("lmPrev");
   const next = document.getElementById("lmNext");
 
-  body.textContent = _verses[idx] || "";
+  const verseText = _verses[idx] || "";
+  const isProse = PROSE_IDS.includes(_currentStotramId) && _isProseBlock(verseText);
+  const hasTranslation = TRANSLATION_IDS.includes(_currentStotramId);
 
-  // Animation
+  // Does this verse have any অর্থ: lines at all?
+  const verseHasArtha = /^অর্থ\s*:/m.test(verseText);
+
+  // Does this verse have any non-artha, non-empty content lines?
+  const verseHasContent = verseText.split("\n").some(l => {
+    const t = l.trim();
+    return t.length > 0 && !/^অর্থ\s*:/.test(t);
+  });
+
+  let linesHtml = '';
+  if (isProse) {
+    const escaped = verseText.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+    linesHtml = '<span class="lyr-prose">' + escaped + '</span>';
+  } else {
+    const rawLines = verseText.split("\n");
+    linesHtml = rawLines.map(line => {
+      if (line.trim() === "") return '<span class="lyr-line-empty"></span>';
+      const esc = line.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+      if (/^অর্থ\s*:/.test(line.trim())) {
+        // Only inject অর্থ: line when translation is ON
+        if (!hasTranslation || !_translationVisible) return '';
+        return '<span class="lyr-line lyr-artha">' + esc + '</span>';
+      }
+      return '<span class="lyr-line">' + esc + '</span>';
+    }).join("");
+  }
+
+  // Decide if the card should be visible at all:
+  // Hide it when: translation is OFF and the verse has ONLY অর্থ: lines (no Sanskrit content)
+  const cardVisible = isProse || verseHasContent || (verseHasArtha && _translationVisible);
+  const cardWrap = document.getElementById("lmb");
+  if (cardWrap) cardWrap.style.visibility = cardVisible ? "" : "hidden";
+
+  const footerHtml = '<div class="lyr-footer">❧ &nbsp; 🌸 &nbsp; ❧</div>';
+  body.innerHTML = (cardVisible ? linesHtml : '') + footerHtml;
+
+  // Re-inject SVG theme decorations (lost when innerHTML was rebuilt)
+  _reinjectThemeDecos();
+
+  // Toggle: only show when this verse actually has অর্থ: lines
+  _renderTranslationToggle(verseHasArtha);
+
   body.classList.remove("lyr-slide-enter-left","lyr-slide-enter-right");
   if (dir === 1)  { void body.offsetWidth; body.classList.add("lyr-slide-enter-left"); }
   if (dir === -1) { void body.offsetWidth; body.classList.add("lyr-slide-enter-right"); }
 
-  ctr.textContent = "VERSE " + (idx + 1) + " / " + _verses.length;
+  if (ctr) ctr.textContent = "VERSE " + (idx + 1) + " / " + _verses.length;
   prev.disabled = idx === 0;
   next.disabled = idx === _verses.length - 1;
 
-  // Update dots
-  document.querySelectorAll(".lm-dot").forEach((d,i) => {
-    d.classList.toggle("active", i === idx);
-  });
-
-  // Scroll verse area to top
-  document.getElementById("lmb").scrollTop = 0;
+  const inner = document.querySelector(".lm-card-inner");
+  if (inner) inner.scrollTop = 0;
+  _hcjRenderPlayer(idx);
+  _hcjOnVerseChange(idx);
 }
 
-function _buildDots() {
-  const dotsEl = document.getElementById("lmDots");
-  dotsEl.innerHTML = "";
-  // Only show dots if ≤ 25 verses (beyond that too many dots)
-  if (_verses.length <= 25) {
-    _verses.forEach((_, i) => {
-      const d = document.createElement("div");
-      d.className = "lm-dot" + (i === 0 ? " active" : "");
-      d.onclick = () => verseNav(i - _verseIdx);
-      dotsEl.appendChild(d);
-    });
+// Render translation toggle — shown ONLY when current verse has অর্থ: lines.
+// verseHasArtha: boolean passed from _renderVerse
+function _renderTranslationToggle(verseHasArtha) {
+  // Not a translatable stotram → always remove
+  if (!TRANSLATION_IDS.includes(_currentStotramId)) {
+    var old = document.getElementById('lm-translate-wrap');
+    if (old) old.remove();
+    return;
+  }
+
+  var existing = document.getElementById('lm-translate-wrap');
+
+  // This verse has no অর্থ: → hide toggle (and reset translation state)
+  if (!verseHasArtha) {
+    if (existing) existing.style.display = 'none';
+    return;
+  }
+
+  // This verse has অর্থ: → show toggle
+  if (existing) {
+    existing.style.display = '';
+    _syncToggleUI();
+    return;
+  }
+
+  // First time — build the toggle
+  const nav = document.getElementById('lmNav');
+  if (!nav) return;
+
+  var wrap = document.createElement('div');
+  wrap.id = 'lm-translate-wrap';
+  wrap.className = 'lm-translate-wrap';
+
+  var label = document.createElement('span');
+  label.className = 'lm-toggle-label';
+  label.textContent = 'অনুবাদ';
+
+  var sw = document.createElement('button');
+  sw.id = 'lm-toggle-sw';
+  sw.className = 'lm-toggle-sw' + (_translationVisible ? ' on' : '');
+  sw.setAttribute('role', 'switch');
+  sw.setAttribute('aria-checked', _translationVisible ? 'true' : 'false');
+  sw.innerHTML = '<span class="lm-toggle-thumb"></span>';
+  sw.onclick = function() {
+    _translationVisible = !_translationVisible;
+    _renderVerse(_verseIdx, null);
+  };
+
+  wrap.appendChild(label);
+  wrap.appendChild(sw);
+  nav.parentNode.insertBefore(wrap, nav);
+}
+
+function _reinjectThemeDecos() {
+  // Remove stale decos from previous render
+  ['lm-deco-top','lm-deco-bottom'].forEach(function(cid){
+    var old = document.getElementById(cid); if(old) old.remove();
+  });
+  var card = document.querySelector('.lm-water-card');
+  if (!card) return;
+  var theme = card.getAttribute('data-theme');
+  if (!theme) return;
+  var inner = card.querySelector('.lm-card-inner');
+  if (!inner) return;
+
+  var topSvg = (theme==='shiv') ? SVG_TRISHUL_TOP : (theme==='radha') ? SVG_RADHA_TOP : null;
+  var botSvg = (theme==='shiv') ? SVG_SHIV_BOTTOM : (theme==='radha') ? SVG_PEACOCK_BOTTOM : null;
+
+  if (topSvg) {
+    var t = document.createElement('div');
+    t.id='lm-deco-top'; t.className='lm-theme-top'; t.innerHTML=topSvg;
+    inner.insertBefore(t, inner.firstChild);
+  }
+  if (botSvg) {
+    var b = document.createElement('div');
+    b.id='lm-deco-bottom'; b.className='lm-theme-bottom'; b.innerHTML=botSvg;
+    inner.appendChild(b);
   }
 }
+
+function _syncToggleUI() {
+  var sw = document.getElementById('lm-toggle-sw');
+  if (!sw) return;
+  sw.className = 'lm-toggle-sw' + (_translationVisible ? ' on' : '');
+  sw.setAttribute('aria-checked', _translationVisible ? 'true' : 'false');
+}
+
+function _buildDots() { /* dots removed */ }
 
 function verseNav(delta) {
   const newIdx = _verseIdx + delta;
@@ -8698,27 +9094,278 @@ function verseNav(delta) {
 }
 
 function _initSwipeHandler() {
-  const area = document.getElementById("lmb");
-  // Remove old listeners by cloning
-  const fresh = area.cloneNode(true);
-  area.parentNode.replaceChild(fresh, area);
-  // Re-attach lyrBody reference after clone
-  // (lyrBody is inside, but we access by id so it's fine)
+  // Horizontal swipe nav enabled for all stotrams EXCEPT hcj.
+  // Vertical scrolling inside .lm-card-inner is preserved.
+  const card = document.getElementById('lmCard');
+  if (!card) return;
 
-  let tx = 0;
-  fresh.addEventListener("touchstart", e => { tx = e.touches[0].clientX; }, {passive:true});
-  fresh.addEventListener("touchend", e => {
-    const dx = e.changedTouches[0].clientX - tx;
-    if (Math.abs(dx) > 40) verseNav(dx < 0 ? 1 : -1);
-  }, {passive:true});
+  // Remove any previous swipe listeners
+  card._swipeCleanup && card._swipeCleanup();
+
+  if (_currentStotramId === 'hcj') return; // HCJ uses its own audio player arrows
+
+  let startX = 0, startY = 0, moved = false;
+
+  function onStart(e) {
+    const t = e.touches ? e.touches[0] : e;
+    startX = t.clientX;
+    startY = t.clientY;
+    moved = false;
+  }
+  function onEnd(e) {
+    const t = e.changedTouches ? e.changedTouches[0] : e;
+    const dx = t.clientX - startX;
+    const dy = t.clientY - startY;
+    if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 40) {
+      // Horizontal swipe detected — prevent vertical scroll conflict
+      if (dx < 0) verseNav(1);   // swipe left → next
+      else        verseNav(-1);  // swipe right → prev
+    }
+  }
+
+  card.addEventListener('touchstart', onStart, { passive: true });
+  card.addEventListener('touchend', onEnd, { passive: true });
+
+  card._swipeCleanup = function() {
+    card.removeEventListener('touchstart', onStart);
+    card.removeEventListener('touchend', onEnd);
+  };
 }
 
 function closeLyrics() {
-  document.getElementById("lmo").classList.remove("show");
+  var lmo = document.getElementById("lmo");
+  lmo.classList.remove("show");
+  lmo.removeAttribute('data-bg');
+  var card = document.querySelector('.lm-water-card');
+  if (card) card.removeAttribute('data-theme');
+  _hcjStopAudio();
   _verses = []; _verseIdx = 0;
+  _currentStotramId = "";
+  _translationVisible = false;
+  var oldWrap = document.getElementById('lm-translate-wrap');
+  if (oldWrap) oldWrap.remove();
+  var navBar=document.getElementById("lmNav"); if(navBar) navBar.style.display="";
 }
 
 // ═══════════════════════════════════════════════════════
+
+// HCJ AUDIO ENGINE
+var _hcjAudio = null, _hcjMode = "manual", _hcjPlaying = false, _hcjAudioIdx = -1;
+var _hcjRafId = null; // requestAnimationFrame id for progress bar
+
+function _hcjAudioPath(i) { return "audio/hcj_"+(i+1)+".mp3"; }
+
+// Format seconds → m:ss
+function _hcjFmtTime(s) {
+  if (!isFinite(s) || isNaN(s)) return "0:00";
+  var m = Math.floor(s / 60), sec = Math.floor(s % 60);
+  return m + ":" + (sec < 10 ? "0" : "") + sec;
+}
+
+// RAF loop — updates progress bar & timestamps every frame while playing
+function _hcjProgressLoop() {
+  _hcjUpdateProgress();
+  if (_hcjAudio && !_hcjAudio.paused) {
+    _hcjRafId = requestAnimationFrame(_hcjProgressLoop);
+  } else {
+    _hcjRafId = null;
+  }
+}
+
+function _hcjStartProgressLoop() {
+  if (_hcjRafId) return; // already running
+  _hcjRafId = requestAnimationFrame(_hcjProgressLoop);
+}
+
+function _hcjStopProgressLoop() {
+  if (_hcjRafId) { cancelAnimationFrame(_hcjRafId); _hcjRafId = null; }
+}
+
+function _hcjUpdateProgress() {
+  var bar   = document.getElementById("hcj-prog-fill");
+  var thumb = document.getElementById("hcj-prog-thumb");
+  var cur   = document.getElementById("hcj-time-cur");
+  var tot   = document.getElementById("hcj-time-tot");
+  if (!bar) return;
+  if (_hcjAudio && _hcjAudio.duration > 0) {
+    var pct = (_hcjAudio.currentTime / _hcjAudio.duration) * 100;
+    bar.style.width = pct + "%";
+    if (thumb) thumb.style.left = pct + "%";
+    if (cur) cur.textContent = _hcjFmtTime(_hcjAudio.currentTime);
+    if (tot) tot.textContent = _hcjFmtTime(_hcjAudio.duration);
+  } else {
+    bar.style.width = "0%";
+    if (thumb) thumb.style.left = "0%";
+    if (cur) cur.textContent = "0:00";
+    if (tot) tot.textContent = "0:00";
+  }
+}
+
+function _hcjStopAudio() {
+  _hcjStopProgressLoop();
+  if (_hcjAudio) { _hcjAudio.pause(); _hcjAudio.onended=null; _hcjAudio=null; }
+  _hcjPlaying=false; _hcjAudioIdx=-1; _hcjSyncUI();
+  _hcjUpdateProgress();
+}
+function _hcjPlayVerse(idx) {
+  _hcjStopProgressLoop();
+  if (_hcjAudio) { _hcjAudio.pause(); _hcjAudio.onended=null; _hcjAudio=null; }
+  _hcjAudio = new Audio(_hcjAudioPath(idx));
+  _hcjAudioIdx = idx;
+  _hcjAudio.loop = (_hcjMode==="loop");
+  _hcjAudio.onended = function() {
+    _hcjStopProgressLoop();
+    if (_hcjMode==="continue" && idx+1<_verses.length) { _verseIdx=idx+1; _renderVerse(_verseIdx,1); _hcjPlayVerse(_verseIdx); }
+    else { _hcjPlaying=false; _hcjAudioIdx=-1; _hcjSyncUI(); _hcjUpdateProgress(); }
+  };
+  _hcjAudio.play().then(function(){
+    _hcjPlaying=true; _hcjSyncUI(); _hcjStartProgressLoop();
+  }).catch(function(){ _hcjPlaying=false; _hcjAudioIdx=-1; _hcjSyncUI(); });
+}
+function _hcjTogglePlay() { if (_hcjPlaying) _hcjStopAudio(); else _hcjPlayVerse(_verseIdx); }
+function _hcjSetMode(mode) {
+  // Toggle off back to manual if the same mode button is tapped again
+  _hcjMode = (_hcjMode===mode) ? "manual" : mode;
+  if (_hcjAudio) _hcjAudio.loop=(_hcjMode==="loop");
+  _hcjSyncUI();
+}
+// Called whenever the displayed verse changes — keep audio in sync.
+function _hcjOnVerseChange(idx) {
+  if (_currentStotramId!=="hcj") return;
+  if (_hcjPlaying && _hcjAudioIdx !== idx) {
+    _hcjPlayVerse(idx);
+  }
+  var si=document.getElementById("hcj-seek-input"); if (si) si.value=idx+1;
+}
+function _hcjGoToVerse(n) {
+  var i=parseInt(n)-1; if (isNaN(i)||i<0||i>=_verses.length) return;
+  _verseIdx=i; _renderVerse(i,0);
+}
+function _hcjSyncUI() {
+  var pl=document.getElementById("hcj-play-btn");
+  if (pl) {
+    pl.textContent=_hcjPlaying?"\u23f8":"\u25b6";
+    pl.classList.toggle("hcj-playing",_hcjPlaying);
+    pl.title=_hcjPlaying?"বিরতি":"বাজাও";
+  }
+  ["loop","continue"].forEach(function(m){
+    var b=document.getElementById("hcj-mode-"+m);
+    if(b) b.classList.toggle("hcj-mode-active",_hcjMode===m);
+  });
+}
+function _hcjRenderPlayer(idx) {
+  var ow=document.getElementById("hcj-player-wrap"); if(ow) ow.remove();
+  var navBar=document.getElementById("lmNav");
+  if (_currentStotramId!=="hcj") { if(navBar) navBar.style.display=""; return; }
+  if (navBar) navBar.style.display="none";
+  var lmd=document.querySelector("#lmo .lmd"); if (!lmd) return;
+
+  var wrap=document.createElement("div"); wrap.id="hcj-player-wrap";
+
+  // ── Progress bar row (above buttons) ──
+  var progRow=document.createElement("div"); progRow.className="hcj-prog-row";
+
+  var timeCur=document.createElement("span");
+  timeCur.id="hcj-time-cur"; timeCur.className="hcj-time";
+  timeCur.textContent="0:00";
+  progRow.appendChild(timeCur);
+
+  var progTrack=document.createElement("div"); progTrack.className="hcj-prog-track";
+  var progFill=document.createElement("div");
+  progFill.id="hcj-prog-fill"; progFill.className="hcj-prog-fill";
+  var progThumb=document.createElement("div");
+  progThumb.id="hcj-prog-thumb"; progThumb.className="hcj-prog-thumb";
+  progFill.appendChild(progThumb);
+  progTrack.appendChild(progFill);
+
+  // Scrub on tap/drag
+  function _hcjScrubAt(e) {
+    if (!_hcjAudio || !_hcjAudio.duration) return;
+    e.preventDefault();
+    var rect = progTrack.getBoundingClientRect();
+    var clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    var pct = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+    _hcjAudio.currentTime = pct * _hcjAudio.duration;
+    _hcjUpdateProgress();
+  }
+  var _scrubbing = false;
+  progTrack.addEventListener("mousedown",  function(e){ _scrubbing=true; _hcjScrubAt(e); });
+  progTrack.addEventListener("touchstart", function(e){ _scrubbing=true; _hcjScrubAt(e); }, {passive:false});
+  window.addEventListener("mousemove",  function(e){ if(_scrubbing) _hcjScrubAt(e); });
+  window.addEventListener("touchmove",  function(e){ if(_scrubbing) _hcjScrubAt(e); }, {passive:false});
+  window.addEventListener("mouseup",   function(){ _scrubbing=false; });
+  window.addEventListener("touchend",  function(){ _scrubbing=false; });
+
+  progRow.appendChild(progTrack);
+
+  var timeTot=document.createElement("span");
+  timeTot.id="hcj-time-tot"; timeTot.className="hcj-time";
+  timeTot.textContent="0:00";
+  progRow.appendChild(timeTot);
+
+  wrap.appendChild(progRow);
+
+  // ── Buttons row ──
+  var row=document.createElement("div"); row.className="hcj-player";
+
+  // Prev arrow (left of player)
+  var prevBtn=document.createElement("button");
+  prevBtn.id="hcj-prev-btn";
+  prevBtn.className="hcj-mini-btn hcj-arrow-btn";
+  prevBtn.innerHTML="&#8592;";
+  prevBtn.title="পূর্ববর্তী পদ";
+  prevBtn.disabled=(idx===0);
+  prevBtn.onclick=function(){verseNav(-1);};
+  row.appendChild(prevBtn);
+
+  // Play / pause
+  var plb=document.createElement("button");
+  plb.id="hcj-play-btn";
+  plb.className="hcj-mini-btn hcj-play-btn"+(_hcjPlaying?" hcj-playing":"");
+  plb.textContent=_hcjPlaying?"\u23f8":"\u25b6";
+  plb.title=_hcjPlaying?"বিরতি":"বাজাও";
+  plb.onclick=function(){_hcjTogglePlay();};
+  row.appendChild(plb);
+
+  // Mode buttons (icon-only, tiny)
+  var modes=[
+    {k:"loop",  i:"\uD83D\uDD01", t:"লুপ (একই পদ)"},
+    {k:"continue", i:"\u23ED", t:"ক্রমাগত (পরবর্তী পদ)"}
+  ];
+  modes.forEach(function(m){
+    var b=document.createElement("button");
+    b.id="hcj-mode-"+m.k;
+    b.className="hcj-mini-btn hcj-mode-btn"+(_hcjMode===m.k?" hcj-mode-active":"");
+    b.textContent=m.i; b.title=m.t;
+    b.onclick=function(){_hcjSetMode(m.k);};
+    row.appendChild(b);
+  });
+
+  // Verse seek (compact)
+  var si=document.createElement("input");
+  si.id="hcj-seek-input"; si.type="number"; si.min=1; si.max=_verses.length;
+  si.value=idx+1; si.className="hcj-seek-input";
+  si.title="পদ নং";
+  si.onchange=function(){_hcjGoToVerse(this.value);};
+  si.onkeydown=function(e){if(e.key==="Enter")_hcjGoToVerse(this.value);};
+  row.appendChild(si);
+
+  var tot=document.createElement("span"); tot.className="hcj-seek-total"; tot.textContent="/"+_verses.length;
+  row.appendChild(tot);
+
+  // Next arrow (right of player)
+  var nextBtn=document.createElement("button");
+  nextBtn.id="hcj-next-btn";
+  nextBtn.className="hcj-mini-btn hcj-arrow-btn";
+  nextBtn.innerHTML="&#8594;";
+  nextBtn.title="পরবর্তী পদ";
+  nextBtn.disabled=(idx===_verses.length-1);
+  nextBtn.onclick=function(){verseNav(1);};
+  row.appendChild(nextBtn);
+
+  wrap.appendChild(row); lmd.appendChild(wrap);
+}
+
 // DAILY REMINDERS — Brahma Muhurta, Sandhyakal, Manual
 // ═══════════════════════════════════════════════════════
 const REM_KEY = "radhaJapReminders_v2";

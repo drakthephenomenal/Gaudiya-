@@ -1,0 +1,518 @@
+/* ════════════════════════════════════════════════════════════
+     style-stotram.css  ·  Stotram Lyrics Modal Styles
+     Extracted from style.css for easier maintenance.
+     Linked from index.html after style.css.
+     To change the lyrics card appearance, edit ONLY this file.
+  ════════════════════════════════════════════════════════════ */
+
+  /* ── Lyrics Modal — Watery Card Reader ── */
+.lmo{position:fixed;inset:0;background:rgba(4,10,30,0.88);backdrop-filter:blur(6px);z-index:400;display:none;align-items:center;justify-content:center;overflow:hidden;}
+.lmo.show{display:flex;}
+
+/* Ripple rings in background */
+.lmo-ripple{position:absolute;border-radius:50%;border:1.5px solid rgba(109,184,255,0.18);pointer-events:none;animation:lmoRipple 4s ease-out infinite;}
+.lmo-ripple.r1{width:260px;height:260px;animation-delay:0s;}
+.lmo-ripple.r2{width:420px;height:420px;animation-delay:1.2s;border-color:rgba(109,184,255,0.10);}
+.lmo-ripple.r3{width:580px;height:580px;animation-delay:2.4s;border-color:rgba(109,184,255,0.06);}
+@keyframes lmoRipple{0%{opacity:0;transform:scale(0.7)}40%{opacity:1}100%{opacity:0;transform:scale(1.15)}}
+
+/* Modal container */
+.lmd{position:relative;display:flex;flex-direction:column;align-items:center;width:min(99vw,480px);height:96vh;max-height:96vh;padding:0 0 12px;z-index:2;}
+
+/* Close button */
+.lmx{position:absolute;top:-4px;right:0;background:rgba(255,255,255,0.10);border:1px solid rgba(255,255,255,0.15);border-radius:50%;width:34px;height:34px;color:#fff;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:5;font-family:'Inter',sans-serif;transition:background 0.15s;}
+.lmx:active{background:rgba(255,255,255,0.22);}
+
+/* Title */
+.lmt{font-family:'Hind Siliguri','Tiro Devanagari Hindi',serif;font-size:13px;color:rgba(109,184,255,0.9);font-weight:700;letter-spacing:1.5px;text-transform:uppercase;text-align:center;margin-bottom:6px;padding:0 40px;}
+
+/* Verse counter */
+.lm-vctr{font-family:'Inter',sans-serif;font-size:11px;color:rgba(255,255,255,0.35);letter-spacing:2px;text-align:center;margin-bottom:14px;}
+
+/* Card wrapper — fills remaining height */
+.lm-card-wrap{
+  width:100%;
+  flex:1;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:4px 2px 2px;
+  min-height:0;
+  overflow:hidden;
+}
+
+/* Card — hugs short content, scrolls when tall */
+/* ════════════════════════════════════════════════════
+   BASE CARD — parchment foundation (unthemed fallback)
+════════════════════════════════════════════════════ */
+.lm-water-card{
+  width:100%;
+  background: linear-gradient(170deg,#f5dfa0 0%,#f0cc6e 25%,#e8b840 60%,#c89010 100%);
+  border-radius:20px;
+  position:relative;
+  overflow:hidden;
+  display:flex;
+  flex-direction:column;
+  height:auto;
+  max-height:100%;
+  box-shadow:
+    0 0 0 2px #8B6010,
+    0 0 0 5px rgba(200,150,10,0.45),
+    0 16px 55px rgba(0,0,0,0.65),
+    inset 0 1px 0 rgba(255,245,190,0.85);
+  animation:cardFloat 5s ease-in-out infinite;
+}
+@keyframes cardFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+/* Parchment noise overlay */
+.lm-water-card::before{
+  content:'';
+  position:absolute;inset:0;
+  background:
+    radial-gradient(ellipse at 15% 12%, rgba(255,255,220,0.38) 0%,transparent 42%),
+    radial-gradient(ellipse at 85% 88%, rgba(140,80,0,0.20)   0%,transparent 42%),
+    radial-gradient(ellipse at 50% 50%, rgba(255,220,100,0.10) 0%,transparent 65%);
+  pointer-events:none;z-index:1;
+}
+.lm-water-card::after{ display:none; }
+@keyframes waveShift{from{transform:translateX(-4px)}to{transform:translateX(4px)}}
+
+/* ════════════════════════════════════════════════════
+   SHIV THEME  ·  bss · ans · rds · sps
+   Deep navy background, saffron-gold parchment,
+   ornate gold border, trishul top SVG
+════════════════════════════════════════════════════ */
+.lm-water-card[data-theme="shiv"]{
+  background: linear-gradient(170deg,#f5dfa0 0%,#f0cc6e 25%,#e8b840 60%,#c89010 100%);
+  box-shadow:
+    0 0 0 1.5px #5a3000,
+    0 0 0 4px #c8960a,
+    0 0 0 7px rgba(180,110,0,0.35),
+    0 18px 60px rgba(0,0,0,0.78),
+    inset 0 1px 0 rgba(255,245,190,0.9);
+}
+/* Ornate gold frame lines inside card */
+.lm-water-card[data-theme="shiv"] .lm-card-inner{
+  position:relative;
+  border: 1.5px solid rgba(100,60,0,0.55);
+  border-radius:12px;
+  margin:12px;
+  padding:22px 20px 18px;
+  background:rgba(255,248,210,0.22);
+  box-shadow:
+    inset 0 0 0 1px rgba(255,210,50,0.30),
+    inset 0 0 0 3px rgba(100,60,0,0.12);
+}
+/* Corner ticks */
+.lm-water-card[data-theme="shiv"] .lm-card-inner::before,
+.lm-water-card[data-theme="shiv"] .lm-card-inner::after{ display:none; }
+/* Saffron aged edges */
+.lm-water-card[data-theme="shiv"]::before{
+  background:
+    radial-gradient(ellipse at 12% 10%, rgba(255,255,220,0.40) 0%,transparent 42%),
+    radial-gradient(ellipse at 88% 90%, rgba(160,70,0,0.22)    0%,transparent 42%),
+    radial-gradient(ellipse at 50% 50%, rgba(255,200,60,0.08)  0%,transparent 68%);
+}
+.lm-water-card[data-theme="shiv"] .lyr-line  { color:#1a0800; font-weight:500; }
+.lm-water-card[data-theme="shiv"] .lyr-artha { color:#8B0000 !important; font-style:italic; }
+.lm-water-card[data-theme="shiv"] .lyr-footer{ color:#5a2800 !important; opacity:0.5; }
+.lm-water-card[data-theme="shiv"] .lyr-prose { color:#1a0800; }
+
+/* ════════════════════════════════════════════════════
+   RADHA / VISHNU / KRISHNA THEME  ·  hcj·rks·gms·nkc·vs2
+   Deep navy bg, golden parchment,
+   blue-gold border, Radha symbol + peacock feathers
+════════════════════════════════════════════════════ */
+.lm-water-card[data-theme="radha"]{
+  background: linear-gradient(170deg,#f5dfa0 0%,#f0cc6e 25%,#e8b840 60%,#c89010 100%);
+  box-shadow:
+    0 0 0 1.5px #0e2a5a,
+    0 0 0 4px #c8960a,
+    0 0 0 7px rgba(10,50,140,0.38),
+    0 18px 60px rgba(0,0,0,0.78),
+    inset 0 1px 0 rgba(255,245,190,0.9);
+}
+.lm-water-card[data-theme="radha"] .lm-card-inner{
+  position:relative;
+  border: 1.5px solid rgba(10,50,140,0.50);
+  border-radius:12px;
+  margin:12px;
+  padding:22px 20px 18px;
+  background:rgba(240,248,255,0.14);
+  box-shadow:
+    inset 0 0 0 1px rgba(255,210,50,0.32),
+    inset 0 0 0 3px rgba(10,50,140,0.10),
+    inset 0 0 22px rgba(10,50,200,0.06);
+}
+.lm-water-card[data-theme="radha"] .lm-card-inner::before,
+.lm-water-card[data-theme="radha"] .lm-card-inner::after{ display:none; }
+.lm-water-card[data-theme="radha"]::before{
+  background:
+    radial-gradient(ellipse at 12% 10%, rgba(180,220,255,0.16) 0%,transparent 42%),
+    radial-gradient(ellipse at 88% 90%, rgba(10,50,160,0.18)   0%,transparent 42%),
+    radial-gradient(ellipse at 50% 50%, rgba(255,220,80,0.08)  0%,transparent 68%);
+}
+.lm-water-card[data-theme="radha"] .lyr-line  { color:#060a20; font-weight:500; }
+.lm-water-card[data-theme="radha"] .lyr-artha { color:#8B0000 !important; font-style:italic; }
+.lm-water-card[data-theme="radha"] .lyr-footer{ color:#0a2060 !important; opacity:0.45; }
+.lm-water-card[data-theme="radha"] .lyr-prose { color:#060a20; }
+
+/* Themed SVG decoration containers injected by JS */
+.lm-theme-top{
+  width:100%;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  margin-bottom:8px;
+  flex-shrink:0;
+  pointer-events:none;
+  user-select:none;
+}
+.lm-theme-top svg{ overflow:visible; }
+.lm-theme-bottom{
+  width:100%;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  margin-top:6px;
+  flex-shrink:0;
+  pointer-events:none;
+  user-select:none;
+}
+.lm-theme-bottom svg{ overflow:visible; }
+
+/* Corner ornament dots on inner frame */
+.lm-water-card[data-theme] .lm-card-inner::before{
+  content:'◆';
+  display:block;
+  position:absolute;
+  top:-1px;left:50%;
+  transform:translateX(-50%) translateY(-50%);
+  font-size:10px;
+  color:#8B6010;
+  background:inherit;
+  padding:0 4px;
+  pointer-events:none;
+}
+
+/* Scroll container — fills card, content starts at top */
+.lm-card-inner{
+  position:relative;
+  z-index:2;
+  overflow-y:auto;
+  overflow-x:hidden;
+  -webkit-overflow-scrolling:touch;
+  padding:28px 24px 24px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  /* NO flex:1, NO justify-content:center — let card height be natural */
+}
+.lm-card-inner::-webkit-scrollbar{width:3px;}
+.lm-card-inner::-webkit-scrollbar-track{background:transparent;}
+.lm-card-inner::-webkit-scrollbar-thumb{background:rgba(109,184,255,0.3);border-radius:4px;}
+
+/* Lyrics */
+.lyr{
+  font-family:\'Hind Siliguri\',\'Tiro Devanagari Hindi\',serif;
+  color:#111;
+  letter-spacing:0.3px;
+  text-align:center;
+  width:100%;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  font-size:20px;
+}
+.lyr-line{
+  display:block;
+  white-space:normal;
+  overflow-wrap:break-word;
+  word-break:break-word;
+  font-size:clamp(12px,4.8vw,22px);
+  line-height:2.0;
+  width:100%;
+  text-align:center;
+}
+/* Prose block for NKC intro/outro sections */
+.lyr-prose{
+  display:block;
+  white-space:pre-wrap;
+  overflow-wrap:break-word;
+  word-break:break-word;
+  font-size:clamp(13px,3.8vw,18px);
+  line-height:1.75;
+  width:100%;
+  text-align:left;
+  color:#222;
+}
+/* অর্থ translation line */
+.lyr-artha{
+  color:#c0392b !important;
+  font-style:italic;
+  margin:4px 0;
+  text-align:center !important;
+  white-space:normal;
+  overflow-wrap:break-word;
+  word-break:break-word;
+}
+.lyr-line-empty{
+  display:block;
+  height:0.55em;
+  width:100%;
+}
+.lyr-footer{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:10px;
+  padding:18px 0 10px;
+  width:100%;
+  opacity:0.45;
+  font-size:18px;
+  letter-spacing:6px;
+  color:rgba(109,184,255,0.8);
+  user-select:none;
+}
+/* Translation toggle switch */
+.lm-translate-wrap{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:10px;
+  margin:6px auto 0;
+  padding:0;
+}
+.lm-toggle-label{
+  font-family:'Hind Siliguri','Inter',sans-serif;
+  font-size:13px;
+  color:rgba(255,255,255,0.75);
+  letter-spacing:0.5px;
+  user-select:none;
+}
+.lm-toggle-sw{
+  position:relative;
+  width:44px;
+  height:26px;
+  border-radius:13px;
+  background:rgba(255,255,255,0.18);
+  border:1.5px solid rgba(255,255,255,0.22);
+  cursor:pointer;
+  transition:background 0.25s, border-color 0.25s;
+  padding:0;
+  flex-shrink:0;
+}
+.lm-toggle-sw.on{
+  background:rgba(46,204,113,0.75);
+  border-color:rgba(46,204,113,0.9);
+}
+.lm-toggle-thumb{
+  position:absolute;
+  top:3px;
+  left:3px;
+  width:18px;
+  height:18px;
+  border-radius:50%;
+  background:#fff;
+  box-shadow:0 1px 4px rgba(0,0,0,0.35);
+  transition:transform 0.25s;
+  display:block;
+}
+.lm-toggle-sw.on .lm-toggle-thumb{
+  transform:translateX(18px);
+}
+
+/* Dots */
+.lm-dots{display:flex;justify-content:center;gap:6px;padding:14px 0 4px;flex-wrap:wrap;}
+.lm-dot{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.18);cursor:pointer;transition:all 0.2s;flex-shrink:0;}
+.lm-dot.active{background:var(--a2);transform:scale(1.4);}
+
+/* Nav buttons */
+.lm-nav{display:flex;gap:14px;margin-top:12px;}
+.lm-nav-btn{
+  width:56px;height:56px;border-radius:50%;
+  border:1.5px solid rgba(109,184,255,0.35);
+  background:rgba(255,255,255,0.07);
+  backdrop-filter:blur(4px);
+  color:#fff;font-size:20px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  transition:all 0.15s;
+  box-shadow:0 4px 16px rgba(30,80,200,0.2);
+}
+.lm-nav-btn:active{background:rgba(109,184,255,0.22);transform:scale(0.93);}
+.lm-nav-btn:disabled{opacity:0.25;cursor:default;}
+
+/* Slide animations */
+.lyr-slide-enter-left{animation:slideInLeft 0.22s ease;}
+.lyr-slide-enter-right{animation:slideInRight 0.22s ease;}
+@keyframes slideInLeft{from{opacity:0;transform:translateX(36px)}to{opacity:1;transform:translateX(0)}}
+@keyframes slideInRight{from{opacity:0;transform:translateX(-36px)}to{opacity:1;transform:translateX(0)}}
+
+
+  
+  /* ═══════════════════════════════════════════════════════════════════
+     STOTRAM LYRICS VIEW — DEVOTIONAL FRAME TEMPLATE
+     Uses img/stotram-frame.png as the card background.
+     The golden center of the frame is the lyrics reading area.
+  ═══════════════════════════════════════════════════════════════════ */
+
+  /* Full-screen modal overlay — dark background */
+  .lmo {
+    background: rgba(3,8,22,0.93);
+    backdrop-filter: blur(4px);
+  }
+
+  /* Hide ripple rings — the frame image provides all decoration */
+  .lmo-ripple { display: none; }
+
+  /* Full-viewport column layout */
+  .lmd {
+    width: 100vw;
+    max-width: 100vw;
+    height: 100vh;
+    height: 100dvh;
+    max-height: 100dvh;
+    padding: max(env(safe-area-inset-top),10px) 0 max(env(safe-area-inset-bottom),8px);
+    gap: 2px;
+  }
+
+  /* Title: warm gold, readable on dark overlay */
+  .lmt {
+    margin-top: 4px;
+    padding: 0 48px;
+    color: #ffd700;
+    font-size: 12px;
+    text-shadow: 0 2px 10px rgba(255,215,0,0.55), 0 1px 4px rgba(0,0,0,0.9);
+  }
+
+  /* Close button: gold tint on dark */
+  .lmx {
+    top: max(env(safe-area-inset-top),8px);
+    right: 12px;
+    color: #ffd700;
+    background: rgba(4,12,34,0.75);
+    border-color: rgba(255,215,0,0.45);
+  }
+
+  /* Card wrap — centers the frame card */
+  .lm-card-wrap {
+    width: 100%;
+    padding: 2px 6px 0;
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* ── The Card IS the Frame ──
+     The uploaded image (stotram-frame.png) is a square ornate frame.
+     The golden parchment center (lyrics area) sits roughly in the
+     middle 60% of the image in both dimensions.
+     We size the card to fit the viewport and use padding to push
+     content into the golden center zone. ── */
+  .lm-water-card {
+    background:
+      url('img/stotram-frame.png') center center / cover no-repeat;
+    border-radius: 14px;
+    box-shadow:
+      0 24px 70px rgba(0,0,0,0.85),
+      0 0 0 1px rgba(200,150,10,0.25);
+    animation: cardFloat 5s ease-in-out infinite;
+    /* Square aspect — preserves the frame proportions */
+    width: min(92vw, 460px);
+    aspect-ratio: 1 / 1;
+    max-height: 78vh;
+    overflow: hidden;
+    border: none;
+    /* Ensure we can fit content inside */
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Hide all old card pseudo-elements and SVG ornaments */
+  .lm-water-card::before,
+  .lm-water-card::after { display: none !important; }
+  .lm-water-card[data-theme]::before,
+  .lm-water-card[data-theme]::after { display: none !important; }
+  .lm-water-card[data-theme] .lm-card-inner::before { display: none; }
+  .lm-theme-top, .lm-theme-bottom { display: none; }
+
+  /* ── Scroll container — positioned inside the golden center ──
+     Top padding ~16%: clears the top ornament of the frame
+     Left/right padding ~18%: clears the side decorations
+     Bottom padding ~14%: clears the bottom ornament ── */
+  .lm-card-inner {
+    flex: 1;
+    padding: 16% 19% 13%;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    background: transparent;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+    z-index: 2;
+  }
+  .lm-card-inner::-webkit-scrollbar { width: 2px; }
+  .lm-card-inner::-webkit-scrollbar-track { background: transparent; }
+  .lm-card-inner::-webkit-scrollbar-thumb {
+    background: rgba(139,90,0,0.4);
+    border-radius: 4px;
+  }
+
+  /* Lyrics text — warm dark brown for parchment readability */
+  .lyr {
+    color: #1a0800;
+    max-width: 100%;
+    margin: 0 auto;
+  }
+  .lyr-line {
+    color: #1a0800;
+    font-size: clamp(11px, 3.8vw, 20px);
+    white-space: normal;
+    overflow-wrap: break-word;
+    word-break: break-word;
+    line-height: 1.85;
+  }
+  .lyr-artha  { color: #780000 !important; }
+  .lyr-prose  { color: #1a0800; font-size: clamp(11px, 3.4vw, 17px); }
+  .lyr-footer { color: #5a2800 !important; opacity: 0.65; font-size: 14px; letter-spacing: 4px; }
+
+  /* Override any theme-specific text colours */
+  .lm-water-card[data-theme] .lyr-line  { color: #1a0800; }
+  .lm-water-card[data-theme] .lyr-artha { color: #780000 !important; }
+  .lm-water-card[data-theme] .lyr-footer{ color: #5a2800 !important; }
+  .lm-water-card[data-theme] .lyr-prose { color: #1a0800; }
+
+  /* Dots: subtle dark gold */
+  .lm-dots { padding: 8px 0 2px; }
+  .lm-dot { background: rgba(100,60,0,0.2); }
+  .lm-dot.active { background: rgba(139,90,0,0.75); transform: scale(1.4); }
+
+  /* Nav arrows — gold on dark overlay */
+  .lm-nav { gap: 52px; margin-top: 6px; }
+  .lm-nav-btn {
+    width: auto; height: auto;
+    border: none; background: transparent;
+    backdrop-filter: none; box-shadow: none;
+    color: rgba(255,215,0,0.9);
+    font-size: 26px; padding: 6px 14px;
+    line-height: 1; border-radius: 0;
+    text-shadow: 0 2px 8px rgba(0,0,0,0.7);
+    transition: opacity 0.15s, transform 0.15s, color 0.15s;
+  }
+  .lm-nav-btn:active {
+    background: transparent;
+    transform: scale(0.85);
+    color: #fff;
+  }
+  .lm-nav-btn:disabled { opacity: 0.2; }
+
+  /* Verse counter on dark overlay */
+  .lm-vctr { color: rgba(255,215,0,0.45); }
+
+  /* Translation toggle label on dark overlay */
+  .lm-toggle-label { color: rgba(255,215,0,0.8); }
+  
+  

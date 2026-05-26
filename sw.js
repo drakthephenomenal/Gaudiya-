@@ -1,26 +1,30 @@
 // ═══════════════════════════════════════════════════════
 // Radha Naam Jap — Service Worker
-// v85: Full-screen frame + centred short lyrics
+// v86: fixed offline caching for GitHub Pages / subpath installs
 // ═══════════════════════════════════════════════════════
-const CACHE = 'radha-jap-v85';
-const VER = '?v=85';
+const CACHE = 'radha-jap-v101'; // bumped: Android nav-arrow + swipe fix
 
-const PRECACHE = [
+const LOCAL_ASSETS = [
+  './',
   './index.html',
-  './style.css' + VER,
-  './style-stotram.css' + VER,
-  './stotrams.js' + VER,
-  './app.js' + VER,
+  './404.html',
+  './style.css',
+  './style-stotram.css',
+  './stotrams.js',
+  './app.js',
   './panchangData.js',
   './guru.jpg',
   './icon-192.png',
   './icon-512.png',
   './manifest.json',
+];
+
+const EXTERNAL_ASSETS = [
   'https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js',
   'https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js',
   'https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js',
-  'https://fonts.googleapis.com/css2?family=Tiro+Devanagari+Hindi&family=Hind+Siliguri:wght@400;600;700&family=Cinzel+Decorative:wght@400;700&family=EB+Garamond:wght@400;600&family=Inter:wght@300;400;500;600&display=swap',
-  'https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js'
+  'https://fonts.googleapis.com/css2?family=Tiro+Devanagari+Hindi&family=Hind+Siliguri:wght@400;600;700&family=Cinzel+Decorative:wght@400;700&family=EB+Garamond:wght@400;600&family=Inter:wght@300;400;500;600&family=Noto+Sans+Devanagari:wght@400;700&family=Noto+Sans+Bengali:wght@400;500;600;700&display=swap',
+  'https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js',
 ];
 
 const BYPASS = [
@@ -34,96 +38,157 @@ const BYPASS = [
   'accounts.google.com',
 ];
 
-// ── Install ──
-self.addEventListener('install', e => {
+function withinScopePath(pathname) {
+  const scopePath = new URL(self.registration.scope).pathname;
+  return pathname.startsWith(scopePath) ? pathname.slice(scopePath.length) : null;
+}
+
+function toLocalCacheKey(requestOrUrl) {
+  const raw = typeof requestOrUrl === 'string' ? requestOrUrl : requestOrUrl.url;
+  const url = new URL(raw, self.location.origin);
+
+  if (url.origin !== self.location.origin) return null;
+
+  let relativePath = withinScopePath(url.pathname);
+  if (relativePath == null) return null;
+
+  if (!relativePath || relativePath === '/') return './index.html';
+  if (relativePath.startsWith('/')) relativePath = relativePath.slice(1);
+  return `./${relativePath}`;
+}
+
+async function cacheLocalAsset(cache, asset) {
+  try {
+    const response = await fetch(asset, { cache: 'reload' });
+    if (response && response.ok) {
+      await cache.put(asset, response.clone());
+    }
+  } catch (_) {}
+}
+
+async function cacheExternalAsset(cache, url) {
+  try {
+    const response = await fetch(url, { cache: 'reload', mode: 'no-cors' });
+    if (response && (response.ok || response.type === 'opaque')) {
+      await cache.put(url, response.clone());
+    }
+  } catch (_) {}
+}
+
+async function storeResponse(cacheKey, response) {
+  if (!response || (!response.ok && response.type !== 'opaque')) return;
+  const cache = await caches.open(CACHE);
+  await cache.put(cacheKey, response.clone());
+}
+
+self.addEventListener('install', (event) => {
   self.skipWaiting();
-  e.waitUntil(
-    caches.open(CACHE).then(cache =>
-      Promise.allSettled(PRECACHE.map(url => cache.add(url).catch(() => {})))
-    )
-  );
+  event.waitUntil((async () => {
+    const cache = await caches.open(CACHE);
+    await Promise.allSettled(LOCAL_ASSETS.map((asset) => cacheLocalAsset(cache, asset)));
+    await Promise.allSettled(EXTERNAL_ASSETS.map((asset) => cacheExternalAsset(cache, asset)));
+  })());
 });
 
-// ── Activate ──
-self.addEventListener('activate', e => {
-  e.waitUntil(
-    caches.keys()
-      .then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k))))
-      .then(() => self.clients.claim())
-      .then(() => self.clients.matchAll({ type: 'window', includeUncontrolled: true }))
-      .then(clients => clients.forEach(c => {
-        c.postMessage({ type: 'SW_UPDATED', version: CACHE });
-        c.postMessage({ type: 'SW_READY' });
-      }))
-  );
+self.addEventListener('activate', (event) => {
+  event.waitUntil((async () => {
+    const keys = await caches.keys();
+    await Promise.all(keys.filter((key) => key !== CACHE).map((key) => caches.delete(key)));
+    await self.clients.claim();
+    const clients = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+    clients.forEach((client) => {
+      client.postMessage({ type: 'SW_UPDATED', version: CACHE });
+      client.postMessage({ type: 'SW_READY' });
+    });
+  })());
 });
 
-// ── Fetch ──
-self.addEventListener('fetch', e => {
-  if (e.request.method !== 'GET') return;
-  const url = new URL(e.request.url);
-  if (BYPASS.some(h => url.href.includes(h))) return;
+self.addEventListener('fetch', (event) => {
+  if (event.request.method !== 'GET') return;
 
-  if (url.pathname.endsWith('index.html') || url.pathname.endsWith('/') || e.request.mode === 'navigate') {
-    e.respondWith(
-      fetch(e.request, { cache: 'no-cache' })
-        .then(resp => {
-          if (resp && resp.status === 200) caches.open(CACHE).then(c => c.put(e.request, resp.clone()));
-          return resp;
-        })
-        .catch(() => caches.match('./index.html'))
-    );
+  const url = new URL(event.request.url);
+  if (BYPASS.some((host) => url.href.includes(host))) return;
+
+  if (event.request.mode === 'navigate') {
+    event.respondWith((async () => {
+      try {
+        const response = await fetch(event.request, { cache: 'no-cache' });
+        if (response && response.ok) {
+          await storeResponse('./index.html', response);
+        }
+        return response;
+      } catch (_) {
+        return (await caches.match('./index.html')) || new Response('Offline', {
+          status: 503,
+          headers: { 'content-type': 'text/plain; charset=utf-8' },
+        });
+      }
+    })());
     return;
   }
 
-  if (url.pathname.endsWith('app.js') || url.pathname.endsWith('style.css') || url.pathname.endsWith('style-stotram.css') || url.pathname.endsWith('stotrams.js')) {
-    e.respondWith(
-      fetch(e.request.url.split('?')[0] + VER, { cache: 'no-cache' })
-        .then(resp => {
-          if (resp && resp.status === 200) caches.open(CACHE).then(c => c.put(e.request, resp.clone()));
-          return resp;
-        })
-        .catch(() => caches.match(e.request))
-    );
+  const localCacheKey = toLocalCacheKey(event.request);
+  if (localCacheKey) {
+    event.respondWith((async () => {
+      const cached = await caches.match(localCacheKey);
+      if (cached) return cached;
+
+      try {
+        const response = await fetch(event.request, { cache: 'no-cache' });
+        await storeResponse(localCacheKey, response);
+        return response;
+      } catch (_) {
+        return cached || new Response('Offline', {
+          status: 503,
+          headers: { 'content-type': 'text/plain; charset=utf-8' },
+        });
+      }
+    })());
     return;
   }
 
-  e.respondWith(
-    caches.match(e.request).then(cached => {
-      const net = fetch(e.request).then(resp => {
-        if (resp && resp.status === 200 && resp.type !== 'error')
-          caches.open(CACHE).then(c => c.put(e.request, resp.clone()));
-        return resp;
-      }).catch(() => null);
-      return cached || net.then(r => r || new Response('Offline', { status: 503 }));
-    })
-  );
+  event.respondWith((async () => {
+    const cached = await caches.match(event.request);
+    if (cached) return cached;
+
+    try {
+      const response = await fetch(event.request);
+      await storeResponse(event.request, response);
+      return response;
+    } catch (_) {
+      return new Response('Offline', {
+        status: 503,
+        headers: { 'content-type': 'text/plain; charset=utf-8' },
+      });
+    }
+  })());
 });
 
-// ── Messages from the page ──
-self.addEventListener('message', e => {
-  if (e.data && e.data.type === 'SHOW_NOTIFICATION') {
-    e.waitUntil(
-      self.registration.showNotification(e.data.title, {
-        body: e.data.body,
-        tag: e.data.tag,
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SHOW_NOTIFICATION') {
+    event.waitUntil(
+      self.registration.showNotification(event.data.title, {
+        body: event.data.body,
+        tag: event.data.tag,
         renotify: true,
         vibrate: [200, 100, 200],
-        icon: './icon-192.png'
+        icon: './icon-192.png',
       })
     );
   }
-  if (e.data && e.data.type === 'SKIP_WAITING') {
+
+  if (event.data && event.data.type === 'SKIP_WAITING') {
     self.skipWaiting();
   }
 });
 
-// ── Notification tap ──
-self.addEventListener('notificationclick', e => {
-  e.notification.close();
-  e.waitUntil(
-    clients.matchAll({ type: 'window' }).then(list => {
-      for (const client of list) { if ('focus' in client) return client.focus(); }
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  event.waitUntil(
+    clients.matchAll({ type: 'window' }).then((list) => {
+      for (const client of list) {
+        if ('focus' in client) return client.focus();
+      }
       if (clients.openWindow) return clients.openWindow('./');
     })
   );

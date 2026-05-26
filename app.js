@@ -1261,6 +1261,10 @@ let lt2 = 0;
 document.addEventListener(
   "touchend",
   (e) => {
+    // Do not cancel touchend inside the lyrics modal. Repeated flick-scrolls
+    // can happen within 300ms; preventing them interrupts native momentum
+    // scrolling and makes the Stotram text feel stuck/shaky on mobile.
+    if (e.target && e.target.closest && e.target.closest("#lmo")) return;
     const n = Date.now();
     if (n - lt2 < 300) e.preventDefault();
     lt2 = n;
@@ -8592,7 +8596,7 @@ window.addEventListener('appinstalled', () => {
 
 // ── Hard cache-bust on version change ──
 (function() {
-  const APP_VER = 'v81';
+  const APP_VER = 'v82';
   if (localStorage.getItem('appVer') !== APP_VER) {
     localStorage.setItem('appVer', APP_VER);
     var p1 = navigator.serviceWorker
@@ -8606,8 +8610,8 @@ window.addEventListener('appinstalled', () => {
         })
       : Promise.resolve();
     Promise.all([p1, p2]).then(function() {
-      if (location.search.indexOf('bust=81') === -1) {
-        location.replace(location.pathname + '?bust=81');
+      if (location.search.indexOf('bust=82') === -1) {
+        location.replace(location.pathname + '?bust=82');
       }
     });
     return;
@@ -8618,7 +8622,7 @@ window.addEventListener('appinstalled', () => {
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
     navigator.serviceWorker
-      .register("/sw.js", { scope: "/" })
+      .register("./sw.js", { scope: "./" })
       .then((r) => {
         console.log("SW registered:", r.scope);
         // When a new SW takes over, reload the page to get fresh files
@@ -8992,10 +8996,24 @@ function _renderVerse(idx, dir) {
   next.disabled = idx === _verses.length - 1;
 
   const inner = document.querySelector(".lm-card-inner");
-  if (inner) inner.scrollTop = 0;
+  if (inner) {
+    // Reset after the DOM has painted so mobile browsers do not fight an
+    // in-progress user scroll while verse/audio UI is being re-rendered.
+    requestAnimationFrame(function(){ inner.scrollTop = 0; });
+  }
   _hcjRenderPlayer(idx);
-  _hcjOnVerseChange(idx);
-}
+    _hcjOnVerseChange(idx);
+    // Dynamic nav positioning: measure real card-inner bottom on every render
+    // so the arrows always land in the decorative band, not over the text.
+    requestAnimationFrame(function() {
+      var nav   = document.getElementById('lmNav');
+      var inner = document.querySelector('#lmo .lm-card-inner');
+      if (!nav || !inner) return;
+      var gap = window.innerHeight - inner.getBoundingClientRect().bottom;
+      // Centre the arrows in the gap, but keep at least 6px from screen edge.
+      nav.style.bottom = Math.max(Math.round(gap / 2), 6) + 'px';
+    });
+  }
 
 // Render translation toggle — shown ONLY when current verse has অর্থ: lines.
 // verseHasArtha: boolean passed from _renderVerse
@@ -9032,7 +9050,7 @@ function _renderTranslationToggle(verseHasArtha) {
 
   var label = document.createElement('span');
   label.className = 'lm-toggle-label';
-  label.textContent = 'অনুবাদ';
+  label.textContent = 'Translation';
 
   var sw = document.createElement('button');
   sw.id = 'lm-toggle-sw';
@@ -9095,7 +9113,8 @@ function verseNav(delta) {
 
 function _initSwipeHandler() {
   // Horizontal swipe nav enabled for all stotrams EXCEPT hcj.
-  // Vertical scrolling inside .lm-card-inner is preserved.
+  // If enlarged text makes the lyric panel scrollable, touches that begin
+  // inside that panel are reserved for native vertical scrolling.
   const card = document.getElementById('lmCard');
   if (!card) return;
 
@@ -9104,15 +9123,17 @@ function _initSwipeHandler() {
 
   if (_currentStotramId === 'hcj') return; // HCJ uses its own audio player arrows
 
-  let startX = 0, startY = 0, moved = false;
+  let startX = 0, startY = 0, startedInScrollableLyrics = false;
 
   function onStart(e) {
     const t = e.touches ? e.touches[0] : e;
     startX = t.clientX;
     startY = t.clientY;
-    moved = false;
+    const inner = e.target && e.target.closest ? e.target.closest('.lm-card-inner') : null;
+    startedInScrollableLyrics = !!(inner && inner.scrollHeight > inner.clientHeight + 20);
   }
   function onEnd(e) {
+    if (startedInScrollableLyrics) return;
     const t = e.changedTouches ? e.changedTouches[0] : e;
     const dx = t.clientX - startX;
     const dy = t.clientY - startY;
@@ -9138,13 +9159,18 @@ function closeLyrics() {
   lmo.removeAttribute('data-bg');
   var card = document.querySelector('.lm-water-card');
   if (card) card.removeAttribute('data-theme');
+  /* Clean up HCJ player window listeners before destroying audio */
+  if (_hcjPlayerCleanup) { _hcjPlayerCleanup(); _hcjPlayerCleanup = null; }
+  var pw = document.getElementById("hcj-player-wrap"); if (pw) pw.remove();
+  /* Reset scroll area bottom override set by _hcjRenderPlayer */
+  var _lci = document.querySelector("#lmo .lm-card-inner"); if (_lci) _lci.style.bottom = "";
   _hcjStopAudio();
   _verses = []; _verseIdx = 0;
   _currentStotramId = "";
   _translationVisible = false;
   var oldWrap = document.getElementById('lm-translate-wrap');
   if (oldWrap) oldWrap.remove();
-  var navBar=document.getElementById("lmNav"); if(navBar) navBar.style.display="";
+  var navBar=document.getElementById("lmNav"); if(navBar) navBar.style.display="none";
 }
 
 // ═══════════════════════════════════════════════════════
@@ -9152,6 +9178,7 @@ function closeLyrics() {
 // HCJ AUDIO ENGINE
 var _hcjAudio = null, _hcjMode = "manual", _hcjPlaying = false, _hcjAudioIdx = -1;
 var _hcjRafId = null; // requestAnimationFrame id for progress bar
+var _hcjPlayerCleanup = null; // cleanup fn for window listeners added in _hcjRenderPlayer
 
 function _hcjAudioPath(i) { return "audio/hcj_"+(i+1)+".mp3"; }
 
@@ -9206,6 +9233,15 @@ function _hcjStopAudio() {
   if (_hcjAudio) { _hcjAudio.pause(); _hcjAudio.onended=null; _hcjAudio=null; }
   _hcjPlaying=false; _hcjAudioIdx=-1; _hcjSyncUI();
   _hcjUpdateProgress();
+  if (window._lyrHcjAudioChanged) window._lyrHcjAudioChanged(null, false);
+}
+function _hcjPauseAudio() {
+  /* True pause — keeps the audio element and current position */
+  _hcjStopProgressLoop();
+  if (_hcjAudio) _hcjAudio.pause();
+  _hcjPlaying = false;
+  _hcjSyncUI();
+  if (window._lyrHcjAudioChanged) window._lyrHcjAudioChanged(_hcjAudio, false);
 }
 function _hcjPlayVerse(idx) {
   _hcjStopProgressLoop();
@@ -9216,13 +9252,29 @@ function _hcjPlayVerse(idx) {
   _hcjAudio.onended = function() {
     _hcjStopProgressLoop();
     if (_hcjMode==="continue" && idx+1<_verses.length) { _verseIdx=idx+1; _renderVerse(_verseIdx,1); _hcjPlayVerse(_verseIdx); }
-    else { _hcjPlaying=false; _hcjAudioIdx=-1; _hcjSyncUI(); _hcjUpdateProgress(); }
+    else { _hcjPlaying=false; _hcjAudioIdx=-1; _hcjSyncUI(); _hcjUpdateProgress();
+      if (window._lyrHcjAudioChanged) window._lyrHcjAudioChanged(null, false); }
   };
   _hcjAudio.play().then(function(){
     _hcjPlaying=true; _hcjSyncUI(); _hcjStartProgressLoop();
+    if (window._lyrHcjAudioChanged) window._lyrHcjAudioChanged(_hcjAudio, true);
   }).catch(function(){ _hcjPlaying=false; _hcjAudioIdx=-1; _hcjSyncUI(); });
 }
-function _hcjTogglePlay() { if (_hcjPlaying) _hcjStopAudio(); else _hcjPlayVerse(_verseIdx); }
+function _hcjTogglePlay() {
+  if (_hcjPlaying) {
+    /* True pause — keeps position so Resume works */
+    _hcjPauseAudio();
+  } else if (_hcjAudio && _hcjAudioIdx === _verseIdx) {
+    /* Resume from paused position (same verse, audio element still exists) */
+    _hcjAudio.play().then(function(){
+      _hcjPlaying=true; _hcjSyncUI(); _hcjStartProgressLoop();
+      if (window._lyrHcjAudioChanged) window._lyrHcjAudioChanged(_hcjAudio, true);
+    }).catch(function(){ _hcjPlaying=false; _hcjSyncUI(); });
+  } else {
+    /* Start fresh for this verse */
+    _hcjPlayVerse(_verseIdx);
+  }
+}
 function _hcjSetMode(mode) {
   // Toggle off back to manual if the same mode button is tapped again
   _hcjMode = (_hcjMode===mode) ? "manual" : mode;
@@ -9242,12 +9294,13 @@ function _hcjGoToVerse(n) {
   _verseIdx=i; _renderVerse(i,0);
 }
 function _hcjSyncUI() {
+  // ▶ play button — dim when already playing
   var pl=document.getElementById("hcj-play-btn");
-  if (pl) {
-    pl.textContent=_hcjPlaying?"\u23f8":"\u25b6";
-    pl.classList.toggle("hcj-playing",_hcjPlaying);
-    pl.title=_hcjPlaying?"বিরতি":"বাজাও";
-  }
+  if (pl) pl.classList.toggle("hcj-btn-dim", _hcjPlaying);
+  // ⏸ pause button — dim when not playing
+  var pa=document.getElementById("hcj-pause-btn");
+  if (pa) pa.classList.toggle("hcj-btn-dim", !_hcjPlaying);
+  // mode buttons
   ["loop","continue"].forEach(function(m){
     var b=document.getElementById("hcj-mode-"+m);
     if(b) b.classList.toggle("hcj-mode-active",_hcjMode===m);
@@ -9255,9 +9308,15 @@ function _hcjSyncUI() {
 }
 function _hcjRenderPlayer(idx) {
   var ow=document.getElementById("hcj-player-wrap"); if(ow) ow.remove();
+  /* Remove any window listeners left by the previous player render */
+  if (_hcjPlayerCleanup) { _hcjPlayerCleanup(); _hcjPlayerCleanup = null; }
   var navBar=document.getElementById("lmNav");
-  if (_currentStotramId!=="hcj") { if(navBar) navBar.style.display=""; return; }
-  if (navBar) navBar.style.display="none";
+  if (_currentStotramId!=="hcj") {
+    if(navBar) navBar.style.display="";
+    var _ci=document.querySelector("#lmo .lm-card-inner"); if(_ci) _ci.style.bottom="";
+    return;
+  }
+  if (navBar) navBar.style.display="";
   var lmd=document.querySelector("#lmo .lmd"); if (!lmd) return;
 
   var wrap=document.createElement("div"); wrap.id="hcj-player-wrap";
@@ -9291,10 +9350,29 @@ function _hcjRenderPlayer(idx) {
   var _scrubbing = false;
   progTrack.addEventListener("mousedown",  function(e){ _scrubbing=true; _hcjScrubAt(e); });
   progTrack.addEventListener("touchstart", function(e){ _scrubbing=true; _hcjScrubAt(e); }, {passive:false});
-  window.addEventListener("mousemove",  function(e){ if(_scrubbing) _hcjScrubAt(e); });
-  window.addEventListener("touchmove",  function(e){ if(_scrubbing) _hcjScrubAt(e); }, {passive:false});
-  window.addEventListener("mouseup",   function(){ _scrubbing=false; });
-  window.addEventListener("touchend",  function(){ _scrubbing=false; });
+
+  /* touchmove is on progTrack only — NOT on window.
+     Touch events fire on the element where touchstart occurred, so this
+     still fires when the finger moves outside the bar. Keeping it on the
+     small progTrack element means Chrome NEVER has to wait for a global
+     touchmove handler before scrolling the text area, which eliminates
+     the shake-without-scrolling bug entirely. */
+  progTrack.addEventListener("touchmove", function(e){
+    if (_scrubbing){ e.preventDefault(); _hcjScrubAt(e); }
+  }, {passive:false});
+
+  /* Mouse drag still uses window so the cursor can leave the track */
+  var _onMouseMove = function(e){ if(_scrubbing) _hcjScrubAt(e); };
+  var _onMouseUp   = function(){ _scrubbing=false; };
+  var _onTouchEnd  = function(){ _scrubbing=false; };
+  window.addEventListener("mousemove", _onMouseMove);
+  window.addEventListener("mouseup",   _onMouseUp);
+  window.addEventListener("touchend",  _onTouchEnd);
+  _hcjPlayerCleanup = function() {
+    window.removeEventListener("mousemove", _onMouseMove);
+    window.removeEventListener("mouseup",   _onMouseUp);
+    window.removeEventListener("touchend",  _onTouchEnd);
+  };
 
   progRow.appendChild(progTrack);
 
@@ -9308,24 +9386,32 @@ function _hcjRenderPlayer(idx) {
   // ── Buttons row ──
   var row=document.createElement("div"); row.className="hcj-player";
 
-  // Prev arrow (left of player)
-  var prevBtn=document.createElement("button");
-  prevBtn.id="hcj-prev-btn";
-  prevBtn.className="hcj-mini-btn hcj-arrow-btn";
-  prevBtn.innerHTML="&#8592;";
-  prevBtn.title="পূর্ববর্তী পদ";
-  prevBtn.disabled=(idx===0);
-  prevBtn.onclick=function(){verseNav(-1);};
-  row.appendChild(prevBtn);
 
-  // Play / pause
+  // ▶ Play button — always shows ▶, dims while already playing
   var plb=document.createElement("button");
   plb.id="hcj-play-btn";
-  plb.className="hcj-mini-btn hcj-play-btn"+(_hcjPlaying?" hcj-playing":"");
-  plb.textContent=_hcjPlaying?"\u23f8":"\u25b6";
-  plb.title=_hcjPlaying?"বিরতি":"বাজাও";
-  plb.onclick=function(){_hcjTogglePlay();};
+  plb.className="hcj-mini-btn hcj-play-btn"+(_hcjPlaying?" hcj-btn-dim":"");
+  plb.textContent="\u25b6"; // ▶
+  plb.title="বাজাও";
+  plb.onclick=function(){
+    if (_hcjPlaying) return; // already playing
+    if (_hcjAudio && _hcjAudioIdx===_verseIdx) {
+      _hcjAudio.play().then(function(){
+        _hcjPlaying=true; _hcjSyncUI(); _hcjStartProgressLoop();
+        if(window._lyrHcjAudioChanged) window._lyrHcjAudioChanged(_hcjAudio,true);
+      }).catch(function(){ _hcjPlaying=false; _hcjSyncUI(); });
+    } else { _hcjPlayVerse(_verseIdx); }
+  };
   row.appendChild(plb);
+
+  // ⏸ Pause button — always shows ⏸, dims while not playing
+  var pab=document.createElement("button");
+  pab.id="hcj-pause-btn";
+  pab.className="hcj-mini-btn hcj-pause-btn"+(!_hcjPlaying?" hcj-btn-dim":"");
+  pab.textContent="\u23f8"; // ⏸
+  pab.title="বিরতি";
+  pab.onclick=function(){ if (_hcjPlaying) _hcjPauseAudio(); };
+  row.appendChild(pab);
 
   // Mode buttons (icon-only, tiny)
   var modes=[
@@ -9353,17 +9439,18 @@ function _hcjRenderPlayer(idx) {
   var tot=document.createElement("span"); tot.className="hcj-seek-total"; tot.textContent="/"+_verses.length;
   row.appendChild(tot);
 
-  // Next arrow (right of player)
-  var nextBtn=document.createElement("button");
-  nextBtn.id="hcj-next-btn";
-  nextBtn.className="hcj-mini-btn hcj-arrow-btn";
-  nextBtn.innerHTML="&#8594;";
-  nextBtn.title="পরবর্তী পদ";
-  nextBtn.disabled=(idx===_verses.length-1);
-  nextBtn.onclick=function(){verseNav(1);};
-  row.appendChild(nextBtn);
 
   wrap.appendChild(row); lmd.appendChild(wrap);
+
+  /* Shrink the scroll area so it never slides under the player.
+     The player is now position:absolute at the bottom of .lmd.
+     We read its rendered height after layout and push .lm-card-inner
+     bottom up by that amount so every touch lands in the scroll area. */
+  requestAnimationFrame(function() {
+    var pw    = document.getElementById("hcj-player-wrap");
+    var inner = document.querySelector("#lmo .lm-card-inner");
+    if (pw && inner) inner.style.bottom = pw.offsetHeight + "px";
+  });
 }
 
 // DAILY REMINDERS — Brahma Muhurta, Sandhyakal, Manual
@@ -10797,3 +10884,328 @@ function _renderAnnualEkList(results, year, listEl, statusEl) {
       year +
       (App.S.lastLat ? " (GPS location)" : " (default location)");
 }
+
+/* ════════════════════════════════════════════════════════════
+   v87  (2026-05-25) — merged from stotram-patch.js
+   Discrete-step text-size control + audio pause/scroll padding
+   for the stotram lyric overlay.
+   ════════════════════════════════════════════════════════════ */
+(function () {
+  "use strict";
+
+  /* Discrete font sizes (px). Step 1 = smallest, last = biggest. */
+  var STEPS        = [11, 13, 15, 17, 19, 21, 24, 28, 32, 38];
+  var DEFAULT_STEP = 3;                       // index into STEPS (≈17px)
+  var STORAGE_KEY  = "lyr_step";              // new key (integer step)
+  var LEGACY_KEY   = "lyr_manual_px";         // old key (px value)
+
+  var _autoStep   = null;
+  var _manualStep = null;
+  var _pending    = false;
+  var _barBuilt   = false;
+  var _audioEl    = null;
+
+  try {
+    var sv = localStorage.getItem(STORAGE_KEY);
+    if (sv !== null) {
+      var n = parseInt(sv, 10);
+      if (!isNaN(n)) _manualStep = clampStep(n);
+    } else {
+      var legacy = localStorage.getItem(LEGACY_KEY);
+      if (legacy !== null) _manualStep = pxToStep(parseFloat(legacy));
+    }
+  } catch (e) {}
+
+  function clampStep(i) {
+    if (i < 0) return 0;
+    if (i > STEPS.length - 1) return STEPS.length - 1;
+    return i;
+  }
+  function pxToStep(px) {
+    if (!isFinite(px)) return DEFAULT_STEP;
+    var best = 0, bestD = Infinity;
+    for (var i = 0; i < STEPS.length; i++) {
+      var d = Math.abs(STEPS[i] - px);
+      if (d < bestD) { bestD = d; best = i; }
+    }
+    return best;
+  }
+
+  function autoFitStep(lyrEl) {
+    var lines = lyrEl.querySelectorAll(".lyr-line");
+    if (!lines.length) return null;
+    var cw = lyrEl.getBoundingClientRect().width;
+    if (cw < 4) return null;
+
+    lyrEl.style.setProperty("--lyr-fs", STEPS[0] + "px");
+    var i;
+    for (i = 0; i < lines.length; i++) {
+      lines[i].style.display    = "inline-block";
+      lines[i].style.width      = "auto";
+      lines[i].style.whiteSpace = "nowrap";
+    }
+    var maxW = 0;
+    for (i = 0; i < lines.length; i++) {
+      if (lines[i].offsetWidth > maxW) maxW = lines[i].offsetWidth;
+    }
+    for (i = 0; i < lines.length; i++) {
+      lines[i].style.display    = "";
+      lines[i].style.width      = "";
+      lines[i].style.whiteSpace = "";
+    }
+    if (maxW < 1) return null;
+    var idealPx = (cw / maxW) * STEPS[0];
+    return pxToStep(idealPx);
+  }
+
+  function applyStep(step, modal) {
+    step = clampStep(step);
+    var px    = STEPS[step];
+    var value = px + "px";
+    var lyrs  = modal.querySelectorAll(".lyr");
+    for (var i = 0; i < lyrs.length; i++) {
+      lyrs[i].style.setProperty("--lyr-fs", value);
+      var lines = lyrs[i].querySelectorAll(".lyr-line");
+      for (var j = 0; j < lines.length; j++) lines[j].style.fontSize = value;
+    }
+    updateLabel("T " + (step + 1) + "/" + STEPS.length);
+  }
+
+  function fit() {
+    if (_pending) return;
+    var modal = document.querySelector(".lmo");
+    if (!modal || !modal.classList.contains("show")) return;
+    _pending = true;
+    requestAnimationFrame(function () {
+      var lyrs = modal.querySelectorAll(".lyr");
+      var s    = lyrs.length ? autoFitStep(lyrs[0]) : null;
+      if (s !== null) _autoStep = s;
+      var target = (_manualStep !== null) ? _manualStep : _autoStep;
+      if (target !== null) applyStep(target, modal);
+      _pending = false;
+    });
+  }
+  function fitSoon() {
+    [80, 300, 600, 1100, 2000].forEach(function (d) { setTimeout(fit, d); });
+  }
+  window.fitLyrLines = fit;
+
+  var _resizeTimer;
+  window.addEventListener("resize", function () {
+    clearTimeout(_resizeTimer);
+    _resizeTimer = setTimeout(fit, 220);
+  });
+
+  function buildBar() {
+    if (_barBuilt) return;
+    var modal = document.getElementById("lmo");
+    if (!modal) return;
+    _barBuilt = true;
+
+    var wrap = document.createElement("div");
+    wrap.id = "lyr-fs-ctrl";
+    wrap.innerHTML =
+      '<button id="lyr-fs-pause" style="display:none" title="Pause/Resume">⏸</button>' +
+      '<button id="lyr-fs-down" title="Smaller text" aria-label="Smaller text">−</button>' +
+      '<span id="lyr-fs-label">—</span>' +
+      '<button id="lyr-fs-up"   title="Larger text"  aria-label="Larger text">+</button>' +
+      '<button id="lyr-fs-auto" style="display:none" title="Reset size">↺</button>';
+    modal.appendChild(wrap);
+
+    var down  = document.getElementById("lyr-fs-down");
+    var up    = document.getElementById("lyr-fs-up");
+    var auto  = document.getElementById("lyr-fs-auto");
+    var pause = document.getElementById("lyr-fs-pause");
+
+    function stepBy(delta) {
+      var base = (_manualStep !== null) ? _manualStep
+               : (_autoStep   !== null) ? _autoStep   : DEFAULT_STEP;
+      _manualStep = clampStep(base + delta);
+      savePref();
+      var m = document.querySelector(".lmo");
+      if (m) applyStep(_manualStep, m);
+      refreshAutoBtn();
+    }
+
+    bindRepeat(down, function () { stepBy(-1); });
+    bindRepeat(up,   function () { stepBy( 1); });
+
+    auto.addEventListener("click", function (e) {
+      e.stopPropagation();
+      _manualStep = null;
+      savePref();
+      refreshAutoBtn();
+      fit();
+    });
+
+    pause.addEventListener("click", function (e) {
+      e.stopPropagation();
+      if (!_audioEl) return;
+      if (_audioEl.paused) _audioEl.play(); else _audioEl.pause();
+      syncPauseBtn();
+    });
+  }
+
+  /* Tap + long-press repeat (140ms after a 380ms warm-up) */
+  function bindRepeat(btn, fn) {
+    var holdT, repT;
+    function start(e) {
+      e.stopPropagation();
+      fn();
+      holdT = setTimeout(function () { repT = setInterval(fn, 140); }, 380);
+    }
+    function stop() {
+      clearTimeout(holdT); clearInterval(repT);
+      holdT = repT = null;
+    }
+    btn.addEventListener("pointerdown",  start);
+    btn.addEventListener("pointerup",    stop);
+    btn.addEventListener("pointerleave", stop);
+    btn.addEventListener("pointercancel",stop);
+    btn.addEventListener("click", function (e) { e.stopPropagation(); });
+  }
+
+  function updateLabel(t) {
+    var el = document.getElementById("lyr-fs-label");
+    if (el) el.textContent = t;
+  }
+  function refreshAutoBtn() {
+    var el = document.getElementById("lyr-fs-auto");
+    if (el) el.style.display = (_manualStep !== null) ? "inline-block" : "none";
+  }
+  function syncPauseBtn() {
+    var btn = document.getElementById("lyr-fs-pause");
+    if (!btn) return;
+    if (!_audioEl || _audioEl.ended) { btn.style.display = "none"; return; }
+    btn.style.display = "inline-block";
+    btn.textContent   = _audioEl.paused ? "▶" : "⏸";
+    btn.title         = _audioEl.paused ? "Resume" : "Pause";
+  }
+  function savePref() {
+    try {
+      if (_manualStep === null) {
+        localStorage.removeItem(STORAGE_KEY);
+        localStorage.removeItem(LEGACY_KEY);
+      } else {
+        localStorage.setItem(STORAGE_KEY, String(_manualStep));
+      }
+    } catch (e) {}
+  }
+
+  function getPlayerHeight() {
+    var ids = ["hcj-player-wrap","lm-audio-player","audio-player-wrap","playerWrap","player-wrap"];
+    for (var i = 0; i < ids.length; i++) {
+      var el = document.getElementById(ids[i]);
+      if (el && el.offsetHeight > 20) return el.offsetHeight + 12;
+    }
+    if (_audioEl) {
+      var p = _audioEl.parentElement;
+      for (var k = 0; k < 5 && p; k++) {
+        if (p.offsetHeight > 30 && p.offsetHeight < 300) return p.offsetHeight + 12;
+        p = p.parentElement;
+      }
+    }
+    return 110;
+  }
+  function setScrollPadding(active) {
+    var modal = document.querySelector(".lmo");
+    if (!modal) return;
+    var inner = modal.querySelector(".lm-card-inner");
+    if (inner) inner.style.paddingBottom = active ? getPlayerHeight() + "px" : "";
+  }
+
+  function onAudioEnded() { setScrollPadding(false); syncPauseBtn(); }
+  function _attachAudioListeners(el) {
+    el.removeEventListener("pause", syncPauseBtn);
+    el.removeEventListener("play",  syncPauseBtn);
+    el.removeEventListener("ended", onAudioEnded);
+    el.addEventListener("pause", syncPauseBtn);
+    el.addEventListener("play",  syncPauseBtn);
+    el.addEventListener("ended", onAudioEnded);
+  }
+  document.addEventListener("play", function (e) {
+    if (!e.target || e.target.tagName !== "AUDIO") return;
+    _audioEl = e.target;
+    _attachAudioListeners(_audioEl);
+    syncPauseBtn();
+    setScrollPadding(true);
+  }, true);
+  document.addEventListener("pause", function (e) {
+    if (e.target && e.target.tagName === "AUDIO") syncPauseBtn();
+  }, true);
+
+  window._lyrHcjAudioChanged = function (audioEl, isPlaying) {
+    if (isPlaying) setScrollPadding(true);
+    else if (!audioEl) setScrollPadding(false);
+  };
+
+  function init() {
+    buildBar();
+    var modal = document.querySelector(".lmo");
+    if (!modal) return;
+
+    new MutationObserver(function (muts) {
+      for (var i = 0; i < muts.length; i++) {
+        var m = muts[i];
+        if (m.type === "attributes" && m.target === modal && m.attributeName === "class") {
+          if (modal.classList.contains("show")) fitSoon();
+          return;
+        }
+        if (m.type === "childList" && m.addedNodes.length) {
+          if (m.addedNodes[0] && m.addedNodes[0].id === "lyr-fs-ctrl") continue;
+          // Only refit when an actual lyric line is added/removed.
+          // Ignoring HCJ audio-player progress/text updates prevents
+          // mid-scroll font-size rewrites that snap the page on iPad.
+          var touchesLyrics = false;
+          for (var ai = 0; ai < m.addedNodes.length; ai++) {
+            var n = m.addedNodes[ai];
+            if (n.nodeType === 1 && (n.classList && (n.classList.contains("lyr-line") || n.classList.contains("lyr-prose")) || (n.querySelector && n.querySelector(".lyr-line, .lyr-prose")))) {
+              touchesLyrics = true; break;
+            }
+          }
+          if (touchesLyrics) setTimeout(fit, 120);
+          return;
+        }
+      }
+    }).observe(modal, {
+      attributes: true, attributeFilter: ["class"],
+      childList: true, subtree: true
+    });
+
+    if (modal.classList.contains("show")) fitSoon();
+
+    modal.addEventListener("touchmove", function (e) {
+      if (e.target && e.target.closest && e.target.closest(".lm-card-inner")) {
+        e.stopPropagation();
+      }
+    }, { passive: true });
+
+    var clampScrollSoon = function () {
+      setTimeout(function () {
+        var inner = modal.querySelector(".lm-card-inner");
+        if (!inner) return;
+        var max = Math.max(0, inner.scrollHeight - inner.clientHeight);
+        if (inner.scrollTop > max) inner.scrollTop = max;
+      }, 50);
+    };
+    ["lyr-fs-up","lyr-fs-down","lyr-fs-auto"].forEach(function (id) {
+      var b = document.getElementById(id);
+      if (b) b.addEventListener("click", clampScrollSoon);
+    });
+
+    modal.addEventListener("click", function (e) {
+      if (e.target.closest(".lm-nav-btn") ||
+          e.target.closest(".lm-arr")     ||
+          e.target.closest(".lm-dot")     ||
+          e.target.closest("[data-verse]")) {
+        setTimeout(fit, 150);
+      }
+    });
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", init);
+  } else {
+    init();
+  }
+})();

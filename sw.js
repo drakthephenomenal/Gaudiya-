@@ -2,7 +2,7 @@
 // Radha Naam Jap — Service Worker
 // v86: fixed offline caching for GitHub Pages / subpath installs
 // ═══════════════════════════════════════════════════════
-const CACHE = 'radha-jap-v101'; // bumped: Android nav-arrow + swipe fix
+const CACHE = 'radha-jap-v100';
 
 const LOCAL_ASSETS = [
   './',

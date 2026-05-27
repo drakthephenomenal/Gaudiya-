@@ -497,9 +497,7 @@
     bottom: auto; left: auto; transform: none;
   }
   .lm-nav {
-    /* v88 fix: was calc(50dvh-75vw)≈120px → inside orange text area on Android.
-       Bottom decorative band ≈ 12dvh; sit in its lower half. */
-    bottom: max(4dvh, calc(env(safe-area-inset-bottom) + 4px));
+    bottom: max(calc(50dvh - 75vw), env(safe-area-inset-bottom));
   }
 }
 
@@ -526,10 +524,7 @@
 }
 
 /* Adaptive font-size variable used by the JS sizer */
-/* Baseline preformed lyric font size — phones (portrait) 6px, iPad 10px.
-   Users adjust from this baseline via the +/- size controls. */
-.lyr { --lyr-fs: 6px; }
-@media (min-aspect-ratio: 2/3) { .lyr { --lyr-fs: 10px; } }
+.lyr { --lyr-fs: clamp(12px, 3.6vw, 20px); }
 .lyr-line { font-size: var(--lyr-fs) !important; }
 
 /* Scroll fixes */

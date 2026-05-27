@@ -3173,27 +3173,24 @@ function cr2(tp) {
   pr = tp;
   const t = document.getElementById("moT"),
     d = document.getElementById("moD");
-  if (tp === "today") {
-    t.textContent = "Reset Today?";
-    d.textContent = "Clear today's " + App.gTod() + " jap count.";
-  } else if (tp === "28today") {
+  if (tp === "28today") {
     t.textContent = "Reset 28 Names Today?";
     d.textContent = "Clear today's " + (App.S.h28[App.S.tk] || 0) + " count.";
   } else if (tp === "28all") {
     t.textContent = "⚠️ Reset All 28 Names Data?";
     d.textContent = "All 28 Names counts and time will be permanently deleted.";
-  } else if (tp === "range") {
-    const f = document.getElementById("rfrom").value,
-      to = document.getElementById("rto").value;
-    if (!f || !to) {
-      toast("Please select both dates");
-      return;
-    }
-    t.textContent = "Reset Date Range?";
-    d.textContent = "Data from " + f + " to " + to + " will be deleted.";
+  } else if (tp === "namesAndTime") {
+    t.textContent = "⚠️ Delete all Name Jap & Time data?";
+    d.textContent =
+      "This permanently deletes all Radha, RV, HK, and 28 Names jap counts, all jap time, all mala logs and history. Brahmacharya and Milestones data will be kept. This cannot be undone.";
+  } else if (tp === "brahmaMilestones") {
+    t.textContent = "⚠️ Delete all Brahmacharya & Milestones data?";
+    d.textContent =
+      "This permanently deletes your Brahmacharya start date, all Brahmacharya records, sankalpas (milestones), and occasions. Jap and time data will be kept. This cannot be undone.";
   } else {
-    t.textContent = "⚠️ Reset All Data?";
-    d.textContent = "All history and records will be permanently deleted.";
+    // legacy fallback
+    t.textContent = "⚠️ Reset?";
+    d.textContent = "Are you sure?";
   }
   document.getElementById("mo").classList.add("show");
   document.getElementById("moCf").onclick = doReset;
@@ -3234,55 +3231,7 @@ function doReset() {
   App._suspendCloudSync = true;
   App._resetInProgress = true;
 
-  if (pr === "today") {
-    // ── Reset Today: ALL modes — Radha + RV + 28 Names ──
-    App.S.history[tk] = 0;
-    App.S.historyRV[tk] = 0;
-    App.S.h28[tk] = 0;
-    App.S.timerHistory[tk] = 0;
-    App.S.timerHistoryRV[tk] = 0;
-    App.S.timer28History[tk] = 0;
-    if (!App.S.historyHK) App.S.historyHK = {};
-    if (!App.S.timerHistoryHK) App.S.timerHistoryHK = {};
-    App.S.historyHK[tk] = 0;
-    App.S.timerHistoryHK[tk] = 0;
-    App.S.malaLog = [];
-    App.S.malaLogRV = [];
-    App.S.malaLogHK = [];
-    App.S.activityLog = (App.S.activityLog || []).filter(
-      (e) => !e.ts || _ldk(new Date(e.ts)) !== tk,
-    );
-    App.lmc = 0;
-    App.lmcRV = 0;
-    App.lmcHK = 0;
-    App.lm28 = 0;
-    // Reset all sankalpas anchors since 28 Names count just zeroed
-    (App.S.sankalpas || [])
-      .filter((s) => !s.done && s.startCycles !== null)
-      .forEach((s) => {
-        s._savedProgress =
-          (s._savedProgress || 0) +
-          Math.max(0, getTotalCycles28() - s.startCycles);
-        s.startCycles = getTotalCycles28();
-      });
-    App.stopAll28Timers();
-    App.malaWallStart = Date.now();
-    localStorage.setItem("rjap_malaWallStart", String(App.malaWallStart));
-    App._malaTimerStart = App.timerSeconds;
-    App.syncTimerFromMalaLog();
-    // Persist zeros to IDB immediately (prevent resurrection on reload)
-    App.dbPut("history", tk, 0);
-    App.dbPut("timerHistory", tk, 0);
-    App.dbPut("timerHistoryRV", tk, 0);
-    App.dbPut("h28", tk, 0);
-    App.dbPut("timer28History", tk, 0);
-    App.dbPut("malaLog", "today", { date: tk, log: [] });
-    App.dbPut("activityLogArchive", tk, []);
-    renderMalaLog();
-    u28();
-    render28StatsPanel();
-    renderSankalpas();
-  } else if (pr === "28today") {
+  if (pr === "28today") {
     // Freeze active wishes before zeroing
     (App.S.sankalpas || [])
       .filter((s) => !s.done && s.startCycles !== null)
@@ -3322,49 +3271,8 @@ function doReset() {
     u28();
     render28StatsPanel();
     renderSankalpas();
-  } else if (pr === "range") {
-    const f = document.getElementById("rfrom").value,
-      to = document.getElementById("rto").value;
-    const allKeys = new Set([
-      ...Object.keys(App.S.history || {}),
-      ...Object.keys(App.S.historyRV || {}),
-      ...Object.keys(App.S.h28 || {}),
-    ]);
-    allKeys.forEach((k) => {
-      if (k >= f && k <= to) {
-        if (App.S.history) App.S.history[k] = 0;
-        if (App.S.historyRV) App.S.historyRV[k] = 0;
-        if (App.S.h28) App.S.h28[k] = 0;
-        if (App.S.timerHistory) App.S.timerHistory[k] = 0;
-        if (App.S.timerHistoryRV) App.S.timerHistoryRV[k] = 0;
-        if (App.S.timer28History) App.S.timer28History[k] = 0;
-        if (App.S.historyHK) App.S.historyHK[k] = 0;
-        if (App.S.timerHistoryHK) App.S.timerHistoryHK[k] = 0;
-      }
-    });
-    // If today is in range, also clear live logs and IDB
-    if (tk >= f && tk <= to) {
-      App.S.malaLog = [];
-      App.S.malaLogRV = [];
-      App.S.malaLogHK = [];
-      App.S.activityLog = (App.S.activityLog || []).filter(
-        (e) => !e.ts || _ldk(new Date(e.ts)) < f || _ldk(new Date(e.ts)) > to,
-      );
-      App.lmc = 0;
-      App.lmcRV = 0;
-      App.lm28 = 0;
-      App.stopAll28Timers();
-      App.dbPut("history", tk, 0);
-      App.dbPut("timerHistory", tk, 0);
-      App.dbPut("timerHistoryRV", tk, 0);
-      App.dbPut("h28", tk, 0);
-      App.dbPut("timer28History", tk, 0);
-      App.dbPut("malaLog", "today", { date: tk, log: [] });
-      App.syncTimerFromMalaLog();
-      renderMalaLog();
-    }
-  } else {
-    // ── Full Reset: EVERYTHING — Radha + RV + HK + 28 Names + all history ──
+  } else if (pr === "namesAndTime") {
+    // Delete all Name Jap (Radha + RV + HK + 28 Names) and all Time data
     App.S.history = {};
     App.S.h28 = {};
     App.S.historyRV = {};
@@ -3377,9 +3285,6 @@ function doReset() {
     App.S.nameJapDeduct = 0;
     App.S.nameJapDeductRV = 0;
     App.S.nameJapDeductHK = 0;
-    App.S.stotrams = {};
-    App.S.brahma = {};
-    App.S.brahmacharya_start_date = "";
     App.S.timerHistory = {};
     App.S.timer28History = {};
     App.S.timerHistoryRV = {};
@@ -3387,9 +3292,7 @@ function doReset() {
     App.S.malaLog = [];
     App.S.malaLogRV = [];
     App.S.malaLogHK = [];
-    App.S.activityLog = []; // wipe full activity log
-    App.S.sankalpas = [];
-    App.S.occasions = {};
+    App.S.activityLog = [];
     App.S.syncBaseline = {};
     App.S.syncBaseline28 = {};
     App.S.syncBaselineTimer = {};
@@ -3402,10 +3305,6 @@ function doReset() {
     App.lm28 = 0;
     App.lmcRV = 0;
     App.lmcHK = 0;
-    STLIST.forEach((x) => {
-      App.S.stotrams[x.id] = {};
-    });
-    // Clear ALL IDB stores including activityLogArchive
     App.dbClearStore("history");
     App.dbClearStore("h28");
     App.dbClearStore("timerHistory");
@@ -3415,14 +3314,23 @@ function doReset() {
     App.dbClearStore("malaLog");
     App.resetTimer();
     App.stopAll28Timers();
-    ["dtIn", "ltIn", "msIn"].forEach((id) => {
+    ["dtIn", "ltIn"].forEach((id) => {
       const el = document.getElementById(id);
       if (el) el.value = "";
     });
-    initBrahmaStartInput();
     renderMalaLog();
     u28();
     render28StatsPanel();
+    renderSankalpas();
+  } else if (pr === "brahmaMilestones") {
+    // Delete all Brahmacharya + Milestones (sankalpas) + occasions
+    App.S.brahma = {};
+    App.S.brahmacharya_start_date = "";
+    App.S.sankalpas = [];
+    App.S.occasions = {};
+    const msEl = document.getElementById("msIn");
+    if (msEl) msEl.value = "";
+    initBrahmaStartInput();
     renderSankalpas();
   }
 
@@ -9002,18 +8910,8 @@ function _renderVerse(idx, dir) {
     requestAnimationFrame(function(){ inner.scrollTop = 0; });
   }
   _hcjRenderPlayer(idx);
-    _hcjOnVerseChange(idx);
-    // Dynamic nav positioning: measure real card-inner bottom on every render
-    // so the arrows always land in the decorative band, not over the text.
-    requestAnimationFrame(function() {
-      var nav   = document.getElementById('lmNav');
-      var inner = document.querySelector('#lmo .lm-card-inner');
-      if (!nav || !inner) return;
-      var gap = window.innerHeight - inner.getBoundingClientRect().bottom;
-      // Centre the arrows in the gap, but keep at least 6px from screen edge.
-      nav.style.bottom = Math.max(Math.round(gap / 2), 6) + 'px';
-    });
-  }
+  _hcjOnVerseChange(idx);
+}
 
 // Render translation toggle — shown ONLY when current verse has অর্থ: lines.
 // verseHasArtha: boolean passed from _renderVerse
@@ -9130,7 +9028,7 @@ function _initSwipeHandler() {
     startX = t.clientX;
     startY = t.clientY;
     const inner = e.target && e.target.closest ? e.target.closest('.lm-card-inner') : null;
-    startedInScrollableLyrics = !!(inner && inner.scrollHeight > inner.clientHeight + 20);
+    startedInScrollableLyrics = !!(inner && inner.scrollHeight > inner.clientHeight + 4);
   }
   function onEnd(e) {
     if (startedInScrollableLyrics) return;
@@ -9170,7 +9068,7 @@ function closeLyrics() {
   _translationVisible = false;
   var oldWrap = document.getElementById('lm-translate-wrap');
   if (oldWrap) oldWrap.remove();
-  var navBar=document.getElementById("lmNav"); if(navBar) navBar.style.display="none";
+  var navBar=document.getElementById("lmNav"); if(navBar) navBar.style.display="";
 }
 
 // ═══════════════════════════════════════════════════════
@@ -9316,7 +9214,7 @@ function _hcjRenderPlayer(idx) {
     var _ci=document.querySelector("#lmo .lm-card-inner"); if(_ci) _ci.style.bottom="";
     return;
   }
-  if (navBar) navBar.style.display="";
+  if (navBar) navBar.style.display="none";
   var lmd=document.querySelector("#lmo .lmd"); if (!lmd) return;
 
   var wrap=document.createElement("div"); wrap.id="hcj-player-wrap";
@@ -9386,6 +9284,15 @@ function _hcjRenderPlayer(idx) {
   // ── Buttons row ──
   var row=document.createElement("div"); row.className="hcj-player";
 
+  // Prev arrow (left of player)
+  var prevBtn=document.createElement("button");
+  prevBtn.id="hcj-prev-btn";
+  prevBtn.className="hcj-mini-btn hcj-arrow-btn";
+  prevBtn.innerHTML="&#8592;";
+  prevBtn.title="পূর্ববর্তী পদ";
+  prevBtn.disabled=(idx===0);
+  prevBtn.onclick=function(){verseNav(-1);};
+  row.appendChild(prevBtn);
 
   // ▶ Play button — always shows ▶, dims while already playing
   var plb=document.createElement("button");
@@ -9439,6 +9346,15 @@ function _hcjRenderPlayer(idx) {
   var tot=document.createElement("span"); tot.className="hcj-seek-total"; tot.textContent="/"+_verses.length;
   row.appendChild(tot);
 
+  // Next arrow (right of player)
+  var nextBtn=document.createElement("button");
+  nextBtn.id="hcj-next-btn";
+  nextBtn.className="hcj-mini-btn hcj-arrow-btn";
+  nextBtn.innerHTML="&#8594;";
+  nextBtn.title="পরবর্তী পদ";
+  nextBtn.disabled=(idx===_verses.length-1);
+  nextBtn.onclick=function(){verseNav(1);};
+  row.appendChild(nextBtn);
 
   wrap.appendChild(row); lmd.appendChild(wrap);
 

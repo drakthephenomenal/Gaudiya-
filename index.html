@@ -333,10 +333,16 @@
       <!-- a) Cycle Counts -->
       <div class="n28sp-section">
         <div class="n28sp-title">🔄 Cycle Counts</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:4px">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
           <div class="ns"><div class="nv" id="sp28CyclesTod" style="font-size:18px">0</div><div class="nl">Today</div></div>
           <div class="ns"><div class="nv" id="sp28CyclesAll" style="font-size:18px">0</div><div class="nl">All Time</div></div>
         </div>
+        <div class="n28sp-row">
+          <input type="number" class="n28sp-in" id="sp28CycleVal" min="0" placeholder="Cycles" style="width:74px" oninput="prev28Cycles(this.value)">
+          <button class="n28sp-btn add" onclick="adj28Cycles(1)">＋ Add</button>
+          <button class="n28sp-btn ded" onclick="adj28Cycles(-1)">－ Deduct</button>
+        </div>
+        <div style="font-size:10px;color:var(--td);margin-top:4px"><span id="sp28CyclePreview" style="color:var(--a2)"></span></div>
       </div>
 
       <!-- b) Cycle Time -->
@@ -355,16 +361,36 @@
         <div style="font-size:10px;color:var(--td);margin-top:4px"><span id="sp28TimePreview" style="color:var(--a2)"></span></div>
       </div>
 
-      <!-- d) Reset Options -->
+      <!-- c) 28 Names Jap Bank -->
+      <div class="n28sp-section" style="border-color:rgba(255,215,0,0.25)">
+        <div class="n28sp-title" style="color:var(--gold)">🏦 28 Names Jap Bank</div>
+        <div style="font-size:11px;color:var(--td);margin-bottom:8px;line-height:1.45">
+          Cycles you jap when <strong>no wish is active</strong> are auto-saved here. You can also deposit / withdraw manually and push any amount to your active wish.
+        </div>
+        <div class="ns" style="margin-bottom:10px">
+          <div class="nv" id="sp28BankBal" style="font-size:20px;color:var(--gold)">0 cycles</div>
+          <div class="nl" id="sp28BankTaps">= 0 taps</div>
+        </div>
+        <div class="n28sp-row" style="margin-bottom:8px">
+          <input type="number" class="n28sp-in" id="sp28BankVal" min="0" placeholder="Cycles" style="width:74px">
+          <button class="n28sp-btn add" onclick="adj28Bank(1)">＋ Deposit</button>
+          <button class="n28sp-btn ded" onclick="adj28Bank(-1)">－ Withdraw</button>
+        </div>
+        <div class="n28sp-row">
+          <input type="number" class="n28sp-in" id="sp28BankPush" min="0" placeholder="Cycles" style="width:74px">
+          <button class="n28sp-btn add" style="border-color:rgba(255,215,0,0.5);color:var(--gold)" onclick="pushBankToWish()">➤ Push to Active Wish</button>
+        </div>
+      </div>
+
+      <!-- d) Reset Options (consolidated to 2) -->
       <div class="n28sp-section" style="border-color:rgba(232,51,109,0.2)">
         <div class="n28sp-title" style="color:var(--rl)">↺ Reset Options</div>
         <div style="display:flex;flex-direction:column;gap:7px">
-          <button class="n28sp-reset-btn" onclick="cr2('28today')">Reset Today's Count</button>
-          <button class="n28sp-reset-btn" onclick="reset28Time('today')">Reset Today's Time</button>
-          <button class="n28sp-reset-btn" onclick="reset28Time('all')">Reset All Time (Time only)</button>
+          <button class="n28sp-reset-btn" onclick="cr2('28today')">Reset Today (Count + Time)</button>
           <button class="n28sp-reset-btn" style="border-color:rgba(232,51,109,0.5);color:var(--rl)" onclick="cr2('28all')">Reset All 28 Names Data</button>
         </div>
       </div>
+
 
     </div>
   </div>

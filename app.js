@@ -21,6 +21,7 @@ const App = {
     timerHistory: {},
     timer28History: {},
     sankalpas: [],
+    jb28: 0,
     occasions: {},
     syncBaseline: {},
     syncBaseline28: {},
@@ -165,6 +166,7 @@ const App = {
       brahma: this.S.brahma,
       customSt: this.S.customSt,
       sankalpas: this.S.sankalpas,
+      jb28: this.S.jb28 || 0,
       occasions: this.S.occasions,
       history: this.S.history,
       h28: this.S.h28,
@@ -297,6 +299,7 @@ const App = {
     if (!this.S.timerHistory) this.S.timerHistory = {};
     if (!this.S.timer28History) this.S.timer28History = {};
     if (!this.S.sankalpas) this.S.sankalpas = [];
+    if (typeof this.S.jb28 !== "number") this.S.jb28 = 0;
     if (!this.S.occasions) this.S.occasions = {};
     if (!this.S.historyRV) this.S.historyRV = {};
     if (!this.S.timerHistoryRV) this.S.timerHistoryRV = {};
@@ -3183,14 +3186,17 @@ function cr2(tp) {
     d = document.getElementById("moD");
   if (tp === "28today") {
     t.textContent = "Reset 28 Names Today?";
-    d.textContent = "Clear today's " + (App.S.h28[App.S.tk] || 0) + " count.";
+    d.textContent =
+      "Clear today's " + (App.S.h28[App.S.tk] || 0) +
+      " count and today's 28 Names time.";
   } else if (tp === "28all") {
     t.textContent = "⚠️ Reset All 28 Names Data?";
-    d.textContent = "All 28 Names counts and time will be permanently deleted.";
+    d.textContent =
+      "All 28 Names counts, time, sankalpas and Jap Bank will be permanently deleted.";
   } else if (tp === "namesAndTime") {
     t.textContent = "⚠️ Delete all Name Jap & Time data?";
     d.textContent =
-      "This permanently deletes all Radha, RV, HK, and 28 Names jap counts, all jap time, all mala logs and history. Brahmacharya and Milestones data will be kept. This cannot be undone.";
+      "This permanently deletes all Radha, RV, and HK jap counts, all jap time, all mala logs and history. 28 Names data, Brahmacharya and Milestones data will be kept. This cannot be undone.";
   } else if (tp === "brahmaMilestones") {
     t.textContent = "⚠️ Delete all Brahmacharya & Milestones data?";
     d.textContent =
@@ -3269,6 +3275,7 @@ function doReset() {
     App.S.h28[tk] = 0;
     App.S.timer28History[tk] = 0;
     App.S.sankalpas = [];
+    App.S.jb28 = 0;
     App.S.syncBaseline28 = {};
     App.lm28 = 0;
     App.stopAll28Timers();
@@ -3280,9 +3287,9 @@ function doReset() {
     render28StatsPanel();
     renderSankalpas();
   } else if (pr === "namesAndTime") {
-    // Delete all Name Jap (Radha + RV + HK + 28 Names) and all Time data
+    // Delete all Name Jap (Radha + RV + HK) and all Time data
+    // NOTE: 28 Names counts/time/sankalpas are intentionally preserved here.
     App.S.history = {};
-    App.S.h28 = {};
     App.S.historyRV = {};
     App.S.historyHK = {};
     App.S.dt = 0;
@@ -3294,7 +3301,6 @@ function doReset() {
     App.S.nameJapDeductRV = 0;
     App.S.nameJapDeductHK = 0;
     App.S.timerHistory = {};
-    App.S.timer28History = {};
     App.S.timerHistoryRV = {};
     App.S.timerHistoryHK = {};
     App.S.malaLog = [];
@@ -3302,26 +3308,20 @@ function doReset() {
     App.S.malaLogHK = [];
     App.S.activityLog = [];
     App.S.syncBaseline = {};
-    App.S.syncBaseline28 = {};
     App.S.syncBaselineTimer = {};
-    App.S.syncBaselineTimer28 = {};
     App.S.syncBaselineRV = {};
     App.S.syncBaselineTimerRV = {};
     App.S.syncBaselineHK = {};
     App.S.syncBaselineTimerHK = {};
     App.lmc = 0;
-    App.lm28 = 0;
     App.lmcRV = 0;
     App.lmcHK = 0;
     App.dbClearStore("history");
-    App.dbClearStore("h28");
     App.dbClearStore("timerHistory");
-    App.dbClearStore("timer28History");
     App.dbClearStore("timerHistoryRV");
     App.dbClearStore("activityLogArchive");
     App.dbClearStore("malaLog");
     App.resetTimer();
-    App.stopAll28Timers();
     ["dtIn", "ltIn"].forEach((id) => {
       const el = document.getElementById(id);
       if (el) el.value = "";
@@ -3374,6 +3374,7 @@ function exportAllData() {
     brahma: App.S.brahma || {},
     customSt: App.S.customSt || [],
     sankalpas: App.S.sankalpas || [],
+    jb28: App.S.jb28 || 0,
     occasions: App.S.occasions || {},
     ms: App.S.ms || 108,
     dt: App.S.dt || 0,
@@ -3438,6 +3439,7 @@ function importAllData(input) {
       if (data.brahma) App.S.brahma = { ...App.S.brahma, ...data.brahma };
       if (data.customSt) App.S.customSt = data.customSt;
       if (data.sankalpas) App.S.sankalpas = data.sankalpas;
+      if (data.jb28 !== undefined) App.S.jb28 = data.jb28;
       if (data.occasions)
         App.S.occasions = { ...App.S.occasions, ...data.occasions };
       if (data.ms) App.S.ms = data.ms;
@@ -4482,6 +4484,7 @@ async function fbPushFull() {
     timerHistory: App.S.timerHistory || {},
     timer28History: App.S.timer28History || {},
     sankalpas: App.S.sankalpas || [],
+    jb28: App.S.jb28 || 0,
     occasions: App.S.occasions || {},
     ms: App.S.ms || 108,
     dt: App.S.dt || 0,
@@ -4558,6 +4561,7 @@ function fbApplyRemote(d) {
     App.S.customSt = JSON.parse(JSON.stringify(d.customSt || []));
   if ("sankalpas" in d)
     App.S.sankalpas = JSON.parse(JSON.stringify(d.sankalpas || []));
+  if ("jb28" in d) App.S.jb28 = Number(d.jb28) || 0;
   if ("occasions" in d)
     App.S.occasions = JSON.parse(JSON.stringify(d.occasions || {}));
   // Only apply malaLog from Firebase if it belongs to today AND local today has jap
@@ -5114,6 +5118,9 @@ function cycleDone28() {
       fulfilled = true;
       activateNextSankalp();
     }
+  } else {
+    // No active wish → independent jap goes to the 28 Names Jap Bank
+    App.S.jb28 = (App.S.jb28 || 0) + 1;
   }
   if (fulfilled) {
     App.save();
@@ -5125,6 +5132,52 @@ function cycleDone28() {
   }
   if (navigator.vibrate) navigator.vibrate([80, 40, 80, 40, 200]);
 }
+
+// ── 28 Names Jap Bank ──
+// Deposit / withdraw cycles to/from the bank manually
+function adj28Bank(sign) {
+  const inp = document.getElementById("sp28BankVal");
+  const n = parseInt(inp?.value) || 0;
+  if (n < 1) { toast("Enter number of cycles"); return; }
+  if (sign < 0 && n > (App.S.jb28 || 0)) {
+    toast("Cannot withdraw more than bank balance");
+    return;
+  }
+  App.S.jb28 = Math.max(0, (App.S.jb28 || 0) + sign * n);
+  if (inp) inp.value = "";
+  render28StatsPanel();
+  App.save();
+  fbDebouncedPush();
+  toast((sign > 0 ? "Deposited " : "Withdrew ") + n + " cycle" + (n > 1 ? "s" : "") + " 🙏");
+}
+// Push cycles from bank → active wish (adds to _savedProgress)
+function pushBankToWish() {
+  const active = getActiveSankalp();
+  if (!active) { toast("No active wish to push to"); return; }
+  const inp = document.getElementById("sp28BankPush");
+  const n = parseInt(inp?.value) || 0;
+  if (n < 1) { toast("Enter cycles to push"); return; }
+  if (n > (App.S.jb28 || 0)) { toast("Not enough in bank"); return; }
+  App.S.jb28 -= n;
+  active._savedProgress = (active._savedProgress || 0) + n;
+  if (inp) inp.value = "";
+  // Check fulfilment
+  const prog = getSankalpProgressById(active.id, null);
+  if (prog >= active.target) {
+    active.done = true;
+    active.doneDate = App.S.tk;
+    activateNextSankalp();
+    toast("🌟 Sankalp fulfilled by bank push! 🙏");
+  } else {
+    toast("Pushed " + n + " cycle" + (n > 1 ? "s" : "") + " to wish 🙏");
+  }
+  render28StatsPanel();
+  u28();
+  renderSankalpas();
+  App.save();
+  fbDebouncedPush();
+}
+
 
 // ── Sankalp ──
 function getTotalCycles28() {
@@ -5396,9 +5449,9 @@ function renderSankalpas() {
         '<div class="sk-btns"><button class="sk-btn grn" onclick="fulfillSankalp(\'' +
         sk.id +
         "')\">✓ Fulfilled</button>" +
-        '<button class="sk-btn grey" onclick="deleteSankalp(\'' +
+        '<button class="sk-btn grey" style="color:#f55;border-color:rgba(255,68,68,0.45)" onclick="deleteSankalp(\'' +
         sk.id +
-        "')\">✕</button></div>" +
+        "')\">✕ Delete Wish</button></div>" +
         "</div>";
     } else {
       const qProg = sk._savedProgress || 0;
@@ -5455,9 +5508,9 @@ function renderSankalpas() {
             sk.id +
             "')\">⬆ Prioritize</button>"
           : "") +
-        '<button class="sk-btn grey" onclick="deleteSankalp(\'' +
+        '<button class="sk-btn grey" style="color:#f55;border-color:rgba(255,68,68,0.45)" onclick="deleteSankalp(\'' +
         sk.id +
-        "')\">✕</button></div>" +
+        "')\">✕ Delete Wish</button></div>" +
         "</div>";
     }
   });
@@ -5561,6 +5614,11 @@ function render28StatsPanel() {
     ea = document.getElementById("sp28TimeAll");
   if (et) et.textContent = fmt28Short(todTime);
   if (ea) ea.textContent = fmt28Short(allTime);
+  // Bank balance
+  const eb = document.getElementById("sp28BankBal");
+  if (eb) eb.textContent = (App.S.jb28 || 0) + " cycle" + ((App.S.jb28 || 0) === 1 ? "" : "s");
+  const ebt = document.getElementById("sp28BankTaps");
+  if (ebt) ebt.textContent = "= " + ((App.S.jb28 || 0) * 28) + " taps";
 }
 
 // Add/deduct cycles (1 cycle = 28 taps)

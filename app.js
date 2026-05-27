@@ -2908,23 +2908,35 @@ function uStats() {
     document.getElementById("manualTodayPreview").textContent =
       n > 0 ? tod + n : "—";
   }
+  // ── Mode-aware helpers (Radha / RV / HK) for lifetime previews ──
+  const _mode = App.S.gaudiyaMode ? "hk" : App.S.japMode;
+  const _modeHist =
+    _mode === "rv"
+      ? App.S.historyRV || {}
+      : _mode === "hk"
+        ? App.S.historyHK || {}
+        : App.S.history || {};
+  const _modeDeduct =
+    _mode === "rv"
+      ? App.S.nameJapDeductRV || 0
+      : _mode === "hk"
+        ? App.S.nameJapDeductHK || 0
+        : App.S.nameJapDeduct || 0;
+  const _modeRawTot = Object.values(_modeHist).reduce((a, b) => a + b, 0);
+  const _modeLifetime = Math.max(0, _modeRawTot - _modeDeduct);
+
   if (pji) {
     const n = parseInt(pji.value) || 0;
     document.getElementById("prevMalaPreview").textContent =
       n > 0 ? Math.floor(n / ms) : "0";
+    // addPrevJap() writes n into the current mode's history → mode lifetime grows by n
     document.getElementById("prevLifetimePreview").textContent =
-      n > 0 ? (tot + n).toLocaleString() : "—";
+      n > 0 ? (_modeLifetime + n).toLocaleString() : "—";
   }
   if (aoi && aod) {
     const n = parseInt(aoi.value) || 0;
     const d = aod.value;
-    const curH =
-      App.S.japMode === "rv"
-        ? App.S.historyRV
-        : App.S.japMode === "hk"
-          ? App.S.historyHK || {}
-          : App.S.history;
-    const cur = d ? curH[d] || 0 : 0;
+    const cur = d ? _modeHist[d] || 0 : 0;
     document.getElementById("addJapOtherPreview").textContent =
       n > 0 && d ? cur + n : "—";
   }
@@ -2936,36 +2948,32 @@ function uStats() {
   if (doi && dod) {
     const n = parseInt(doi.value) || 0;
     const d = dod.value;
-    const curH2 =
-      App.S.japMode === "rv"
-        ? App.S.historyRV
-        : App.S.japMode === "hk"
-          ? App.S.historyHK || {}
-          : App.S.history;
-    const cur = d ? curH2[d] || 0 : 0;
+    const cur = d ? _modeHist[d] || 0 : 0;
     document.getElementById("deductOtherPreview").textContent =
       n > 0 && d ? Math.max(0, cur - n) : "—";
   }
-  // Name Jap Deduct live previews
-  const curDeduct = App.S.nameJapDeduct || 0;
-  const rawTot = Object.values(App.S.history).reduce((a, b) => a + b, 0);
+  // Name Jap Deduct / Restore live previews — mode-aware
   const njdi = document.getElementById("nameJapDeductIn");
   const njri = document.getElementById("nameJapRestoreIn");
   const njdCur = document.getElementById("nameJapDeductCur");
   const njdMalas = document.getElementById("nameJapDeductMalas");
-  if (njdCur) njdCur.textContent = curDeduct.toLocaleString();
+  if (njdCur) njdCur.textContent = _modeDeduct.toLocaleString();
   if (njdMalas)
-    njdMalas.textContent = Math.floor(curDeduct / ms).toLocaleString();
+    njdMalas.textContent = Math.floor(_modeDeduct / ms).toLocaleString();
   if (njdi) {
     const n = parseInt(njdi.value) || 0;
+    // addNameJapDeduct() increases mode deduct by n → mode lifetime drops by n
     document.getElementById("nameJapDeductPreview").textContent =
-      n > 0 ? Math.max(0, rawTot - curDeduct - n).toLocaleString() : "—";
+      n > 0 ? Math.max(0, _modeLifetime - n).toLocaleString() : "—";
   }
   if (njri) {
     const n = parseInt(njri.value) || 0;
+    // removeNameJapDeduct() decreases mode deduct by n (capped at current deduct)
+    // → mode lifetime grows by min(n, currentDeduct), never beyond raw total
+    const restorable = Math.min(n, _modeDeduct);
     document.getElementById("nameJapRestorePreview").textContent =
       n > 0
-        ? Math.min(rawTot, Math.max(0, rawTot - curDeduct + n)).toLocaleString()
+        ? Math.min(_modeRawTot, _modeLifetime + restorable).toLocaleString()
         : "—";
   }
   // Jap time previews

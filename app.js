@@ -21,7 +21,6 @@ const App = {
     timerHistory: {},
     timer28History: {},
     sankalpas: [],
-    jb28: 0,
     occasions: {},
     syncBaseline: {},
     syncBaseline28: {},
@@ -166,7 +165,6 @@ const App = {
       brahma: this.S.brahma,
       customSt: this.S.customSt,
       sankalpas: this.S.sankalpas,
-      jb28: this.S.jb28 || 0,
       occasions: this.S.occasions,
       history: this.S.history,
       h28: this.S.h28,
@@ -299,7 +297,6 @@ const App = {
     if (!this.S.timerHistory) this.S.timerHistory = {};
     if (!this.S.timer28History) this.S.timer28History = {};
     if (!this.S.sankalpas) this.S.sankalpas = [];
-    if (typeof this.S.jb28 !== "number") this.S.jb28 = 0;
     if (!this.S.occasions) this.S.occasions = {};
     if (!this.S.historyRV) this.S.historyRV = {};
     if (!this.S.timerHistoryRV) this.S.timerHistoryRV = {};
@@ -687,12 +684,14 @@ const App = {
     // For HK mode: show Chaitanya verse overlay until next tap
     if (isHKmala) {
       const lang = this.S.hkLang || "hi";
-      const line1 = lang === "bn"
-        ? "জয় শ্রীকৃষ্ণ চৈতন্য প্রভু নিত্যানন্দ।"
-        : "जय श्री कृष्ण चैतन्य प्रभु नित्यानन्द।";
-      const line2 = lang === "bn"
-        ? "শ্রীঅদ্বৈত গদাধর শ্রীবাসাদি গৌরভক্তবৃন্দ।"
-        : "श्री अद्वैत गदाधर श्रीवासादि गौर भक्त वृन्द॥";
+      const line1 =
+        lang === "bn"
+          ? "জয় শ্রীকৃষ্ণ চৈতন্য প্রভু নিত্যানন্দ।"
+          : "जय श्री कृष्ण चैतन्य प्रभु नित्यानन्द।";
+      const line2 =
+        lang === "bn"
+          ? "শ্রীঅদ্বৈত গদাধর শ্রীবাসাদি গৌরভক্তবৃন্দ।"
+          : "श्री अद्वैत गदाधर श्रीवासादि गौर भक्त वृन्द॥";
       showHKMalaComplete(line1, line2);
     } else {
       f.classList.add("show");
@@ -1024,7 +1023,6 @@ const App = {
     this.tapTimer();
     // Re-arm 6s auto-pause on every tap
     this._arm28AutoPause();
-    spawnName28(e, get28Name(NAMES28[posBefore]));
     if (this.S.h28[this.S.tk] % 28 === 0) cycleDone28();
     u28();
   },
@@ -1183,7 +1181,8 @@ function applyHKLangLabels(lang) {
   const isBn = lang === "bn";
   // 1. Jap page top dropdown label
   const naamLbl = document.getElementById("naamHKLabel");
-  if (naamLbl) naamLbl.textContent = isBn ? "হরে কৃষ্ণ মহামন্ত্র" : "हरे कृष्ण महामंत्र";
+  if (naamLbl)
+    naamLbl.textContent = isBn ? "হরে কৃষ্ণ মহামন্ত্র" : "हरे कृष्ण महामंत्र";
   // 2. Settings language toggle label
   const langLbl = document.getElementById("hkLangLabel");
   if (langLbl) langLbl.textContent = isBn ? "Bangla" : "Hindi";
@@ -1192,17 +1191,25 @@ function applyHKLangLabels(lang) {
   if (newLangLbl) newLangLbl.textContent = isBn ? "বাংলা" : "हिंदी";
   // 4. Daily target heading
   const dtLbl = document.getElementById("hkDailyTargetLabel");
-  if (dtLbl) dtLbl.textContent = isBn
-    ? "🪷 হরে কৃষ্ণ মহামন্ত্র Targets"
-    : "🪷 हरे कृष्ण महामंत्र Targets";
+  if (dtLbl)
+    dtLbl.textContent = isBn
+      ? "🪷 হরে কৃষ্ণ মহামন্ত্র Targets"
+      : "🪷 हरे कृष्ण महामंत्र Targets";
   // 5. Stats card lotus title
   const statsLotus = document.getElementById("hkcTitleLotus");
-  if (statsLotus) statsLotus.textContent = isBn ? "🪷 হরে কৃষ্ণ" : "🪷 हरे कृष्ण";
+  if (statsLotus)
+    statsLotus.textContent = isBn ? "🪷 হরে কৃষ্ণ" : "🪷 हरे कृष्ण";
   // 6. Toggle the hkLang toggle visual state
   const tgH = document.getElementById("tgHkLang");
   if (tgH) isBn ? tgH.classList.add("on") : tgH.classList.remove("on");
   // 7. body class drives active button highlight via CSS
-  isBn ? document.body.classList.add("hk-bn") : document.body.classList.remove("hk-bn");
+  isBn
+    ? document.body.classList.add("hk-bn")
+    : document.body.classList.remove("hk-bn");
+  // 8. History table HK column header
+  const histHKHdr = document.getElementById("histHKColHeader");
+  if (histHKHdr)
+    histHKHdr.textContent = isBn ? "হরে কৃষ্ণ মহামন্ত্র" : "हरे कृष्ण महामंत्र";
 }
 
 function spawnHK() {
@@ -1218,10 +1225,10 @@ function spawnHK() {
   const lang = App.S.hkLang || "hi";
   const text = lang === "bn" ? HK_TEXT_BN : HK_TEXT;
   // CURRENT color → float rises up and disappears (the "old" text leaving)
-  const currentColor  = HK_COLORS[_hkColorIdx % 7];
+  const currentColor = HK_COLORS[_hkColorIdx % 7];
   const currentShadow = HK_SHADOWS_MAP[_hkColorIdx % 7];
   // NEXT color → stays as persistent display (the "new" text arriving)
-  const nextColor  = HK_COLORS[(_hkColorIdx + 1) % 7];
+  const nextColor = HK_COLORS[(_hkColorIdx + 1) % 7];
   const nextShadow = HK_SHADOWS_MAP[(_hkColorIdx + 1) % 7];
   _hkColorIdx++;
 
@@ -1230,7 +1237,10 @@ function spawnHK() {
   if (zone) {
     const floatEl = document.createElement("div");
     floatEl.className = "hk-float-name";
-    floatEl.innerHTML = text.split("\n").map((l) => "<div>" + l + "</div>").join("");
+    floatEl.innerHTML = text
+      .split("\n")
+      .map((l) => "<div>" + l + "</div>")
+      .join("");
     floatEl.style.color = currentColor;
     floatEl.style.textShadow = currentShadow;
     zone.appendChild(floatEl);
@@ -1238,7 +1248,10 @@ function spawnHK() {
   }
 
   // Persistent display immediately shows NEXT color (arriving text)
-  el.innerHTML = text.split("\n").map((l) => "<div>" + l + "</div>").join("");
+  el.innerHTML = text
+    .split("\n")
+    .map((l) => "<div>" + l + "</div>")
+    .join("");
   el.style.color = nextColor;
   el.style.textShadow = nextShadow;
   if (!el.classList.contains("hk-visible")) {
@@ -1334,7 +1347,8 @@ function shareApp() {
     "Radha Vallabh Sri Harivangsa \uD83D\uDE4F\n\n" +
     "Boost your Naam Jap experience with this little app —\n" +
     "track Brahmacharya, Ekadashi, daily Jap & lots of statistics \u2728 \uD83E\uDEB7\n\n" +
-    "\uD83D\uDC49 " + url;
+    "\uD83D\uDC49 " +
+    url;
   if (navigator.share) {
     navigator
       .share({ text: shareText })
@@ -1428,7 +1442,8 @@ function syncTargetJapToMala(prefix) {
     const croreEl = document.getElementById("ltCroreIn");
     const croreDisp = document.getElementById("ltCroreDisp");
     if (croreEl) croreEl.value = jap > 0 ? +(jap / 10000000).toFixed(4) : "";
-    if (croreDisp) croreDisp.textContent = jap > 0 ? (jap / 10000000).toFixed(2) : "0";
+    if (croreDisp)
+      croreDisp.textContent = jap > 0 ? (jap / 10000000).toFixed(2) : "0";
   }
 }
 function syncTargetMalaToJap(prefix) {
@@ -1445,7 +1460,8 @@ function syncTargetMalaToJap(prefix) {
     const croreEl = document.getElementById("ltCroreIn");
     const croreDisp = document.getElementById("ltCroreDisp");
     if (croreEl) croreEl.value = jap > 0 ? +(jap / 10000000).toFixed(4) : "";
-    if (croreDisp) croreDisp.textContent = jap > 0 ? (jap / 10000000).toFixed(2) : "0";
+    if (croreDisp)
+      croreDisp.textContent = jap > 0 ? (jap / 10000000).toFixed(2) : "0";
   }
 }
 function syncTargetCroreToJap() {
@@ -1460,7 +1476,8 @@ function syncTargetCroreToJap() {
   const jap = Math.round(crores * CRORE_VAL);
   if (japEl) japEl.value = jap > 0 ? jap : "";
   if (malaEl) malaEl.value = jap > 0 ? Math.round(jap / ms) : "";
-  if (dispEl) dispEl.textContent = jap > 0 ? Math.ceil(jap / ms).toLocaleString() : "0";
+  if (dispEl)
+    dispEl.textContent = jap > 0 ? Math.ceil(jap / ms).toLocaleString() : "0";
   if (croreDisp) croreDisp.textContent = crores > 0 ? crores.toFixed(2) : "0";
 }
 
@@ -1568,10 +1585,12 @@ function switchJapMode(mode) {
     const lang = App.S.hkLang || "hi";
     // Update dropdown label based on language
     const naamHKLabel = document.getElementById("naamHKLabel");
-    if (naamHKLabel) naamHKLabel.textContent = lang === "bn" ? "হরে কৃষ্ণ মহামন্ত্র" : "हरे कृष्ण महामंत्र";
+    if (naamHKLabel)
+      naamHKLabel.textContent =
+        lang === "bn" ? "হরে কৃষ্ণ মহামন্ত্র" : "हरे कृष्ण महामंत्र";
     const word = lang === "bn" ? "মহামন্ত্র" : "महामंत्र";
     titleEl.innerHTML =
-      '<span style="font-size:clamp(22px,6vw,34px);line-height:1.1;color:#6DB8FF;font-family:\'Tiro Devanagari Hindi\',\'Hind Siliguri\',serif">' +
+      "<span style=\"font-size:clamp(22px,6vw,34px);line-height:1.1;color:#6DB8FF;font-family:'Tiro Devanagari Hindi','Hind Siliguri',serif\">" +
       word +
       "</span>";
     titleEl.style.textAlign = "center";
@@ -1695,11 +1714,16 @@ function sv(id, btn) {
     // Populate crore equivalent
     const ltCroreInEl = document.getElementById("ltCroreIn");
     const ltCroreDispEl = document.getElementById("ltCroreDisp");
-    if (ltCroreInEl) ltCroreInEl.value = App.S.lt > 0 ? +(App.S.lt / 10000000).toFixed(4) : "";
-    if (ltCroreDispEl) ltCroreDispEl.textContent = App.S.lt > 0 ? (App.S.lt / 10000000).toFixed(2) : "0";
+    if (ltCroreInEl)
+      ltCroreInEl.value = App.S.lt > 0 ? +(App.S.lt / 10000000).toFixed(4) : "";
+    if (ltCroreDispEl)
+      ltCroreDispEl.textContent =
+        App.S.lt > 0 ? (App.S.lt / 10000000).toFixed(2) : "0";
     // Populate mala display
     const ltMalaDispEl = document.getElementById("ltMala");
-    if (ltMalaDispEl) ltMalaDispEl.textContent = App.S.lt > 0 ? Math.ceil(App.S.lt / ms).toLocaleString() : "0";
+    if (ltMalaDispEl)
+      ltMalaDispEl.textContent =
+        App.S.lt > 0 ? Math.ceil(App.S.lt / ms).toLocaleString() : "0";
     // Populate RV daily target (fix: was missing, target not showing)
     const dtRVEl = document.getElementById("dtRVIn");
     if (dtRVEl) dtRVEl.value = App.S.dtRV > 0 ? App.S.dtRV : "";
@@ -1806,14 +1830,19 @@ function tgs(k) {
     if (lblH) lblH.textContent = App.S.hkLang === "bn" ? "Bangla" : "Hindi";
     // Update dropdown label in Jap page
     const naamHKLbl = document.getElementById("naamHKLabel");
-    if (naamHKLbl) naamHKLbl.textContent = App.S.hkLang === "bn" ? "হরে কৃষ্ণ মহামন্ত্র" : "हरे कृष्ण महामंत्र";
+    if (naamHKLbl)
+      naamHKLbl.textContent =
+        App.S.hkLang === "bn" ? "হরে কৃষ্ণ মহামন্ত্র" : "हरे कृष्ण महामंत्र";
     // Update Daily Target section label
     applyHKLangLabels(App.S.hkLang);
     // Update hkPersist text immediately if visible
     const hkEl = document.getElementById("hkPersist");
     if (hkEl && hkEl.classList.contains("hk-visible")) {
       const newText = App.S.hkLang === "bn" ? HK_TEXT_BN : HK_TEXT;
-      hkEl.innerHTML = newText.split("\n").map((l) => "<div>" + l + "</div>").join("");
+      hkEl.innerHTML = newText
+        .split("\n")
+        .map((l) => "<div>" + l + "</div>")
+        .join("");
     }
     if (App.S.japMode === "hk") switchJapMode("hk");
     App.save();
@@ -2002,6 +2031,13 @@ function autoLoadHistory() {
     t = document.getElementById("histTo");
   if (f && !f.value) f.value = today;
   if (t && !t.value) t.value = today;
+  const todayBtn = document.querySelector(
+    '#histPresetRow .hpb[data-preset="1"]',
+  );
+  if (todayBtn) {
+    todayBtn.classList.add("active");
+    window._histActiveLabel = "Today";
+  }
   if (typeof renderHistory === "function")
     try {
       renderHistory();
@@ -2090,23 +2126,42 @@ function addManualJap() {
     if (_mf) {
       if (isHK) {
         const lang = App.S.hkLang || "hi";
-        const line1 = lang === "bn"
-          ? "জয় শ্রীকৃষ্ণ চৈতন্য প্রভু নিত্যানন্দ।"
-          : "जय श्री कृष्ण चैतन्य प्रभु नित्यानन्द।";
-        const line2 = lang === "bn"
-          ? "শ্রীঅদ্বৈত গদাধর শ্রীবাসাদি গৌরভক্তবৃন্দ।"
-          : "श्री अद्वैत गदाधर श्रीवासादि गौर भक्त वृन्द॥";
+        const line1 =
+          lang === "bn"
+            ? "জয় শ্রীকৃষ্ণ চৈতন্য প্রভু নিত্যানন্দ।"
+            : "जय श्री कृष्ण चैतन्य प्रभु नित्यानन्द।";
+        const line2 =
+          lang === "bn"
+            ? "শ্রীঅদ্বৈত গদাধর শ্রীবাসাদি গৌরভক্তবৃন্দ।"
+            : "श्री अद्वैत गदाधर श्रीवासादि गौर भक्त वृन्द॥";
         const l1e = _mf.querySelector(".mf-line1");
         const l2e = _mf.querySelector(".mf-line2");
         const o1 = l1e ? l1e.textContent : "";
         const o2 = l2e ? l2e.textContent : "";
-        if (l1e) { l1e.textContent = line1; l1e.style.fontSize = "clamp(14px,3.8vw,22px)"; }
-        if (l2e) { l2e.textContent = line2; l2e.style.fontSize = "clamp(12px,3.2vw,18px)"; l2e.style.fontFamily = "'Tiro Devanagari Hindi','Hind Siliguri',serif"; l2e.style.color = "var(--gold)"; }
+        if (l1e) {
+          l1e.textContent = line1;
+          l1e.style.fontSize = "clamp(14px,3.8vw,22px)";
+        }
+        if (l2e) {
+          l2e.textContent = line2;
+          l2e.style.fontSize = "clamp(12px,3.2vw,18px)";
+          l2e.style.fontFamily =
+            "'Tiro Devanagari Hindi','Hind Siliguri',serif";
+          l2e.style.color = "var(--gold)";
+        }
         _mf.classList.add("show-long");
         setTimeout(() => {
           _mf.classList.remove("show-long");
-          if (l1e) { l1e.textContent = o1; l1e.style.fontSize = ""; }
-          if (l2e) { l2e.textContent = o2; l2e.style.fontSize = ""; l2e.style.fontFamily = ""; l2e.style.color = ""; }
+          if (l1e) {
+            l1e.textContent = o1;
+            l1e.style.fontSize = "";
+          }
+          if (l2e) {
+            l2e.textContent = o2;
+            l2e.style.fontSize = "";
+            l2e.style.fontFamily = "";
+            l2e.style.color = "";
+          }
         }, 4000);
       } else {
         _mf.classList.add("show");
@@ -2176,10 +2231,15 @@ function addPrevJap() {
   } else {
     App.S.history[prevKey] = n;
   }
+  // Clear input BEFORE re-render so the live preview resets to "—"
+  document.getElementById("prevJapIn").value = "";
+  const _pml = document.getElementById("prevMalaPreview");
+  if (_pml) _pml.textContent = "0";
+  const _plp = document.getElementById("prevLifetimePreview");
+  if (_plp) _plp.textContent = "—";
   App.save();
   App.ua();
   fbDebouncedPush();
-  document.getElementById("prevJapIn").value = "";
   toast("Added " + n.toLocaleString() + " jap to lifetime! 🙏 Jai Radhe!");
 }
 
@@ -2637,14 +2697,72 @@ function uStats() {
     if (k.startsWith(mp)) ms2 += v;
     if (!k.startsWith("prev_") && v > best) best = v;
   });
+  // ── Streak & Best Streak (mode-aware, per-target checking) ──
+  const _isGaudiya = App.S.gaudiyaMode || false;
+  const _radhaTarget = App.S.dt || 0;
+  const _rvTarget = App.S.dtRV || 0;
+  const _hkTarget = App.S.dtHK || 0;
+  // A target is "active" if at least one target is configured for the current mode
+  const _hasTarget = _isGaudiya
+    ? _hkTarget > 0
+    : _radhaTarget > 0 || _rvTarget > 0;
+  // Returns true only when EVERY configured target for this mode is individually met on day k
+  function _dayHitsTarget(k) {
+    if (_isGaudiya) {
+      return _hkTarget > 0 && (App.S.historyHK[k] || 0) >= _hkTarget;
+    }
+    const radhaOk =
+      _radhaTarget <= 0 || (App.S.history[k] || 0) >= _radhaTarget;
+    const rvOk = _rvTarget <= 0 || (App.S.historyRV[k] || 0) >= _rvTarget;
+    return (_radhaTarget > 0 || _rvTarget > 0) && radhaOk && rvOk;
+  }
+  // Active Streak: consecutive days where ALL configured targets were individually hit.
+  // If today hasn't hit every target yet, start from yesterday so an
+  // in-progress day doesn't break an otherwise-live streak.
   const d2 = new Date();
-  while (streak < 999) {
+  if (_hasTarget && !_dayHitsTarget(_ldk(d2))) {
+    d2.setDate(d2.getDate() - 1);
+  }
+  while (streak < 999 && _hasTarget) {
     const k = _ldk(d2);
-    if ((curHist[k] || 0) > 0) {
+    if (_dayHitsTarget(k)) {
       streak++;
       d2.setDate(d2.getDate() - 1);
     } else break;
   }
+  // Best Streak Ever: longest consecutive run where ALL configured targets were individually hit
+  let bestStreakEver = 0;
+  if (_hasTarget) {
+    const _allHistKeys = new Set([
+      ...Object.keys(App.S.history || {}),
+      ...Object.keys(App.S.historyRV || {}),
+      ...Object.keys(App.S.historyHK || {}),
+    ]);
+    const tgtDays = Array.from(_allHistKeys)
+      .filter((k) => !k.startsWith("prev_") && _dayHitsTarget(k))
+      .sort();
+    let run = 0;
+    for (let i = 0; i < tgtDays.length; i++) {
+      if (i === 0) {
+        run = 1;
+      } else {
+        const diff = Math.round(
+          (new Date(tgtDays[i]) - new Date(tgtDays[i - 1])) / 86400000,
+        );
+        run = diff === 1 ? run + 1 : 1;
+      }
+      if (run > bestStreakEver) bestStreakEver = run;
+    }
+    // Active streak always wins if it surpasses the historical best
+    bestStreakEver = Math.max(bestStreakEver, streak);
+  }
+  const elBSE = document.getElementById("sBestStreakEver");
+  const elBSESub = document.getElementById("sBestStreakEverSub");
+  if (elBSE) elBSE.textContent = bestStreakEver;
+  if (elBSESub)
+    elBSESub.textContent = _hasTarget
+      ? "Best ever consecutive target days"
+      : "Set a daily target to track";
   document.getElementById("sTod").textContent = tod;
   document.getElementById("sTodM").textContent =
     Math.floor(tod / ms) + " malas";
@@ -2759,17 +2877,21 @@ function uStats() {
   _setHK("tHKTod2", hkTod);
   _setHK("tHKWk2", hkWk);
   _setHK("tHKMo2", hkMo);
-  const _setEl = (id, v) => { const e = document.getElementById(id); if (e) e.textContent = v; };
+  const _setEl = (id, v) => {
+    const e = document.getElementById(id);
+    if (e) e.textContent = v;
+  };
   const hkTodCount = App.S.historyHK[App.S.tk] || 0;
-  const hkWkCount  = wk.reduce((s, k) => s + (App.S.historyHK[k] || 0), 0);
-  const hkMoCount  = Object.entries(App.S.historyHK || {})
-    .filter(([k]) => k.startsWith(mp)).reduce((s, [, v]) => s + v, 0);
-  _setEl("sTod2",  hkTodCount.toLocaleString("en-IN"));
+  const hkWkCount = wk.reduce((s, k) => s + (App.S.historyHK[k] || 0), 0);
+  const hkMoCount = Object.entries(App.S.historyHK || {})
+    .filter(([k]) => k.startsWith(mp))
+    .reduce((s, [, v]) => s + v, 0);
+  _setEl("sTod2", hkTodCount.toLocaleString("en-IN"));
   _setEl("sTodM2", Math.floor(hkTodCount / ms) + "m");
-  _setEl("sWk2",   hkWkCount.toLocaleString("en-IN"));
-  _setEl("sWkM2",  Math.floor(hkWkCount  / ms) + "m");
-  _setEl("sMo2",   hkMoCount.toLocaleString("en-IN"));
-  _setEl("sMoM2",  Math.floor(hkMoCount  / ms) + "m");
+  _setEl("sWk2", hkWkCount.toLocaleString("en-IN"));
+  _setEl("sWkM2", Math.floor(hkWkCount / ms) + "m");
+  _setEl("sMo2", hkMoCount.toLocaleString("en-IN"));
+  _setEl("sMoM2", Math.floor(hkMoCount / ms) + "m");
 
   // Lifetime Jap Time (all jap time + all 28 names time)
   const ltTimeSec =
@@ -2783,6 +2905,98 @@ function uStats() {
       ? ltH + "h " + ltM + "m " + String(ltS).padStart(2, "0") + "s"
       : ltM + "m " + String(ltS).padStart(2, "0") + "s";
   document.getElementById("sStr").textContent = streak;
+  // ── Per-deity period counts & combined totals (new UI) ──
+  const rPTod = (App.S.history || {})[App.S.tk] || 0;
+  const rPWk = wk.reduce((s, k) => s + ((App.S.history || {})[k] || 0), 0);
+  const rPMo = Object.entries(App.S.history || {})
+    .filter(([k]) => k.startsWith(mp))
+    .reduce((s, [, v]) => s + v, 0);
+  const rvPTod = (App.S.historyRV || {})[App.S.tk] || 0;
+  const rvPWk = wk.reduce((s, k) => s + ((App.S.historyRV || {})[k] || 0), 0);
+  const rvPMo = Object.entries(App.S.historyRV || {})
+    .filter(([k]) => k.startsWith(mp))
+    .reduce((s, [, v]) => s + v, 0);
+  const n28PTod = (App.S.h28 || {})[App.S.tk] || 0;
+  const n28PWk = wk.reduce((s, k) => s + ((App.S.h28 || {})[k] || 0), 0);
+  const n28PMo = Object.entries(App.S.h28 || {})
+    .filter(([k]) => k.startsWith(mp))
+    .reduce((s, [, v]) => s + v, 0);
+  const _sn = (id, v) => {
+    const e = document.getElementById(id);
+    if (e) e.textContent = v.toLocaleString("en-IN");
+  };
+  const _sm = (id, v, sz) => {
+    const e = document.getElementById(id);
+    if (e) e.textContent = Math.floor(v / (sz || ms)) + "m";
+  };
+  const _sc = (id, v) => {
+    const e = document.getElementById(id);
+    if (e) e.textContent = Math.floor(v / 28) + " cy";
+  };
+  _sn("sRTod", rPTod);
+  _sm("sRTodM", rPTod);
+  _sn("sRWk", rPWk);
+  _sm("sRWkM", rPWk);
+  _sn("sRMo", rPMo);
+  _sm("sRMoM", rPMo);
+  _sn("sRVPTod", rvPTod);
+  _sm("sRVPTodM", rvPTod);
+  _sn("sRVPWk", rvPWk);
+  _sm("sRVPWkM", rvPWk);
+  _sn("sRVPMo", rvPMo);
+  _sm("sRVPMoM", rvPMo);
+  _sn("s28PTod", n28PTod);
+  _sc("s28PTodM", n28PTod);
+  _sn("s28PWk", n28PWk);
+  _sc("s28PWkM", n28PWk);
+  _sn("s28PMo", n28PMo);
+  _sc("s28PMoM", n28PMo);
+  // Combined Radha+RV lifetime time
+  const _eCombLt = document.getElementById("tCombLt");
+  if (_eCombLt) {
+    const _combLtSec =
+      Object.values(App.S.timerHistory || {}).reduce((a, b) => a + b, 0) +
+      Object.values(App.S.timerHistoryRV || {}).reduce((a, b) => a + b, 0);
+    _eCombLt.textContent = fmtShort(_combLtSec);
+  }
+  // All combined period counts
+  _sn("sAllTod", rPTod + rvPTod + n28PTod);
+  _sn("sAllWk", rPWk + rvPWk + n28PWk);
+  _sn("sAllMo", rPMo + rvPMo + n28PMo);
+  // All combined period times
+  const _rTH = App.S.timerHistory || {},
+    _rvTH = App.S.timerHistoryRV || {},
+    _n28TH = App.S.timer28History || {};
+  const _allTodTime =
+    (_rTH[App.S.tk] || 0) + (_rvTH[App.S.tk] || 0) + (_n28TH[App.S.tk] || 0);
+  const _allWkTime = wk.reduce(
+    (s, k) => s + (_rTH[k] || 0) + (_rvTH[k] || 0) + (_n28TH[k] || 0),
+    0,
+  );
+  const _allMoKeys = new Set([
+    ...Object.keys(_rTH),
+    ...Object.keys(_rvTH),
+    ...Object.keys(_n28TH),
+  ]);
+  const _allMoTime = [..._allMoKeys]
+    .filter((k) => k.startsWith(mp))
+    .reduce(
+      (s, k) => s + (_rTH[k] || 0) + (_rvTH[k] || 0) + (_n28TH[k] || 0),
+      0,
+    );
+  const _allLtTime =
+    Object.values(_rTH).reduce((a, b) => a + b, 0) +
+    Object.values(_rvTH).reduce((a, b) => a + b, 0) +
+    Object.values(_n28TH).reduce((a, b) => a + b, 0);
+  const _st = (id, v) => {
+    const e = document.getElementById(id);
+    if (e) e.textContent = fmtShort(v);
+  };
+  _st("tAllTod", _allTodTime);
+  _st("tAllWk", _allWkTime);
+  _st("tAllMo", _allMoTime);
+  _st("tAllLt", _allLtTime);
+
   document.getElementById("sBest").textContent = best;
   const bars = document.getElementById("cbrs");
   bars.innerHTML = "";
@@ -3185,14 +3399,11 @@ function cr2(tp) {
   const t = document.getElementById("moT"),
     d = document.getElementById("moD");
   if (tp === "28today") {
-    t.textContent = "Reset 28 Names Today?";
-    d.textContent =
-      "Clear today's " + (App.S.h28[App.S.tk] || 0) +
-      " count and today's 28 Names time.";
+    t.textContent = "Reset Today's Jap & Time?";
+    d.textContent = "This will clear today's " + (App.S.h28[App.S.tk] || 0) + " taps and today's 28 Names timer. Cannot be undone.";
   } else if (tp === "28all") {
-    t.textContent = "⚠️ Reset All 28 Names Data?";
-    d.textContent =
-      "All 28 Names counts, time, sankalpas and Jap Bank will be permanently deleted.";
+    t.textContent = "⚠️ Reset All 28 Names Data & Time?";
+    d.textContent = "All 28 Names counts, time, and wish progress will be permanently deleted.";
   } else if (tp === "namesAndTime") {
     t.textContent = "⚠️ Delete all Name Jap & Time data?";
     d.textContent =
@@ -3275,7 +3486,6 @@ function doReset() {
     App.S.h28[tk] = 0;
     App.S.timer28History[tk] = 0;
     App.S.sankalpas = [];
-    App.S.jb28 = 0;
     App.S.syncBaseline28 = {};
     App.lm28 = 0;
     App.stopAll28Timers();
@@ -3374,7 +3584,6 @@ function exportAllData() {
     brahma: App.S.brahma || {},
     customSt: App.S.customSt || [],
     sankalpas: App.S.sankalpas || [],
-    jb28: App.S.jb28 || 0,
     occasions: App.S.occasions || {},
     ms: App.S.ms || 108,
     dt: App.S.dt || 0,
@@ -3439,7 +3648,6 @@ function importAllData(input) {
       if (data.brahma) App.S.brahma = { ...App.S.brahma, ...data.brahma };
       if (data.customSt) App.S.customSt = data.customSt;
       if (data.sankalpas) App.S.sankalpas = data.sankalpas;
-      if (data.jb28 !== undefined) App.S.jb28 = data.jb28;
       if (data.occasions)
         App.S.occasions = { ...App.S.occasions, ...data.occasions };
       if (data.ms) App.S.ms = data.ms;
@@ -3560,16 +3768,14 @@ function renderMilestonesTab() {
   const el = document.getElementById("msContent");
   if (!el) return;
   const _isG = App.S.gaudiyaMode || false;
-  const hist   = App.S.history || {};
+  const hist = App.S.history || {};
   const histRV = App.S.historyRV || {};
   const histHK = App.S.historyHK || {};
   const rawTot = _isG
     ? Object.values(histHK).reduce((a, b) => a + b, 0)
     : Object.values(hist).reduce((a, b) => a + b, 0) +
       Object.values(histRV).reduce((a, b) => a + b, 0);
-  const deduct = _isG
-    ? (App.S.nameJapDeductHK || 0)
-    : (App.S.nameJapDeduct || 0);
+  const deduct = _isG ? App.S.nameJapDeductHK || 0 : App.S.nameJapDeduct || 0;
   const total = Math.max(0, rawTot - deduct);
   const lang = window._msLang || "hi";
 
@@ -3580,9 +3786,7 @@ function renderMilestonesTab() {
     const d = new Date(today);
     d.setDate(d.getDate() - i);
     const k = _ldk(d);
-    sum7 += _isG
-      ? (histHK[k] || 0)
-      : (hist[k] || 0) + (histRV[k] || 0);
+    sum7 += _isG ? histHK[k] || 0 : (hist[k] || 0) + (histRV[k] || 0);
   }
   const avg7 = sum7 / 7;
 
@@ -3863,7 +4067,9 @@ function setMsLang(lang) {
     if (lblH) lblH.textContent = "Bangla";
     const hkEl = document.getElementById("hkPersist");
     if (hkEl && hkEl.classList.contains("hk-visible")) {
-      hkEl.innerHTML = HK_TEXT_BN.split("\n").map((l) => "<div>" + l + "</div>").join("");
+      hkEl.innerHTML = HK_TEXT_BN.split("\n")
+        .map((l) => "<div>" + l + "</div>")
+        .join("");
     }
     if (App.S.japMode === "hk") switchJapMode("hk");
     App.save();
@@ -3875,7 +4081,9 @@ function setMsLang(lang) {
     if (lblH) lblH.textContent = "Hindi";
     const hkEl = document.getElementById("hkPersist");
     if (hkEl && hkEl.classList.contains("hk-visible")) {
-      hkEl.innerHTML = HK_TEXT.split("\n").map((l) => "<div>" + l + "</div>").join("");
+      hkEl.innerHTML = HK_TEXT.split("\n")
+        .map((l) => "<div>" + l + "</div>")
+        .join("");
     }
     if (App.S.japMode === "hk") switchJapMode("hk");
     App.save();
@@ -4484,7 +4692,6 @@ async function fbPushFull() {
     timerHistory: App.S.timerHistory || {},
     timer28History: App.S.timer28History || {},
     sankalpas: App.S.sankalpas || [],
-    jb28: App.S.jb28 || 0,
     occasions: App.S.occasions || {},
     ms: App.S.ms || 108,
     dt: App.S.dt || 0,
@@ -4561,7 +4768,6 @@ function fbApplyRemote(d) {
     App.S.customSt = JSON.parse(JSON.stringify(d.customSt || []));
   if ("sankalpas" in d)
     App.S.sankalpas = JSON.parse(JSON.stringify(d.sankalpas || []));
-  if ("jb28" in d) App.S.jb28 = Number(d.jb28) || 0;
   if ("occasions" in d)
     App.S.occasions = JSON.parse(JSON.stringify(d.occasions || {}));
   // Only apply malaLog from Firebase if it belongs to today AND local today has jap
@@ -4973,15 +5179,57 @@ function u28() {
     if (isCompleting) {
       nameEl.style.animation = "none";
       nameEl.textContent = "";
+      if (meanEl) meanEl.textContent = "";
     } else {
-      nameEl.style.animation = "none";
-      nameEl.offsetHeight;
-      nameEl.style.animation =
-        "nameIn 0.35s cubic-bezier(0.34,1.56,0.64,1) forwards";
-      nameEl.textContent = get28Name(entry);
+      const newName = get28Name(entry);
+      const oldName = nameEl.textContent;
+      if (oldName && oldName !== newName) {
+        // Clone the current name and let the clone slowly drift out;
+        // the real element flips to the new name IMMEDIATELY so it appears at once.
+        // Multiple clones can queue and animate out in parallel.
+        try {
+          const parent = nameEl.parentNode;
+          if (parent) {
+            const ghost = nameEl.cloneNode(true);
+            ghost.removeAttribute("id");
+            // Position the ghost in the same spot as the live name
+            const cs = window.getComputedStyle(nameEl);
+            ghost.style.position = "absolute";
+            ghost.style.left = nameEl.offsetLeft + "px";
+            ghost.style.top = nameEl.offsetTop + "px";
+            ghost.style.width = nameEl.offsetWidth + "px";
+            ghost.style.height = nameEl.offsetHeight + "px";
+            ghost.style.margin = "0";
+            ghost.style.pointerEvents = "none";
+            ghost.style.zIndex = "5";
+            ghost.style.animation = "nameOut 2.2s cubic-bezier(0.22,0.61,0.36,1) forwards";
+            // Ensure parent can host absolutely positioned child
+            const pp = window.getComputedStyle(parent).position;
+            if (pp === "static") parent.style.position = "relative";
+            parent.appendChild(ghost);
+            setTimeout(() => { try { ghost.remove(); } catch (_) {} }, 2400);
+          }
+        } catch (_) {}
+        // New name appears immediately with a quick pop-in
+        nameEl.style.animation = "none";
+        nameEl.offsetHeight;
+        nameEl.textContent = newName;
+        nameEl.style.animation = "nameIn 0.3s cubic-bezier(0.34,1.56,0.64,1) forwards";
+        if (meanEl) {
+          meanEl.style.transition = "opacity 0.25s";
+          meanEl.textContent = entry.meaning;
+          meanEl.style.opacity = "0.85";
+        }
+      } else {
+        nameEl.style.animation = "none";
+        nameEl.offsetHeight;
+        nameEl.style.animation = "nameIn 0.35s cubic-bezier(0.34,1.56,0.64,1) forwards";
+        nameEl.textContent = newName;
+        if (meanEl) meanEl.textContent = entry.meaning;
+      }
     }
   }
-  if (meanEl) meanEl.textContent = isCompleting ? "" : entry.meaning;
+  if (meanEl && !isCompleting) { /* handled above */ }
   const cc = Math.floor(tod / 28);
   if (cycEl) {
     cycEl.textContent =
@@ -5118,9 +5366,6 @@ function cycleDone28() {
       fulfilled = true;
       activateNextSankalp();
     }
-  } else {
-    // No active wish → independent jap goes to the 28 Names Jap Bank
-    App.S.jb28 = (App.S.jb28 || 0) + 1;
   }
   if (fulfilled) {
     App.save();
@@ -5132,52 +5377,6 @@ function cycleDone28() {
   }
   if (navigator.vibrate) navigator.vibrate([80, 40, 80, 40, 200]);
 }
-
-// ── 28 Names Jap Bank ──
-// Deposit / withdraw cycles to/from the bank manually
-function adj28Bank(sign) {
-  const inp = document.getElementById("sp28BankVal");
-  const n = parseInt(inp?.value) || 0;
-  if (n < 1) { toast("Enter number of cycles"); return; }
-  if (sign < 0 && n > (App.S.jb28 || 0)) {
-    toast("Cannot withdraw more than bank balance");
-    return;
-  }
-  App.S.jb28 = Math.max(0, (App.S.jb28 || 0) + sign * n);
-  if (inp) inp.value = "";
-  render28StatsPanel();
-  App.save();
-  fbDebouncedPush();
-  toast((sign > 0 ? "Deposited " : "Withdrew ") + n + " cycle" + (n > 1 ? "s" : "") + " 🙏");
-}
-// Push cycles from bank → active wish (adds to _savedProgress)
-function pushBankToWish() {
-  const active = getActiveSankalp();
-  if (!active) { toast("No active wish to push to"); return; }
-  const inp = document.getElementById("sp28BankPush");
-  const n = parseInt(inp?.value) || 0;
-  if (n < 1) { toast("Enter cycles to push"); return; }
-  if (n > (App.S.jb28 || 0)) { toast("Not enough in bank"); return; }
-  App.S.jb28 -= n;
-  active._savedProgress = (active._savedProgress || 0) + n;
-  if (inp) inp.value = "";
-  // Check fulfilment
-  const prog = getSankalpProgressById(active.id, null);
-  if (prog >= active.target) {
-    active.done = true;
-    active.doneDate = App.S.tk;
-    activateNextSankalp();
-    toast("🌟 Sankalp fulfilled by bank push! 🙏");
-  } else {
-    toast("Pushed " + n + " cycle" + (n > 1 ? "s" : "") + " to wish 🙏");
-  }
-  render28StatsPanel();
-  u28();
-  renderSankalpas();
-  App.save();
-  fbDebouncedPush();
-}
-
 
 // ── Sankalp ──
 function getTotalCycles28() {
@@ -5614,11 +5813,6 @@ function render28StatsPanel() {
     ea = document.getElementById("sp28TimeAll");
   if (et) et.textContent = fmt28Short(todTime);
   if (ea) ea.textContent = fmt28Short(allTime);
-  // Bank balance
-  const eb = document.getElementById("sp28BankBal");
-  if (eb) eb.textContent = (App.S.jb28 || 0) + " cycle" + ((App.S.jb28 || 0) === 1 ? "" : "s");
-  const ebt = document.getElementById("sp28BankTaps");
-  if (ebt) ebt.textContent = "= " + ((App.S.jb28 || 0) * 28) + " taps";
 }
 
 // Add/deduct cycles (1 cycle = 28 taps)
@@ -5927,14 +6121,11 @@ async function devSaveInbuiltLyrics(id) {
     return;
   }
   try {
-    await fbDb
-      .collection("stotram_overrides")
-      .doc(id)
-      .set({
-        lyrics,
-        updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
-        updatedBy: fbUser.email,
-      });
+    await fbDb.collection("stotram_overrides").doc(id).set({
+      lyrics,
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+      updatedBy: fbUser.email,
+    });
     _globalLyricsOverrides[id] = lyrics;
     renderSt();
     toast("✅ Lyrics saved for all users! 🙏");
@@ -6325,7 +6516,7 @@ function _getAdjustedMonthIndex(ekDate) {
   // Skip purnimas that fall inside an Adhik Maas window
   for (let i = 0; i < 3; i++) {
     const pStr = purnima.toISOString().slice(0, 10);
-    const inAdhik = (_ADHIK_MAAS_WINDOWS || []).some(function(w) {
+    const inAdhik = (_ADHIK_MAAS_WINDOWS || []).some(function (w) {
       return pStr >= w.start && pStr <= w.end;
     });
     if (!inAdhik) break;
@@ -7586,10 +7777,10 @@ function renderCal() {
       String(d).padStart(2, "0");
     const _isG = App.S.gaudiyaMode || false;
     const cnt = _isG
-      ? (App.S.historyHK[key] || 0)
-      : (App.S.history[key] || 0) + (App.S.historyRV[key] || 0),
+        ? App.S.historyHK[key] || 0
+        : (App.S.history[key] || 0) + (App.S.historyRV[key] || 0),
       timeSec = _isG
-        ? (App.S.timerHistoryHK[key] || 0)
+        ? App.S.timerHistoryHK[key] || 0
         : (App.S.timerHistory[key] || 0) + (App.S.timerHistoryRV[key] || 0),
       time28Sec = App.S.timer28History[key] || 0;
     const occ = App.S.occasions && App.S.occasions[key];
@@ -7800,11 +7991,12 @@ function showDay(key, cnt, timeSec, time28Sec) {
   const totalMalas = Math.floor(totalCount / ms);
   // HK / Mahamantra counts for Gaudiya mode
   const hkCount = App.S.historyHK[key] || 0;
-  const hkTime  = App.S.timerHistoryHK[key] || 0;
+  const hkTime = App.S.timerHistoryHK[key] || 0;
   const hkMalas = Math.floor(hkCount / ms);
   const hkJapEl = document.getElementById("cdmoHkJap");
-  if (hkJapEl) hkJapEl.textContent = hkCount > 0
-    ? hkCount + " jap · " + hkMalas + " malas" : "—";
+  if (hkJapEl)
+    hkJapEl.textContent =
+      hkCount > 0 ? hkCount + " jap · " + hkMalas + " malas" : "—";
   const hkTimeEl = document.getElementById("cdmoHkTime");
   if (hkTimeEl) hkTimeEl.textContent = hkTime > 0 ? App.fmtTime(hkTime) : "—";
 
@@ -7999,7 +8191,7 @@ function sheetMarkBc(action) {
   // Refresh the sheet to show updated status
   const _isG2 = App.S.gaudiyaMode || false;
   const cnt2 = _isG2
-    ? (App.S.historyHK[key] || 0)
+    ? App.S.historyHK[key] || 0
     : (App.S.history[key] || 0) + (App.S.historyRV[key] || 0);
   const timeSec2 =
     (App.S.timerHistory[key] || 0) + (App.S.timerHistoryRV[key] || 0);
@@ -8474,7 +8666,7 @@ window.addEventListener("load", async () => {
 let deferredPrompt = null;
 let _installBannerShownThisSession = false;
 
-window.addEventListener('beforeinstallprompt', (e) => {
+window.addEventListener("beforeinstallprompt", (e) => {
   e.preventDefault();
   deferredPrompt = e;
 
@@ -8482,26 +8674,27 @@ window.addEventListener('beforeinstallprompt', (e) => {
   if (_installBannerShownThisSession) return;
 
   // Already installed (standalone mode)
-  if (window.matchMedia('(display-mode: standalone)').matches) return;
+  if (window.matchMedia("(display-mode: standalone)").matches) return;
 
   // Dismissed within last 3 days
-  const dismissed = localStorage.getItem('installBannerDismissed');
-  if (dismissed && Date.now() - Number(dismissed) < 3 * 24 * 60 * 60 * 1000) return;
+  const dismissed = localStorage.getItem("installBannerDismissed");
+  if (dismissed && Date.now() - Number(dismissed) < 3 * 24 * 60 * 60 * 1000)
+    return;
 
   // Wait for app paint to settle, then show once
   setTimeout(() => {
     // Re-check in case user installed or dismissed while waiting
     if (_installBannerShownThisSession) return;
-    if (window.matchMedia('(display-mode: standalone)').matches) return;
+    if (window.matchMedia("(display-mode: standalone)").matches) return;
     _installBannerShownThisSession = true;
     showInstallBanner();
   }, 2500);
 });
 
 function showInstallBanner() {
-  if (document.getElementById('installBanner')) return;
-  const banner = document.createElement('div');
-  banner.id = 'installBanner';
+  if (document.getElementById("installBanner")) return;
+  const banner = document.createElement("div");
+  banner.id = "installBanner";
   banner.style.cssText = `
     position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(100px);
     background:linear-gradient(135deg,#1a0a2e,#0d1f3c);
@@ -8534,11 +8727,15 @@ function showInstallBanner() {
   // Animate in
   requestAnimationFrame(() => {
     requestAnimationFrame(() => {
-      banner.style.transform = 'translateX(-50%) translateY(0)';
+      banner.style.transform = "translateX(-50%) translateY(0)";
     });
   });
-  document.getElementById('installBtn').addEventListener('click', triggerInstall);
-  document.getElementById('dismissInstallBtn').addEventListener('click', dismissInstallBanner);
+  document
+    .getElementById("installBtn")
+    .addEventListener("click", triggerInstall);
+  document
+    .getElementById("dismissInstallBtn")
+    .addEventListener("click", dismissInstallBanner);
 }
 
 function triggerInstall() {
@@ -8556,36 +8753,44 @@ function triggerInstall() {
 }
 
 function dismissInstallBanner() {
-  const b = document.getElementById('installBanner');
+  const b = document.getElementById("installBanner");
   if (b) {
-    b.style.transform = 'translateX(-50%) translateY(100px)';
+    b.style.transform = "translateX(-50%) translateY(100px)";
     setTimeout(() => b.remove(), 400);
   }
-  localStorage.setItem('installBannerDismissed', Date.now());
+  localStorage.setItem("installBannerDismissed", Date.now());
 }
 
-window.addEventListener('appinstalled', () => {
+window.addEventListener("appinstalled", () => {
   dismissInstallBanner();
 });
 
 // ── Hard cache-bust on version change ──
-(function() {
-  const APP_VER = 'v82';
-  if (localStorage.getItem('appVer') !== APP_VER) {
-    localStorage.setItem('appVer', APP_VER);
+(function () {
+  const APP_VER = "v82";
+  if (localStorage.getItem("appVer") !== APP_VER) {
+    localStorage.setItem("appVer", APP_VER);
     var p1 = navigator.serviceWorker
-      ? navigator.serviceWorker.getRegistrations().then(function(regs){
-          return Promise.all(regs.map(function(r){ return r.unregister(); }));
+      ? navigator.serviceWorker.getRegistrations().then(function (regs) {
+          return Promise.all(
+            regs.map(function (r) {
+              return r.unregister();
+            }),
+          );
         })
       : Promise.resolve();
     var p2 = window.caches
-      ? caches.keys().then(function(keys){
-          return Promise.all(keys.map(function(k){ return caches.delete(k); }));
+      ? caches.keys().then(function (keys) {
+          return Promise.all(
+            keys.map(function (k) {
+              return caches.delete(k);
+            }),
+          );
         })
       : Promise.resolve();
-    Promise.all([p1, p2]).then(function() {
-      if (location.search.indexOf('bust=82') === -1) {
-        location.replace(location.pathname + '?bust=82');
+    Promise.all([p1, p2]).then(function () {
+      if (location.search.indexOf("bust=82") === -1) {
+        location.replace(location.pathname + "?bust=82");
       }
     });
     return;
@@ -8624,9 +8829,12 @@ if ("serviceWorker" in navigator) {
       // SW is active — if we already have a deferred prompt waiting, show the banner now
       if (e.data && e.data.type === "SW_READY") {
         if (deferredPrompt && !_installBannerShownThisSession) {
-          if (!window.matchMedia('(display-mode: standalone)').matches) {
-            const dismissed = localStorage.getItem('installBannerDismissed');
-            if (!dismissed || Date.now() - Number(dismissed) >= 3 * 24 * 60 * 60 * 1000) {
+          if (!window.matchMedia("(display-mode: standalone)").matches) {
+            const dismissed = localStorage.getItem("installBannerDismissed");
+            if (
+              !dismissed ||
+              Date.now() - Number(dismissed) >= 3 * 24 * 60 * 60 * 1000
+            ) {
               _installBannerShownThisSession = true;
               showInstallBanner();
             }
@@ -8703,12 +8911,14 @@ function _isProseBlock(verse) {
 }
 
 // ── IDs that support translation (অনুবাদ) button
-const TRANSLATION_IDS = ['nkc', 'gms'];
+const TRANSLATION_IDS = ["nkc", "gms"];
 // ── IDs where prose sections need vertical-scroll mode
-const PROSE_IDS = ['nkc'];
+const PROSE_IDS = ["nkc"];
 
 // ── showLyrics — watery card swipe reader ──
-let _verses = [], _verseIdx = 0, _currentStotramId = '';
+let _verses = [],
+  _verseIdx = 0,
+  _currentStotramId = "";
 let _translationVisible = false;
 // Global preference set from the Stotram list screen toggle
 let _globalTranslationPref = false;
@@ -8716,13 +8926,13 @@ let _globalTranslationPref = false;
 function setGlobalTranslation(on) {
   _globalTranslationPref = on;
   // Sync the toggle UI on list screen
-  var sw = document.getElementById('st-global-toggle-sw');
+  var sw = document.getElementById("st-global-toggle-sw");
   if (sw) {
-    sw.className = 'lm-toggle-sw' + (on ? ' on' : '');
-    sw.setAttribute('aria-checked', on ? 'true' : 'false');
+    sw.className = "lm-toggle-sw" + (on ? " on" : "");
+    sw.setAttribute("aria-checked", on ? "true" : "false");
   }
-  var lbl = document.getElementById('st-global-toggle-label');
-  if (lbl) lbl.textContent = on ? 'অনুবাদ: চালু' : 'অনুবাদ: বন্ধ';
+  var lbl = document.getElementById("st-global-toggle-label");
+  if (lbl) lbl.textContent = on ? "অনুবাদ: চালু" : "অনুবাদ: বন্ধ";
 }
 
 // ── Devotional SVG decorations ────────────────────────────────
@@ -8824,61 +9034,74 @@ const SVG_SHIV_BOTTOM = `<svg width="160" height="36" viewBox="0 0 160 36" fill=
 
 function showLyrics(id) {
   const ly = getEffectiveLyrics(id);
-  if (!ly) { toast("পাঠ্য পাওয়া যায়নি 🙏"); return; }
+  if (!ly) {
+    toast("পাঠ্য পাওয়া যায়নি 🙏");
+    return;
+  }
 
   _currentStotramId = id;
   // Inherit the global translation preference set on the list screen
-  _translationVisible = TRANSLATION_IDS.includes(id) ? _globalTranslationPref : false;
-
+  _translationVisible = TRANSLATION_IDS.includes(id)
+    ? _globalTranslationPref
+    : false;
 
   // Apply devotional theme to the card based on stotram deity
-  (function(){
-    var card = document.querySelector('.lm-water-card');
+  (function () {
+    var card = document.querySelector(".lm-water-card");
     if (!card) return;
-    var shiv  = ['bss','ans','rds','sps'];
-    var radha = ['hcj','rks','gms','nkc','vs2'];
-    var lmo = document.getElementById('lmo');
+    var shiv = ["bss", "ans", "rds", "sps"];
+    var radha = ["hcj", "rks", "gms", "nkc", "vs2"];
+    var lmo = document.getElementById("lmo");
     // Remove any previous decoration elements
-    ['lm-deco-top','lm-deco-bottom'].forEach(function(cid){
-      var old = document.getElementById(cid); if(old) old.remove();
+    ["lm-deco-top", "lm-deco-bottom"].forEach(function (cid) {
+      var old = document.getElementById(cid);
+      if (old) old.remove();
     });
-    var inner = card.querySelector('.lm-card-inner');
+    var inner = card.querySelector(".lm-card-inner");
 
     function injectDeco(topSvg, botSvg) {
       if (inner && topSvg) {
-        var t = document.createElement('div');
-        t.id='lm-deco-top'; t.className='lm-theme-top'; t.innerHTML=topSvg;
+        var t = document.createElement("div");
+        t.id = "lm-deco-top";
+        t.className = "lm-theme-top";
+        t.innerHTML = topSvg;
         inner.insertBefore(t, inner.firstChild);
       }
       if (inner && botSvg) {
-        var b = document.createElement('div');
-        b.id='lm-deco-bottom'; b.className='lm-theme-bottom'; b.innerHTML=botSvg;
+        var b = document.createElement("div");
+        b.id = "lm-deco-bottom";
+        b.className = "lm-theme-bottom";
+        b.innerHTML = botSvg;
         inner.appendChild(b);
       }
     }
 
     if (shiv.indexOf(id) !== -1) {
-      card.setAttribute('data-theme','shiv');
-      if (lmo) lmo.setAttribute('data-bg','shiv');
+      card.setAttribute("data-theme", "shiv");
+      if (lmo) lmo.setAttribute("data-bg", "shiv");
       injectDeco(SVG_TRISHUL_TOP, SVG_SHIV_BOTTOM);
     } else if (radha.indexOf(id) !== -1) {
-      card.setAttribute('data-theme','radha');
-      if (lmo) lmo.setAttribute('data-bg','radha');
+      card.setAttribute("data-theme", "radha");
+      if (lmo) lmo.setAttribute("data-bg", "radha");
       injectDeco(SVG_RADHA_TOP, SVG_PEACOCK_BOTTOM);
     } else {
-      card.removeAttribute('data-theme');
-      if (lmo) lmo.removeAttribute('data-bg');
+      card.removeAttribute("data-theme");
+      if (lmo) lmo.removeAttribute("data-bg");
     }
   })();
 
   // Split by blank lines into verses
-  let allVerses = ly.split(/\n{2,}/).map(b => b.trim()).filter(b => b.length > 0);
+  let allVerses = ly
+    .split(/\n{2,}/)
+    .map((b) => b.trim())
+    .filter((b) => b.length > 0);
 
   // Remove first verse if it's just the stotram title (for all except hcj)
-  if (id !== 'hcj' && allVerses.length > 0) {
+  if (id !== "hcj" && allVerses.length > 0) {
     const firstV = allVerses[0];
     // Title verse: short (< 100 chars), no ।॥ markers, no numbered shloka
-    const isTitle = firstV.length < 100 && !/[।॥]/.test(firstV) && !/শ্লোক/.test(firstV);
+    const isTitle =
+      firstV.length < 100 && !/[।॥]/.test(firstV) && !/শ্লোক/.test(firstV);
     if (isTitle) allVerses = allVerses.slice(1);
   }
 
@@ -8887,11 +9110,13 @@ function showLyrics(id) {
   const mergedVerses = [];
   for (let i = 0; i < allVerses.length; i++) {
     const v = allVerses[i];
-    const linesOnly = v.split('\n').filter(l => l.trim().length > 0);
-    const allArtha = linesOnly.length > 0 && linesOnly.every(l => /^অর্থ\s*:/.test(l.trim()));
+    const linesOnly = v.split("\n").filter((l) => l.trim().length > 0);
+    const allArtha =
+      linesOnly.length > 0 &&
+      linesOnly.every((l) => /^অর্থ\s*:/.test(l.trim()));
     if (allArtha && mergedVerses.length > 0) {
       // Append to previous verse with a blank line separator
-      mergedVerses[mergedVerses.length - 1] += '\n\n' + v;
+      mergedVerses[mergedVerses.length - 1] += "\n\n" + v;
     } else {
       mergedVerses.push(v);
     }
@@ -8900,8 +9125,12 @@ function showLyrics(id) {
   _verseIdx = 0;
   _hcjStopAudio();
 
-  const allSt = [...STLIST, ...(_globalStotrams||[]), ...(App.S.customSt||[])];
-  const nm = allSt.find(x => x.id === id);
+  const allSt = [
+    ...STLIST,
+    ...(_globalStotrams || []),
+    ...(App.S.customSt || []),
+  ];
+  const nm = allSt.find((x) => x.id === id);
   document.getElementById("lmTitle").textContent = nm ? nm.name : id;
 
   _renderVerse(0, null);
@@ -8911,49 +9140,59 @@ function showLyrics(id) {
 
 function _renderVerse(idx, dir) {
   const body = document.getElementById("lyrBody");
-  const ctr  = null;
+  const ctr = null;
   const prev = document.getElementById("lmPrev");
   const next = document.getElementById("lmNext");
 
   const verseText = _verses[idx] || "";
-  const isProse = PROSE_IDS.includes(_currentStotramId) && _isProseBlock(verseText);
+  const isProse =
+    PROSE_IDS.includes(_currentStotramId) && _isProseBlock(verseText);
   const hasTranslation = TRANSLATION_IDS.includes(_currentStotramId);
 
   // Does this verse have any অর্থ: lines at all?
   const verseHasArtha = /^অর্থ\s*:/m.test(verseText);
 
   // Does this verse have any non-artha, non-empty content lines?
-  const verseHasContent = verseText.split("\n").some(l => {
+  const verseHasContent = verseText.split("\n").some((l) => {
     const t = l.trim();
     return t.length > 0 && !/^অর্থ\s*:/.test(t);
   });
 
-  let linesHtml = '';
+  let linesHtml = "";
   if (isProse) {
-    const escaped = verseText.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
-    linesHtml = '<span class="lyr-prose">' + escaped + '</span>';
+    const escaped = verseText
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
+    linesHtml = '<span class="lyr-prose">' + escaped + "</span>";
   } else {
     const rawLines = verseText.split("\n");
-    linesHtml = rawLines.map(line => {
-      if (line.trim() === "") return '<span class="lyr-line-empty"></span>';
-      const esc = line.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
-      if (/^অর্থ\s*:/.test(line.trim())) {
-        // Only inject অর্থ: line when translation is ON
-        if (!hasTranslation || !_translationVisible) return '';
-        return '<span class="lyr-line lyr-artha">' + esc + '</span>';
-      }
-      return '<span class="lyr-line">' + esc + '</span>';
-    }).join("");
+    linesHtml = rawLines
+      .map((line) => {
+        if (line.trim() === "") return '<span class="lyr-line-empty"></span>';
+        const esc = line
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;");
+        if (/^অর্থ\s*:/.test(line.trim())) {
+          // Only inject অর্থ: line when translation is ON
+          if (!hasTranslation || !_translationVisible) return "";
+          return '<span class="lyr-line lyr-artha">' + esc + "</span>";
+        }
+        return '<span class="lyr-line">' + esc + "</span>";
+      })
+      .join("");
   }
 
   // Decide if the card should be visible at all:
   // Hide it when: translation is OFF and the verse has ONLY অর্থ: lines (no Sanskrit content)
-  const cardVisible = isProse || verseHasContent || (verseHasArtha && _translationVisible);
+  const cardVisible =
+    isProse || verseHasContent || (verseHasArtha && _translationVisible);
   const cardWrap = document.getElementById("lmb");
   if (cardWrap) cardWrap.style.visibility = cardVisible ? "" : "hidden";
 
   const footerHtml = '<div class="lyr-footer">❧ &nbsp; 🌸 &nbsp; ❧</div>';
-  body.innerHTML = (cardVisible ? linesHtml : '') + footerHtml;
+  body.innerHTML = (cardVisible ? linesHtml : "") + footerHtml;
 
   // Re-inject SVG theme decorations (lost when innerHTML was rebuilt)
   _reinjectThemeDecos();
@@ -8961,9 +9200,15 @@ function _renderVerse(idx, dir) {
   // Toggle: only show when this verse actually has অর্থ: lines
   _renderTranslationToggle(verseHasArtha);
 
-  body.classList.remove("lyr-slide-enter-left","lyr-slide-enter-right");
-  if (dir === 1)  { void body.offsetWidth; body.classList.add("lyr-slide-enter-left"); }
-  if (dir === -1) { void body.offsetWidth; body.classList.add("lyr-slide-enter-right"); }
+  body.classList.remove("lyr-slide-enter-left", "lyr-slide-enter-right");
+  if (dir === 1) {
+    void body.offsetWidth;
+    body.classList.add("lyr-slide-enter-left");
+  }
+  if (dir === -1) {
+    void body.offsetWidth;
+    body.classList.add("lyr-slide-enter-right");
+  }
 
   if (ctr) ctr.textContent = "VERSE " + (idx + 1) + " / " + _verses.length;
   prev.disabled = idx === 0;
@@ -8973,7 +9218,9 @@ function _renderVerse(idx, dir) {
   if (inner) {
     // Reset after the DOM has painted so mobile browsers do not fight an
     // in-progress user scroll while verse/audio UI is being re-rendered.
-    requestAnimationFrame(function(){ inner.scrollTop = 0; });
+    requestAnimationFrame(function () {
+      inner.scrollTop = 0;
+    });
   }
   _hcjRenderPlayer(idx);
   _hcjOnVerseChange(idx);
@@ -8984,45 +9231,45 @@ function _renderVerse(idx, dir) {
 function _renderTranslationToggle(verseHasArtha) {
   // Not a translatable stotram → always remove
   if (!TRANSLATION_IDS.includes(_currentStotramId)) {
-    var old = document.getElementById('lm-translate-wrap');
+    var old = document.getElementById("lm-translate-wrap");
     if (old) old.remove();
     return;
   }
 
-  var existing = document.getElementById('lm-translate-wrap');
+  var existing = document.getElementById("lm-translate-wrap");
 
   // This verse has no অর্থ: → hide toggle (and reset translation state)
   if (!verseHasArtha) {
-    if (existing) existing.style.display = 'none';
+    if (existing) existing.style.display = "none";
     return;
   }
 
   // This verse has অর্থ: → show toggle
   if (existing) {
-    existing.style.display = '';
+    existing.style.display = "";
     _syncToggleUI();
     return;
   }
 
   // First time — build the toggle
-  const nav = document.getElementById('lmNav');
+  const nav = document.getElementById("lmNav");
   if (!nav) return;
 
-  var wrap = document.createElement('div');
-  wrap.id = 'lm-translate-wrap';
-  wrap.className = 'lm-translate-wrap';
+  var wrap = document.createElement("div");
+  wrap.id = "lm-translate-wrap";
+  wrap.className = "lm-translate-wrap";
 
-  var label = document.createElement('span');
-  label.className = 'lm-toggle-label';
-  label.textContent = 'Translation';
+  var label = document.createElement("span");
+  label.className = "lm-toggle-label";
+  label.textContent = "Translation";
 
-  var sw = document.createElement('button');
-  sw.id = 'lm-toggle-sw';
-  sw.className = 'lm-toggle-sw' + (_translationVisible ? ' on' : '');
-  sw.setAttribute('role', 'switch');
-  sw.setAttribute('aria-checked', _translationVisible ? 'true' : 'false');
+  var sw = document.createElement("button");
+  sw.id = "lm-toggle-sw";
+  sw.className = "lm-toggle-sw" + (_translationVisible ? " on" : "");
+  sw.setAttribute("role", "switch");
+  sw.setAttribute("aria-checked", _translationVisible ? "true" : "false");
   sw.innerHTML = '<span class="lm-toggle-thumb"></span>';
-  sw.onclick = function() {
+  sw.onclick = function () {
     _translationVisible = !_translationVisible;
     _renderVerse(_verseIdx, null);
   };
@@ -9034,39 +9281,56 @@ function _renderTranslationToggle(verseHasArtha) {
 
 function _reinjectThemeDecos() {
   // Remove stale decos from previous render
-  ['lm-deco-top','lm-deco-bottom'].forEach(function(cid){
-    var old = document.getElementById(cid); if(old) old.remove();
+  ["lm-deco-top", "lm-deco-bottom"].forEach(function (cid) {
+    var old = document.getElementById(cid);
+    if (old) old.remove();
   });
-  var card = document.querySelector('.lm-water-card');
+  var card = document.querySelector(".lm-water-card");
   if (!card) return;
-  var theme = card.getAttribute('data-theme');
+  var theme = card.getAttribute("data-theme");
   if (!theme) return;
-  var inner = card.querySelector('.lm-card-inner');
+  var inner = card.querySelector(".lm-card-inner");
   if (!inner) return;
 
-  var topSvg = (theme==='shiv') ? SVG_TRISHUL_TOP : (theme==='radha') ? SVG_RADHA_TOP : null;
-  var botSvg = (theme==='shiv') ? SVG_SHIV_BOTTOM : (theme==='radha') ? SVG_PEACOCK_BOTTOM : null;
+  var topSvg =
+    theme === "shiv"
+      ? SVG_TRISHUL_TOP
+      : theme === "radha"
+        ? SVG_RADHA_TOP
+        : null;
+  var botSvg =
+    theme === "shiv"
+      ? SVG_SHIV_BOTTOM
+      : theme === "radha"
+        ? SVG_PEACOCK_BOTTOM
+        : null;
 
   if (topSvg) {
-    var t = document.createElement('div');
-    t.id='lm-deco-top'; t.className='lm-theme-top'; t.innerHTML=topSvg;
+    var t = document.createElement("div");
+    t.id = "lm-deco-top";
+    t.className = "lm-theme-top";
+    t.innerHTML = topSvg;
     inner.insertBefore(t, inner.firstChild);
   }
   if (botSvg) {
-    var b = document.createElement('div');
-    b.id='lm-deco-bottom'; b.className='lm-theme-bottom'; b.innerHTML=botSvg;
+    var b = document.createElement("div");
+    b.id = "lm-deco-bottom";
+    b.className = "lm-theme-bottom";
+    b.innerHTML = botSvg;
     inner.appendChild(b);
   }
 }
 
 function _syncToggleUI() {
-  var sw = document.getElementById('lm-toggle-sw');
+  var sw = document.getElementById("lm-toggle-sw");
   if (!sw) return;
-  sw.className = 'lm-toggle-sw' + (_translationVisible ? ' on' : '');
-  sw.setAttribute('aria-checked', _translationVisible ? 'true' : 'false');
+  sw.className = "lm-toggle-sw" + (_translationVisible ? " on" : "");
+  sw.setAttribute("aria-checked", _translationVisible ? "true" : "false");
 }
 
-function _buildDots() { /* dots removed */ }
+function _buildDots() {
+  /* dots removed */
+}
 
 function verseNav(delta) {
   const newIdx = _verseIdx + delta;
@@ -9079,22 +9343,27 @@ function _initSwipeHandler() {
   // Horizontal swipe nav enabled for all stotrams EXCEPT hcj.
   // If enlarged text makes the lyric panel scrollable, touches that begin
   // inside that panel are reserved for native vertical scrolling.
-  const card = document.getElementById('lmCard');
+  const card = document.getElementById("lmCard");
   if (!card) return;
 
   // Remove any previous swipe listeners
   card._swipeCleanup && card._swipeCleanup();
 
-  if (_currentStotramId === 'hcj') return; // HCJ uses its own audio player arrows
+  if (_currentStotramId === "hcj") return; // HCJ uses its own audio player arrows
 
-  let startX = 0, startY = 0, startedInScrollableLyrics = false;
+  let startX = 0,
+    startY = 0,
+    startedInScrollableLyrics = false;
 
   function onStart(e) {
     const t = e.touches ? e.touches[0] : e;
     startX = t.clientX;
     startY = t.clientY;
-    const inner = e.target && e.target.closest ? e.target.closest('.lm-card-inner') : null;
-    startedInScrollableLyrics = !!(inner && inner.scrollHeight > inner.clientHeight + 4);
+    const inner =
+      e.target && e.target.closest ? e.target.closest(".lm-card-inner") : null;
+    startedInScrollableLyrics = !!(
+      inner && inner.scrollHeight > inner.clientHeight + 4
+    );
   }
   function onEnd(e) {
     if (startedInScrollableLyrics) return;
@@ -9103,53 +9372,67 @@ function _initSwipeHandler() {
     const dy = t.clientY - startY;
     if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 40) {
       // Horizontal swipe detected — prevent vertical scroll conflict
-      if (dx < 0) verseNav(1);   // swipe left → next
-      else        verseNav(-1);  // swipe right → prev
+      if (dx < 0)
+        verseNav(1); // swipe left → next
+      else verseNav(-1); // swipe right → prev
     }
   }
 
-  card.addEventListener('touchstart', onStart, { passive: true });
-  card.addEventListener('touchend', onEnd, { passive: true });
+  card.addEventListener("touchstart", onStart, { passive: true });
+  card.addEventListener("touchend", onEnd, { passive: true });
 
-  card._swipeCleanup = function() {
-    card.removeEventListener('touchstart', onStart);
-    card.removeEventListener('touchend', onEnd);
+  card._swipeCleanup = function () {
+    card.removeEventListener("touchstart", onStart);
+    card.removeEventListener("touchend", onEnd);
   };
 }
 
 function closeLyrics() {
   var lmo = document.getElementById("lmo");
   lmo.classList.remove("show");
-  lmo.removeAttribute('data-bg');
-  var card = document.querySelector('.lm-water-card');
-  if (card) card.removeAttribute('data-theme');
+  lmo.removeAttribute("data-bg");
+  var card = document.querySelector(".lm-water-card");
+  if (card) card.removeAttribute("data-theme");
   /* Clean up HCJ player window listeners before destroying audio */
-  if (_hcjPlayerCleanup) { _hcjPlayerCleanup(); _hcjPlayerCleanup = null; }
-  var pw = document.getElementById("hcj-player-wrap"); if (pw) pw.remove();
+  if (_hcjPlayerCleanup) {
+    _hcjPlayerCleanup();
+    _hcjPlayerCleanup = null;
+  }
+  var pw = document.getElementById("hcj-player-wrap");
+  if (pw) pw.remove();
   /* Reset scroll area bottom override set by _hcjRenderPlayer */
-  var _lci = document.querySelector("#lmo .lm-card-inner"); if (_lci) _lci.style.bottom = "";
+  var _lci = document.querySelector("#lmo .lm-card-inner");
+  if (_lci) _lci.style.bottom = "";
   _hcjStopAudio();
-  _verses = []; _verseIdx = 0;
+  _verses = [];
+  _verseIdx = 0;
   _currentStotramId = "";
   _translationVisible = false;
-  var oldWrap = document.getElementById('lm-translate-wrap');
+  var oldWrap = document.getElementById("lm-translate-wrap");
   if (oldWrap) oldWrap.remove();
-  var navBar=document.getElementById("lmNav"); if(navBar) navBar.style.display="";
+  var navBar = document.getElementById("lmNav");
+  if (navBar) navBar.style.display = "";
 }
 
 // ═══════════════════════════════════════════════════════
 
 // HCJ AUDIO ENGINE
-var _hcjAudio = null, _hcjMode = "manual", _hcjPlaying = false, _hcjAudioIdx = -1;
+var _hcjAudio = null,
+  _hcjMode = "manual",
+  _hcjPlaying = false,
+  _hcjAudioIdx = -1;
 var _hcjRafId = null; // requestAnimationFrame id for progress bar
 var _hcjPlayerCleanup = null; // cleanup fn for window listeners added in _hcjRenderPlayer
 
-function _hcjAudioPath(i) { return "audio/hcj_"+(i+1)+".mp3"; }
+function _hcjAudioPath(i) {
+  return "audio/hcj_" + (i + 1) + ".mp3";
+}
 
 // Format seconds → m:ss
 function _hcjFmtTime(s) {
   if (!isFinite(s) || isNaN(s)) return "0:00";
-  var m = Math.floor(s / 60), sec = Math.floor(s % 60);
+  var m = Math.floor(s / 60),
+    sec = Math.floor(s % 60);
   return m + ":" + (sec < 10 ? "0" : "") + sec;
 }
 
@@ -9169,14 +9452,17 @@ function _hcjStartProgressLoop() {
 }
 
 function _hcjStopProgressLoop() {
-  if (_hcjRafId) { cancelAnimationFrame(_hcjRafId); _hcjRafId = null; }
+  if (_hcjRafId) {
+    cancelAnimationFrame(_hcjRafId);
+    _hcjRafId = null;
+  }
 }
 
 function _hcjUpdateProgress() {
-  var bar   = document.getElementById("hcj-prog-fill");
+  var bar = document.getElementById("hcj-prog-fill");
   var thumb = document.getElementById("hcj-prog-thumb");
-  var cur   = document.getElementById("hcj-time-cur");
-  var tot   = document.getElementById("hcj-time-tot");
+  var cur = document.getElementById("hcj-time-cur");
+  var tot = document.getElementById("hcj-time-tot");
   if (!bar) return;
   if (_hcjAudio && _hcjAudio.duration > 0) {
     var pct = (_hcjAudio.currentTime / _hcjAudio.duration) * 100;
@@ -9194,8 +9480,14 @@ function _hcjUpdateProgress() {
 
 function _hcjStopAudio() {
   _hcjStopProgressLoop();
-  if (_hcjAudio) { _hcjAudio.pause(); _hcjAudio.onended=null; _hcjAudio=null; }
-  _hcjPlaying=false; _hcjAudioIdx=-1; _hcjSyncUI();
+  if (_hcjAudio) {
+    _hcjAudio.pause();
+    _hcjAudio.onended = null;
+    _hcjAudio = null;
+  }
+  _hcjPlaying = false;
+  _hcjAudioIdx = -1;
+  _hcjSyncUI();
   _hcjUpdateProgress();
   if (window._lyrHcjAudioChanged) window._lyrHcjAudioChanged(null, false);
 }
@@ -9209,20 +9501,42 @@ function _hcjPauseAudio() {
 }
 function _hcjPlayVerse(idx) {
   _hcjStopProgressLoop();
-  if (_hcjAudio) { _hcjAudio.pause(); _hcjAudio.onended=null; _hcjAudio=null; }
+  if (_hcjAudio) {
+    _hcjAudio.pause();
+    _hcjAudio.onended = null;
+    _hcjAudio = null;
+  }
   _hcjAudio = new Audio(_hcjAudioPath(idx));
   _hcjAudioIdx = idx;
-  _hcjAudio.loop = (_hcjMode==="loop");
-  _hcjAudio.onended = function() {
+  _hcjAudio.loop = _hcjMode === "loop";
+  _hcjAudio.onended = function () {
     _hcjStopProgressLoop();
-    if (_hcjMode==="continue" && idx+1<_verses.length) { _verseIdx=idx+1; _renderVerse(_verseIdx,1); _hcjPlayVerse(_verseIdx); }
-    else { _hcjPlaying=false; _hcjAudioIdx=-1; _hcjSyncUI(); _hcjUpdateProgress();
-      if (window._lyrHcjAudioChanged) window._lyrHcjAudioChanged(null, false); }
+    if (_hcjMode === "continue" && idx + 1 < _verses.length) {
+      _verseIdx = idx + 1;
+      _renderVerse(_verseIdx, 1);
+      _hcjPlayVerse(_verseIdx);
+    } else {
+      _hcjPlaying = false;
+      _hcjAudioIdx = -1;
+      _hcjSyncUI();
+      _hcjUpdateProgress();
+      if (window._lyrHcjAudioChanged) window._lyrHcjAudioChanged(null, false);
+    }
   };
-  _hcjAudio.play().then(function(){
-    _hcjPlaying=true; _hcjSyncUI(); _hcjStartProgressLoop();
-    if (window._lyrHcjAudioChanged) window._lyrHcjAudioChanged(_hcjAudio, true);
-  }).catch(function(){ _hcjPlaying=false; _hcjAudioIdx=-1; _hcjSyncUI(); });
+  _hcjAudio
+    .play()
+    .then(function () {
+      _hcjPlaying = true;
+      _hcjSyncUI();
+      _hcjStartProgressLoop();
+      if (window._lyrHcjAudioChanged)
+        window._lyrHcjAudioChanged(_hcjAudio, true);
+    })
+    .catch(function () {
+      _hcjPlaying = false;
+      _hcjAudioIdx = -1;
+      _hcjSyncUI();
+    });
 }
 function _hcjTogglePlay() {
   if (_hcjPlaying) {
@@ -9230,10 +9544,19 @@ function _hcjTogglePlay() {
     _hcjPauseAudio();
   } else if (_hcjAudio && _hcjAudioIdx === _verseIdx) {
     /* Resume from paused position (same verse, audio element still exists) */
-    _hcjAudio.play().then(function(){
-      _hcjPlaying=true; _hcjSyncUI(); _hcjStartProgressLoop();
-      if (window._lyrHcjAudioChanged) window._lyrHcjAudioChanged(_hcjAudio, true);
-    }).catch(function(){ _hcjPlaying=false; _hcjSyncUI(); });
+    _hcjAudio
+      .play()
+      .then(function () {
+        _hcjPlaying = true;
+        _hcjSyncUI();
+        _hcjStartProgressLoop();
+        if (window._lyrHcjAudioChanged)
+          window._lyrHcjAudioChanged(_hcjAudio, true);
+      })
+      .catch(function () {
+        _hcjPlaying = false;
+        _hcjSyncUI();
+      });
   } else {
     /* Start fresh for this verse */
     _hcjPlayVerse(_verseIdx);
@@ -9241,63 +9564,78 @@ function _hcjTogglePlay() {
 }
 function _hcjSetMode(mode) {
   // Toggle off back to manual if the same mode button is tapped again
-  _hcjMode = (_hcjMode===mode) ? "manual" : mode;
-  if (_hcjAudio) _hcjAudio.loop=(_hcjMode==="loop");
+  _hcjMode = _hcjMode === mode ? "manual" : mode;
+  if (_hcjAudio) _hcjAudio.loop = _hcjMode === "loop";
   _hcjSyncUI();
 }
 // Called whenever the displayed verse changes — keep audio in sync.
 function _hcjOnVerseChange(idx) {
-  if (_currentStotramId!=="hcj") return;
+  if (_currentStotramId !== "hcj") return;
   if (_hcjPlaying && _hcjAudioIdx !== idx) {
     _hcjPlayVerse(idx);
   }
-  var si=document.getElementById("hcj-seek-input"); if (si) si.value=idx+1;
+  var si = document.getElementById("hcj-seek-input");
+  if (si) si.value = idx + 1;
 }
 function _hcjGoToVerse(n) {
-  var i=parseInt(n)-1; if (isNaN(i)||i<0||i>=_verses.length) return;
-  _verseIdx=i; _renderVerse(i,0);
+  var i = parseInt(n) - 1;
+  if (isNaN(i) || i < 0 || i >= _verses.length) return;
+  _verseIdx = i;
+  _renderVerse(i, 0);
 }
 function _hcjSyncUI() {
   // ▶ play button — dim when already playing
-  var pl=document.getElementById("hcj-play-btn");
+  var pl = document.getElementById("hcj-play-btn");
   if (pl) pl.classList.toggle("hcj-btn-dim", _hcjPlaying);
   // ⏸ pause button — dim when not playing
-  var pa=document.getElementById("hcj-pause-btn");
+  var pa = document.getElementById("hcj-pause-btn");
   if (pa) pa.classList.toggle("hcj-btn-dim", !_hcjPlaying);
   // mode buttons
-  ["loop","continue"].forEach(function(m){
-    var b=document.getElementById("hcj-mode-"+m);
-    if(b) b.classList.toggle("hcj-mode-active",_hcjMode===m);
+  ["loop", "continue"].forEach(function (m) {
+    var b = document.getElementById("hcj-mode-" + m);
+    if (b) b.classList.toggle("hcj-mode-active", _hcjMode === m);
   });
 }
 function _hcjRenderPlayer(idx) {
-  var ow=document.getElementById("hcj-player-wrap"); if(ow) ow.remove();
+  var ow = document.getElementById("hcj-player-wrap");
+  if (ow) ow.remove();
   /* Remove any window listeners left by the previous player render */
-  if (_hcjPlayerCleanup) { _hcjPlayerCleanup(); _hcjPlayerCleanup = null; }
-  var navBar=document.getElementById("lmNav");
-  if (_currentStotramId!=="hcj") {
-    if(navBar) navBar.style.display="";
-    var _ci=document.querySelector("#lmo .lm-card-inner"); if(_ci) _ci.style.bottom="";
+  if (_hcjPlayerCleanup) {
+    _hcjPlayerCleanup();
+    _hcjPlayerCleanup = null;
+  }
+  var navBar = document.getElementById("lmNav");
+  if (_currentStotramId !== "hcj") {
+    if (navBar) navBar.style.display = "";
+    var _ci = document.querySelector("#lmo .lm-card-inner");
+    if (_ci) _ci.style.bottom = "";
     return;
   }
-  if (navBar) navBar.style.display="none";
-  var lmd=document.querySelector("#lmo .lmd"); if (!lmd) return;
+  if (navBar) navBar.style.display = "none";
+  var lmd = document.querySelector("#lmo .lmd");
+  if (!lmd) return;
 
-  var wrap=document.createElement("div"); wrap.id="hcj-player-wrap";
+  var wrap = document.createElement("div");
+  wrap.id = "hcj-player-wrap";
 
   // ── Progress bar row (above buttons) ──
-  var progRow=document.createElement("div"); progRow.className="hcj-prog-row";
+  var progRow = document.createElement("div");
+  progRow.className = "hcj-prog-row";
 
-  var timeCur=document.createElement("span");
-  timeCur.id="hcj-time-cur"; timeCur.className="hcj-time";
-  timeCur.textContent="0:00";
+  var timeCur = document.createElement("span");
+  timeCur.id = "hcj-time-cur";
+  timeCur.className = "hcj-time";
+  timeCur.textContent = "0:00";
   progRow.appendChild(timeCur);
 
-  var progTrack=document.createElement("div"); progTrack.className="hcj-prog-track";
-  var progFill=document.createElement("div");
-  progFill.id="hcj-prog-fill"; progFill.className="hcj-prog-fill";
-  var progThumb=document.createElement("div");
-  progThumb.id="hcj-prog-thumb"; progThumb.className="hcj-prog-thumb";
+  var progTrack = document.createElement("div");
+  progTrack.className = "hcj-prog-track";
+  var progFill = document.createElement("div");
+  progFill.id = "hcj-prog-fill";
+  progFill.className = "hcj-prog-fill";
+  var progThumb = document.createElement("div");
+  progThumb.id = "hcj-prog-thumb";
+  progThumb.className = "hcj-prog-thumb";
   progFill.appendChild(progThumb);
   progTrack.appendChild(progFill);
 
@@ -9312,8 +9650,18 @@ function _hcjRenderPlayer(idx) {
     _hcjUpdateProgress();
   }
   var _scrubbing = false;
-  progTrack.addEventListener("mousedown",  function(e){ _scrubbing=true; _hcjScrubAt(e); });
-  progTrack.addEventListener("touchstart", function(e){ _scrubbing=true; _hcjScrubAt(e); }, {passive:false});
+  progTrack.addEventListener("mousedown", function (e) {
+    _scrubbing = true;
+    _hcjScrubAt(e);
+  });
+  progTrack.addEventListener(
+    "touchstart",
+    function (e) {
+      _scrubbing = true;
+      _hcjScrubAt(e);
+    },
+    { passive: false },
+  );
 
   /* touchmove is on progTrack only — NOT on window.
      Touch events fire on the element where touchstart occurred, so this
@@ -9321,115 +9669,165 @@ function _hcjRenderPlayer(idx) {
      small progTrack element means Chrome NEVER has to wait for a global
      touchmove handler before scrolling the text area, which eliminates
      the shake-without-scrolling bug entirely. */
-  progTrack.addEventListener("touchmove", function(e){
-    if (_scrubbing){ e.preventDefault(); _hcjScrubAt(e); }
-  }, {passive:false});
+  progTrack.addEventListener(
+    "touchmove",
+    function (e) {
+      if (_scrubbing) {
+        e.preventDefault();
+        _hcjScrubAt(e);
+      }
+    },
+    { passive: false },
+  );
 
   /* Mouse drag still uses window so the cursor can leave the track */
-  var _onMouseMove = function(e){ if(_scrubbing) _hcjScrubAt(e); };
-  var _onMouseUp   = function(){ _scrubbing=false; };
-  var _onTouchEnd  = function(){ _scrubbing=false; };
+  var _onMouseMove = function (e) {
+    if (_scrubbing) _hcjScrubAt(e);
+  };
+  var _onMouseUp = function () {
+    _scrubbing = false;
+  };
+  var _onTouchEnd = function () {
+    _scrubbing = false;
+  };
   window.addEventListener("mousemove", _onMouseMove);
-  window.addEventListener("mouseup",   _onMouseUp);
-  window.addEventListener("touchend",  _onTouchEnd);
-  _hcjPlayerCleanup = function() {
+  window.addEventListener("mouseup", _onMouseUp);
+  window.addEventListener("touchend", _onTouchEnd);
+  _hcjPlayerCleanup = function () {
     window.removeEventListener("mousemove", _onMouseMove);
-    window.removeEventListener("mouseup",   _onMouseUp);
-    window.removeEventListener("touchend",  _onTouchEnd);
+    window.removeEventListener("mouseup", _onMouseUp);
+    window.removeEventListener("touchend", _onTouchEnd);
   };
 
   progRow.appendChild(progTrack);
 
-  var timeTot=document.createElement("span");
-  timeTot.id="hcj-time-tot"; timeTot.className="hcj-time";
-  timeTot.textContent="0:00";
+  var timeTot = document.createElement("span");
+  timeTot.id = "hcj-time-tot";
+  timeTot.className = "hcj-time";
+  timeTot.textContent = "0:00";
   progRow.appendChild(timeTot);
 
   wrap.appendChild(progRow);
 
   // ── Buttons row ──
-  var row=document.createElement("div"); row.className="hcj-player";
+  var row = document.createElement("div");
+  row.className = "hcj-player";
 
   // Prev arrow (left of player)
-  var prevBtn=document.createElement("button");
-  prevBtn.id="hcj-prev-btn";
-  prevBtn.className="hcj-mini-btn hcj-arrow-btn";
-  prevBtn.innerHTML="&#8592;";
-  prevBtn.title="পূর্ববর্তী পদ";
-  prevBtn.disabled=(idx===0);
-  prevBtn.onclick=function(){verseNav(-1);};
+  var prevBtn = document.createElement("button");
+  prevBtn.id = "hcj-prev-btn";
+  prevBtn.className = "hcj-mini-btn hcj-arrow-btn";
+  prevBtn.innerHTML = "&#8592;";
+  prevBtn.title = "পূর্ববর্তী পদ";
+  prevBtn.disabled = idx === 0;
+  prevBtn.onclick = function () {
+    verseNav(-1);
+  };
   row.appendChild(prevBtn);
 
   // ▶ Play button — always shows ▶, dims while already playing
-  var plb=document.createElement("button");
-  plb.id="hcj-play-btn";
-  plb.className="hcj-mini-btn hcj-play-btn"+(_hcjPlaying?" hcj-btn-dim":"");
-  plb.textContent="\u25b6"; // ▶
-  plb.title="বাজাও";
-  plb.onclick=function(){
+  var plb = document.createElement("button");
+  plb.id = "hcj-play-btn";
+  plb.className =
+    "hcj-mini-btn hcj-play-btn" + (_hcjPlaying ? " hcj-btn-dim" : "");
+  plb.textContent = "\u25b6"; // ▶
+  plb.title = "বাজাও";
+  plb.onclick = function () {
     if (_hcjPlaying) return; // already playing
-    if (_hcjAudio && _hcjAudioIdx===_verseIdx) {
-      _hcjAudio.play().then(function(){
-        _hcjPlaying=true; _hcjSyncUI(); _hcjStartProgressLoop();
-        if(window._lyrHcjAudioChanged) window._lyrHcjAudioChanged(_hcjAudio,true);
-      }).catch(function(){ _hcjPlaying=false; _hcjSyncUI(); });
-    } else { _hcjPlayVerse(_verseIdx); }
+    if (_hcjAudio && _hcjAudioIdx === _verseIdx) {
+      _hcjAudio
+        .play()
+        .then(function () {
+          _hcjPlaying = true;
+          _hcjSyncUI();
+          _hcjStartProgressLoop();
+          if (window._lyrHcjAudioChanged)
+            window._lyrHcjAudioChanged(_hcjAudio, true);
+        })
+        .catch(function () {
+          _hcjPlaying = false;
+          _hcjSyncUI();
+        });
+    } else {
+      _hcjPlayVerse(_verseIdx);
+    }
   };
   row.appendChild(plb);
 
   // ⏸ Pause button — always shows ⏸, dims while not playing
-  var pab=document.createElement("button");
-  pab.id="hcj-pause-btn";
-  pab.className="hcj-mini-btn hcj-pause-btn"+(!_hcjPlaying?" hcj-btn-dim":"");
-  pab.textContent="\u23f8"; // ⏸
-  pab.title="বিরতি";
-  pab.onclick=function(){ if (_hcjPlaying) _hcjPauseAudio(); };
+  var pab = document.createElement("button");
+  pab.id = "hcj-pause-btn";
+  pab.className =
+    "hcj-mini-btn hcj-pause-btn" + (!_hcjPlaying ? " hcj-btn-dim" : "");
+  pab.textContent = "\u23f8"; // ⏸
+  pab.title = "বিরতি";
+  pab.onclick = function () {
+    if (_hcjPlaying) _hcjPauseAudio();
+  };
   row.appendChild(pab);
 
   // Mode buttons (icon-only, tiny)
-  var modes=[
-    {k:"loop",  i:"\uD83D\uDD01", t:"লুপ (একই পদ)"},
-    {k:"continue", i:"\u23ED", t:"ক্রমাগত (পরবর্তী পদ)"}
+  var modes = [
+    { k: "loop", i: "\uD83D\uDD01", t: "লুপ (একই পদ)" },
+    { k: "continue", i: "\u23ED", t: "ক্রমাগত (পরবর্তী পদ)" },
   ];
-  modes.forEach(function(m){
-    var b=document.createElement("button");
-    b.id="hcj-mode-"+m.k;
-    b.className="hcj-mini-btn hcj-mode-btn"+(_hcjMode===m.k?" hcj-mode-active":"");
-    b.textContent=m.i; b.title=m.t;
-    b.onclick=function(){_hcjSetMode(m.k);};
+  modes.forEach(function (m) {
+    var b = document.createElement("button");
+    b.id = "hcj-mode-" + m.k;
+    b.className =
+      "hcj-mini-btn hcj-mode-btn" +
+      (_hcjMode === m.k ? " hcj-mode-active" : "");
+    b.textContent = m.i;
+    b.title = m.t;
+    b.onclick = function () {
+      _hcjSetMode(m.k);
+    };
     row.appendChild(b);
   });
 
   // Verse seek (compact)
-  var si=document.createElement("input");
-  si.id="hcj-seek-input"; si.type="number"; si.min=1; si.max=_verses.length;
-  si.value=idx+1; si.className="hcj-seek-input";
-  si.title="পদ নং";
-  si.onchange=function(){_hcjGoToVerse(this.value);};
-  si.onkeydown=function(e){if(e.key==="Enter")_hcjGoToVerse(this.value);};
+  var si = document.createElement("input");
+  si.id = "hcj-seek-input";
+  si.type = "number";
+  si.min = 1;
+  si.max = _verses.length;
+  si.value = idx + 1;
+  si.className = "hcj-seek-input";
+  si.title = "পদ নং";
+  si.onchange = function () {
+    _hcjGoToVerse(this.value);
+  };
+  si.onkeydown = function (e) {
+    if (e.key === "Enter") _hcjGoToVerse(this.value);
+  };
   row.appendChild(si);
 
-  var tot=document.createElement("span"); tot.className="hcj-seek-total"; tot.textContent="/"+_verses.length;
+  var tot = document.createElement("span");
+  tot.className = "hcj-seek-total";
+  tot.textContent = "/" + _verses.length;
   row.appendChild(tot);
 
   // Next arrow (right of player)
-  var nextBtn=document.createElement("button");
-  nextBtn.id="hcj-next-btn";
-  nextBtn.className="hcj-mini-btn hcj-arrow-btn";
-  nextBtn.innerHTML="&#8594;";
-  nextBtn.title="পরবর্তী পদ";
-  nextBtn.disabled=(idx===_verses.length-1);
-  nextBtn.onclick=function(){verseNav(1);};
+  var nextBtn = document.createElement("button");
+  nextBtn.id = "hcj-next-btn";
+  nextBtn.className = "hcj-mini-btn hcj-arrow-btn";
+  nextBtn.innerHTML = "&#8594;";
+  nextBtn.title = "পরবর্তী পদ";
+  nextBtn.disabled = idx === _verses.length - 1;
+  nextBtn.onclick = function () {
+    verseNav(1);
+  };
   row.appendChild(nextBtn);
 
-  wrap.appendChild(row); lmd.appendChild(wrap);
+  wrap.appendChild(row);
+  lmd.appendChild(wrap);
 
   /* Shrink the scroll area so it never slides under the player.
      The player is now position:absolute at the bottom of .lmd.
      We read its rendered height after layout and push .lm-card-inner
      bottom up by that amount so every touch lands in the scroll area. */
-  requestAnimationFrame(function() {
-    var pw    = document.getElementById("hcj-player-wrap");
+  requestAnimationFrame(function () {
+    var pw = document.getElementById("hcj-player-wrap");
     var inner = document.querySelector("#lmo .lm-card-inner");
     if (pw && inner) inner.style.bottom = pw.offsetHeight + "px";
   });
@@ -10144,19 +10542,42 @@ function _histFmtTime(ts) {
   );
 }
 
-function histPreset(days) {
+function _histSetActive(btn) {
+  const row = document.getElementById("histPresetRow");
+  if (row)
+    row.querySelectorAll(".hpb").forEach((b) => b.classList.remove("active"));
+  if (btn) {
+    btn.classList.add("active");
+    window._histActiveLabel =
+      btn.getAttribute("data-label") || btn.textContent.trim();
+  } else {
+    window._histActiveLabel = "Custom";
+  }
+}
+
+function histPreset(days, btn) {
   const to = new Date();
   const from = new Date();
   from.setDate(from.getDate() - (days - 1));
   document.getElementById("histFrom").value = _ldk(from);
   document.getElementById("histTo").value = _ldk(to);
+  _histSetActive(btn);
+  renderHistory();
 }
 
-function histPresetMonth() {
+function histPresetMonth(btn) {
   const now = new Date();
   const from = new Date(now.getFullYear(), now.getMonth(), 1);
   document.getElementById("histFrom").value = _ldk(from);
   document.getElementById("histTo").value = _ldk(now);
+  _histSetActive(btn);
+  renderHistory();
+}
+
+function histRangeChanged() {
+  // Manual date change clears preset selection and re-renders
+  _histSetActive(null);
+  renderHistory();
 }
 
 function _histGetDates(from, to) {
@@ -10250,54 +10671,41 @@ function renderHistory() {
     const cyc28 = Math.floor(taps28 / 28);
 
     const tr = document.createElement("tr");
-    tr.style.cssText =
-      "border-bottom:1px solid rgba(255,215,0,0.07);cursor:pointer;transition:background 0.15s";
-    tr.onmouseenter = () => (tr.style.background = "rgba(255,215,0,0.06)");
-    tr.onmouseleave = () => (tr.style.background = "");
+    tr.className = "hist-row";
     tr.onclick = () => showHistDay(tk);
 
-    const radhaStr =
-      radha > 0
-        ? radhaM +
-          'm <span style="font-size:10px;color:var(--td)">(' +
-          radha +
-          ")</span>"
-        : '<span style="color:rgba(255,255,255,0.15)">—</span>';
-    const rvStr =
-      rv > 0
-        ? rvM +
-          'm <span style="font-size:10px;color:var(--td)">(' +
-          rv +
-          ")</span>"
-        : '<span style="color:rgba(255,255,255,0.15)">—</span>';
-    const hkStr =
-      hk > 0
-        ? hkM +
-          'm <span style="font-size:10px;color:var(--td)">(' +
-          hk +
-          ")</span>"
-        : '<span style="color:rgba(255,255,255,0.15)">—</span>';
-    const n28Str =
-      taps28 > 0
-        ? cyc28 +
-          'c <span style="font-size:10px;color:var(--td)">(' +
-          taps28 +
-          ")</span>"
-        : '<span style="color:rgba(255,255,255,0.15)">—</span>';
+    const cell = (n, label) =>
+      n > 0
+        ? '<span class="hist-n">' +
+          n +
+          '</span> <span class="hist-u">' +
+          label +
+          "</span>"
+        : '<span class="hist-dash">—</span>';
+
+    const radhaStr = cell(radhaM, radhaM === 1 ? "mala" : "malas");
+    const rvStr = cell(rvM, rvM === 1 ? "mala" : "malas");
+    const hkStr = cell(hkM, hkM === 1 ? "mala" : "malas");
+    const n28Str = cell(cyc28, cyc28 === 1 ? "cycle" : "cycles");
+
+    const dateCell = `<td class="hist-date"><span class="hist-tap-dot"></span>${_histFmtDate(tk)}</td>`;
+    const chevCell = `<td class="hist-chev">›</td>`;
 
     if (isGaudiya) {
       tr.innerHTML = `
-        <td style="padding:8px 10px;color:var(--tl);white-space:nowrap;font-size:11px">${_histFmtDate(tk)}</td>
-        <td class="hist-hk-col" style="padding:8px 6px;text-align:center;color:#6DB8FF">${hkStr}</td>
-        <td style="padding:8px 6px;text-align:center;color:var(--td);font-size:11px;white-space:nowrap">${_histFmtSec(totalSec)}</td>
+        ${dateCell}
+        <td class="hist-hk-col hist-val hist-c-hk">${hkStr}</td>
+        <td class="hist-val hist-c-time">${_histFmtSec(totalSec)}</td>
+        ${chevCell}
       `;
     } else {
       tr.innerHTML = `
-        <td style="padding:8px 10px;color:var(--tl);white-space:nowrap;font-size:11px">${_histFmtDate(tk)}</td>
-        <td class="hist-radha-col" style="padding:8px 6px;text-align:center;color:var(--gold)">${radhaStr}</td>
-        <td class="hist-radha-col" style="padding:8px 6px;text-align:center;color:var(--a2)">${rvStr}</td>
-        <td class="hist-radha-col" style="padding:8px 6px;text-align:center;color:var(--green)">${n28Str}</td>
-        <td style="padding:8px 6px;text-align:center;color:var(--td);font-size:11px;white-space:nowrap">${_histFmtSec(totalSec)}</td>
+        ${dateCell}
+        <td class="hist-radha-col hist-val hist-c-gold">${radhaStr}</td>
+        <td class="hist-radha-col hist-val hist-c-rv">${rvStr}</td>
+        <td class="hist-radha-col hist-val hist-c-green">${n28Str}</td>
+        <td class="hist-val hist-c-time">${_histFmtSec(totalSec)}</td>
+        ${chevCell}
       `;
     }
     tbody.appendChild(tr);
@@ -10306,6 +10714,10 @@ function renderHistory() {
   if (activeDays === 0) {
     sumLine.textContent = "No jap recorded in this date range.";
     wrap.style.display = "none";
+    if (totDiv) {
+      totDiv.innerHTML = "";
+      totDiv.style.display = "none";
+    }
     return;
   }
 
@@ -10322,27 +10734,39 @@ function renderHistory() {
   const totHKM = Math.floor(totHK / ms);
   const totCyc28 = Math.floor(tot28taps / 28);
   const grandTotal = totTimeSec + totTimeSec28;
+  const fmtN = (n) => n.toLocaleString();
+  const rangeLbl = window._histActiveLabel || "Custom";
+  const statCard = (cls, icon, label, mainNum, mainUnit, sub, time) => `
+    <div class="pt-card ${cls}">
+      <div class="pt-card-icon">${icon}</div>
+      <div class="pt-card-label">${label}</div>
+      <div class="pt-card-main"><span class="pt-num">${fmtN(mainNum)}</span><span class="pt-unit">${mainUnit}</span></div>
+      <div class="pt-card-sub">${sub}</div>
+      <div class="pt-card-time">⏱ ${time}</div>
+    </div>`;
+
+  totDiv.style.display = "block";
+  const _hkPTLang = App.S.hkLang || "hi";
+  const _hkPTLabel =
+    _hkPTLang === "bn" ? "হরে কৃষ্ণ মহামন্ত্র" : "हरे कृष्ण महामंत्र";
+
   if (isGaudiya) {
     totDiv.innerHTML = `
-      <div style="color:var(--gold);font-weight:700;font-size:11px;letter-spacing:1px;margin-bottom:6px;text-transform:uppercase">📊 Period Totals (Gaudiya)</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 10px;font-size:12px">
-        <div style="color:#6DB8FF">HK Jap: <strong>${totHKM} malas</strong> <span style="color:var(--td);font-size:10px">(${totHK})</span></div>
-        <div style="color:var(--tl)">Total Time: <strong>${_histFmtSec(grandTotal)}</strong></div>
-        <div style="color:var(--td);font-size:11px">HK Time: ${_histFmtSec(window._ptHKSec || 0)}</div>
+      <div class="pt-head"><span class="pt-head-icon">📊</span><span class="pt-head-title">Period Totals</span><span class="pt-head-range">(${rangeLbl})</span><span class="pt-head-tag">Gaudiya</span></div>
+      <div class="pt-grid pt-grid-1">
+        ${statCard("pt-hk", "🪈", _hkPTLabel, totHKM, totHKM === 1 ? "mala" : "malas", fmtN(totHK) + " names", _histFmtSec(window._ptHKSec || 0))}
       </div>
+      <div class="pt-total"><span class="pt-total-label">Total Time</span><span class="pt-total-val">${_histFmtSec(grandTotal)}</span></div>
     `;
   } else {
     totDiv.innerHTML = `
-      <div style="color:var(--gold);font-weight:700;font-size:11px;letter-spacing:1px;margin-bottom:6px;text-transform:uppercase">📊 Period Totals</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 10px;font-size:12px">
-        <div style="color:var(--gold)">Radha Jap: <strong>${totRadhaM} malas</strong> <span style="color:var(--td);font-size:10px">(${totRadha})</span></div>
-        <div style="color:var(--a2)">RV Jap: <strong>${totRVM} malas</strong> <span style="color:var(--td);font-size:10px">(${totRV})</span></div>
-        <div style="color:var(--green)">28 Names: <strong>${totCyc28} cycles</strong> <span style="color:var(--td);font-size:10px">(${tot28taps} taps)</span></div>
-        <div style="color:var(--tl)">Total Time: <strong>${_histFmtSec(grandTotal)}</strong></div>
-        <div style="color:var(--td);font-size:11px">Radha Time: ${_histFmtSec(window._ptRadhaSec || 0)}</div>
-        <div style="color:var(--td);font-size:11px">RV Time: ${_histFmtSec(window._ptRVSec || 0)}</div>
-        <div style="color:var(--td);font-size:11px">28 Names Time: ${_histFmtSec(totTimeSec28)}</div>
+      <div class="pt-head"><span class="pt-head-icon">📊</span><span class="pt-head-title">Period Totals</span><span class="pt-head-range">(${rangeLbl})</span></div>
+      <div class="pt-grid pt-grid-3">
+        ${statCard("pt-radha", "📿", "Radha Jap", totRadhaM, totRadhaM === 1 ? "mala" : "malas", fmtN(totRadha) + " names", _histFmtSec(window._ptRadhaSec || 0))}
+        ${statCard("pt-rv", "🕉️", "RV Jap", totRVM, totRVM === 1 ? "mala" : "malas", fmtN(totRV) + " names", _histFmtSec(window._ptRVSec || 0))}
+        ${statCard("pt-28", "🪷", "28 Names", totCyc28, totCyc28 === 1 ? "cycle" : "cycles", fmtN(tot28taps) + " taps", _histFmtSec(totTimeSec28))}
       </div>
+      <div class="pt-total"><span class="pt-total-label">Total Time</span><span class="pt-total-val">${_histFmtSec(grandTotal)}</span></div>
     `;
   }
 }
@@ -10357,98 +10781,188 @@ function showHistDay(tk) {
   detail.scrollIntoView({ behavior: "smooth", block: "nearest" });
 
   const ms = App.S.ms || 108;
+  const isGaudiya = App.S.gaudiyaMode || false;
   const radha = App.S.history[tk] || 0;
   const rv = App.S.historyRV[tk] || 0;
+  const hk = App.S.historyHK[tk] || 0;
   const taps28 = App.S.h28[tk] || 0;
   const tSecR = App.S.timerHistory[tk] || 0;
   const tSecRV = App.S.timerHistoryRV[tk] || 0;
+  const tSecHK = App.S.timerHistoryHK[tk] || 0;
   const t28Sec = App.S.timer28History[tk] || 0;
 
   const radhaM = Math.floor(radha / ms);
   const rvM = Math.floor(rv / ms);
+  const hkM = Math.floor(hk / ms);
   const cyc28 = Math.floor(taps28 / 28);
-  const isToday = tk === App.S.tk;
+  const grand = isGaudiya ? tSecHK : tSecR + tSecRV + t28Sec;
+  const fmtN = (n) => n.toLocaleString();
+
+  // Full localized HK name
+  const _hkDayLang = App.S.hkLang || "hi";
+  const _hkDayLabel =
+    _hkDayLang === "bn" ? "হরে কৃষ্ণ মহামন্ত্র" : "हरे कृष्ण महामंत्र";
+
+  // Stash data for the per-set drill-down
+  window._histDayCtx = { tk, isToday: tk === App.S.tk };
+
+  // Build clickable per-set cards (premium style, same as Period Totals)
+  const card = (cls, set, label, mainNum, mainUnit, sub, time, enabled) => `
+    <div class="pt-card ${cls}${enabled ? " pt-card-tap" : " pt-card-dim"}"
+         ${enabled ? `onclick="showHistSet('${set}')"` : ""}
+         role="${enabled ? "button" : ""}" tabindex="${enabled ? "0" : "-1"}">
+      <div class="pt-card-label">${label}</div>
+      <div class="pt-card-main"><span class="pt-num">${fmtN(mainNum)}</span><span class="pt-unit">${mainUnit}</span></div>
+      <div class="pt-card-sub">${sub}</div>
+      <div class="pt-card-time">⏱ ${time}</div>
+      ${enabled ? '<div class="pt-card-chev">›</div>' : ""}
+    </div>`;
 
   let html = "";
+  html += `<div class="pt-head" style="margin-top:2px"><span class="pt-head-icon">📊</span><span class="pt-head-title">Day Totals</span><span class="pt-head-hint">tap a set for per-mala detail</span></div>`;
 
-  // ── Day Summary ──
-  html += `<div style="background:rgba(255,215,0,0.06);border:1px solid rgba(255,215,0,0.15);border-radius:10px;padding:10px 12px;margin-bottom:10px;font-size:12px;font-family:Inter,sans-serif">`;
-  html += `<div style="font-size:10px;color:var(--gold);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px;font-weight:600">Day Summary</div>`;
-  html += `<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 10px">`;
-  // ── TIME FIX: Always use timerHistory (syncTimerFromMalaLog keeps it authoritative).
-  // Previous isToday override caused mismatch when manual jap+time was added to today.
-  const tSecR_disp = tSecR;
-  const tSecRV_disp = tSecRV;
-  if (radha > 0)
-    html += `<div style="color:var(--gold)">Radha: <strong>${radhaM} mala</strong> (${radha}) · ${_histFmtSec(tSecR_disp)}</div>`;
-  if (rv > 0)
-    html += `<div style="color:var(--a2)">RV: <strong>${rvM} mala</strong> (${rv}) · ${_histFmtSec(tSecRV_disp)}</div>`;
-  if (taps28 > 0)
-    html += `<div style="color:var(--green)">28 Names: <strong>${cyc28} cycles</strong> (${taps28}) · ${_histFmtSec(t28Sec)}</div>`;
-  const grand = tSecR_disp + tSecRV_disp + t28Sec;
-  if (grand > 0)
-    html += `<div style="color:var(--tl)">Total: <strong>${_histFmtSec(grand)}</strong></div>`;
-  html += `</div></div>`;
+  if (isGaudiya) {
+    html += `<div class="pt-grid pt-grid-1">`;
+    html += card(
+      "pt-hk",
+      "hk",
+      _hkDayLabel,
+      hkM,
+      hkM === 1 ? "mala" : "malas",
+      fmtN(hk) + " names",
+      _histFmtSec(tSecHK),
+      hk > 0,
+    );
+    html += `</div>`;
+  } else {
+    html += `<div class="pt-grid pt-grid-3">`;
+    html += card(
+      "pt-radha",
+      "radha",
+      "Radha Jap",
+      radhaM,
+      radhaM === 1 ? "mala" : "malas",
+      fmtN(radha) + " names",
+      _histFmtSec(tSecR),
+      radha > 0,
+    );
+    html += card(
+      "pt-rv",
+      "rv",
+      "RV Jap",
+      rvM,
+      rvM === 1 ? "mala" : "malas",
+      fmtN(rv) + " names",
+      _histFmtSec(tSecRV),
+      rv > 0,
+    );
+    html += card(
+      "pt-28",
+      "28",
+      "28 Names",
+      cyc28,
+      cyc28 === 1 ? "cycle" : "cycles",
+      fmtN(taps28) + " taps",
+      _histFmtSec(t28Sec),
+      taps28 > 0,
+    );
+    html += `</div>`;
+  }
+  html += `<div class="pt-total"><span class="pt-total-label">Total Time</span><span class="pt-total-val">${_histFmtSec(grand)}</span></div>`;
 
-  // ── Per-Mala Detail from activityLog ──
+  // Drill-down slot (populated by showHistSet)
+  html += `<div id="histSetDetail" style="margin-top:14px"></div>`;
+
+  content.innerHTML = html;
+}
+
+function showHistSet(set) {
+  const ctx = window._histDayCtx;
+  if (!ctx) return;
+  const { tk, isToday } = ctx;
+  const slot = document.getElementById("histSetDetail");
+  if (!slot) return;
+
   const log = App.S.activityLog || [];
   const tkPrefix = tk.slice(0, 10);
 
-  // Get mala entries for this day
-  const radhaEntries = log.filter(
-    (e) =>
-      e.t === "mala" && e.mode !== "rv" && _ldk(new Date(e.ts)) === tkPrefix,
-  );
-  const rvEntries = log.filter(
-    (e) =>
-      e.t === "mala" && e.mode === "rv" && _ldk(new Date(e.ts)) === tkPrefix,
-  );
-  const cycleEntries = log.filter(
-    (e) => e.t === "28cycle" && _ldk(new Date(e.ts)) === tkPrefix,
-  );
+  let inner = "";
+  const backBtn = `<button class="hist-back-btn" onclick="document.getElementById('histSetDetail').innerHTML=''">‹ Back to Day Totals</button>`;
 
-  const hasDetail =
-    radhaEntries.length > 0 || rvEntries.length > 0 || cycleEntries.length > 0;
-
-  if (!hasDetail && !isToday) {
-    html += `<div style="font-size:11px;color:var(--td);text-align:center;padding:8px 0">Per-mala detail not available for this date<br><span style="font-size:10px">(activity log only keeps recent sessions)</span></div>`;
-  }
-
-  if (radhaEntries.length > 0) {
-    html += _histMalaTable(
-      "🌸 Radha Jap — Per Mala",
-      radhaEntries,
-      "var(--gold)",
+  if (set === "radha") {
+    const radhaEntries = log.filter(
+      (e) =>
+        e.t === "mala" && e.mode !== "rv" && _ldk(new Date(e.ts)) === tkPrefix,
     );
-  }
-  if (rvEntries.length > 0) {
-    html += _histMalaTable("🔵 RV Jap — Per Mala", rvEntries, "var(--a2)");
-  }
-  if (cycleEntries.length > 0) {
-    html += _hist28CycleTable(cycleEntries);
+    inner += backBtn;
+    if (radhaEntries.length > 0) {
+      inner += _histMalaTable(
+        "🌸 Radha Jap — Per Mala",
+        radhaEntries,
+        "var(--gold)",
+      );
+    } else if (isToday && (App.S.malaLog || []).length > 0) {
+      inner += _histTodayMalaLogTable(
+        "🌸 Radha Jap — Today's Malas",
+        App.S.malaLog,
+        "var(--gold)",
+      );
+    } else {
+      inner += `<div style="font-size:11px;color:var(--td);text-align:center;padding:10px 0">Per-mala detail not available for this date<br><span style="font-size:10px">(activity log only keeps recent sessions)</span></div>`;
+    }
+  } else if (set === "rv") {
+    const rvEntries = log.filter(
+      (e) =>
+        e.t === "mala" && e.mode === "rv" && _ldk(new Date(e.ts)) === tkPrefix,
+    );
+    inner += backBtn;
+    if (rvEntries.length > 0) {
+      inner += _histMalaTable("🔵 RV Jap — Per Mala", rvEntries, "var(--a2)");
+    } else if (isToday && (App.S.malaLogRV || []).length > 0) {
+      inner += _histTodayMalaLogTable(
+        "🔵 RV Jap — Today's Malas",
+        App.S.malaLogRV,
+        "var(--a2)",
+      );
+    } else {
+      inner += `<div style="font-size:11px;color:var(--td);text-align:center;padding:10px 0">Per-mala detail not available for this date</div>`;
+    }
+  } else if (set === "28") {
+    const cycleEntries = log.filter(
+      (e) => e.t === "28cycle" && _ldk(new Date(e.ts)) === tkPrefix,
+    );
+    inner += backBtn;
+    if (cycleEntries.length > 0) {
+      inner += _hist28CycleTable(cycleEntries);
+    } else {
+      inner += `<div style="font-size:11px;color:var(--td);text-align:center;padding:10px 0">Per-cycle detail not available for this date</div>`;
+    }
+  } else if (set === "hk") {
+    const hkEntries = log.filter(
+      (e) =>
+        e.t === "mala" && e.mode === "hk" && _ldk(new Date(e.ts)) === tkPrefix,
+    );
+    const _hkSetLang = App.S.hkLang || "hi";
+    const _hkSetLabel =
+      _hkSetLang === "bn"
+        ? "🪈 হরে কৃষ্ণ মহামন্ত্র — Per Mala"
+        : "🪈 हरे कृष्ण महामंत्र — Per Mala";
+    inner += backBtn;
+    if (hkEntries.length > 0) {
+      inner += _histMalaTable(_hkSetLabel, hkEntries, "var(--rl)");
+    } else if (isToday && (App.S.malaLogHK || []).length > 0) {
+      inner += _histTodayMalaLogTable(
+        _hkSetLabel,
+        App.S.malaLogHK,
+        "var(--rl)",
+      );
+    } else {
+      inner += `<div style="font-size:11px;color:var(--td);text-align:center;padding:10px 0">Per-mala detail not available for this date</div>`;
+    }
   }
 
-  // Today: also show from malaLog (more complete, has all malas even if log is short)
-  if (
-    isToday &&
-    radhaEntries.length === 0 &&
-    (App.S.malaLog || []).length > 0
-  ) {
-    html += _histTodayMalaLogTable(
-      "🌸 Radha Jap — Today's Malas",
-      App.S.malaLog,
-      "var(--gold)",
-    );
-  }
-  if (isToday && rvEntries.length === 0 && (App.S.malaLogRV || []).length > 0) {
-    html += _histTodayMalaLogTable(
-      "🔵 RV Jap — Today's Malas",
-      App.S.malaLogRV,
-      "var(--a2)",
-    );
-  }
-
-  content.innerHTML = html;
+  slot.innerHTML = inner;
+  slot.scrollIntoView({ behavior: "smooth", block: "nearest" });
 }
 
 function _histMalaTable(label, entries, color) {
@@ -10875,17 +11389,34 @@ function _renderAnnualEkList(results, year, listEl, statusEl) {
 (function () {
   "use strict";
 
-  /* Discrete font sizes (px). Step 1 = smallest, last = biggest. */
-  var STEPS        = [11, 13, 15, 17, 19, 21, 24, 28, 32, 38];
-  var DEFAULT_STEP = 3;                       // index into STEPS (≈17px)
-  var STORAGE_KEY  = "lyr_step";              // new key (integer step)
-  var LEGACY_KEY   = "lyr_manual_px";         // old key (px value)
+  /* Discrete font sizes (px). Step 1 = smallest, last = biggest.
+     The upper end scales with the device so larger phones/tablets
+     can reach a comfortably big size instead of being capped at 10. */
+  var BASE_STEPS = [11, 13, 15, 17, 19, 21, 24, 28, 32, 38, 44, 52, 62, 74];
+  function buildSteps() {
+    var vw = Math.max(
+      window.innerWidth || 0,
+      document.documentElement.clientWidth || 0,
+    );
+    // Cap top size at ~12% of viewport width, min 38px, max 96px.
+    var cap = Math.max(38, Math.min(96, Math.round(vw * 0.12)));
+    var out = [];
+    for (var i = 0; i < BASE_STEPS.length; i++) {
+      if (BASE_STEPS[i] <= cap) out.push(BASE_STEPS[i]);
+    }
+    if (out[out.length - 1] < cap) out.push(cap);
+    return out;
+  }
+  var STEPS = buildSteps();
+  var DEFAULT_STEP = 3; // index into STEPS (≈17px)
+  var STORAGE_KEY = "lyr_step"; // new key (integer step)
+  var LEGACY_KEY = "lyr_manual_px"; // old key (px value)
 
-  var _autoStep   = null;
+  var _autoStep = null;
   var _manualStep = null;
-  var _pending    = false;
-  var _barBuilt   = false;
-  var _audioEl    = null;
+  var _pending = false;
+  var _barBuilt = false;
+  var _audioEl = null;
 
   try {
     var sv = localStorage.getItem(STORAGE_KEY);
@@ -10905,10 +11436,14 @@ function _renderAnnualEkList(results, year, listEl, statusEl) {
   }
   function pxToStep(px) {
     if (!isFinite(px)) return DEFAULT_STEP;
-    var best = 0, bestD = Infinity;
+    var best = 0,
+      bestD = Infinity;
     for (var i = 0; i < STEPS.length; i++) {
       var d = Math.abs(STEPS[i] - px);
-      if (d < bestD) { bestD = d; best = i; }
+      if (d < bestD) {
+        bestD = d;
+        best = i;
+      }
     }
     return best;
   }
@@ -10922,8 +11457,8 @@ function _renderAnnualEkList(results, year, listEl, statusEl) {
     lyrEl.style.setProperty("--lyr-fs", STEPS[0] + "px");
     var i;
     for (i = 0; i < lines.length; i++) {
-      lines[i].style.display    = "inline-block";
-      lines[i].style.width      = "auto";
+      lines[i].style.display = "inline-block";
+      lines[i].style.width = "auto";
       lines[i].style.whiteSpace = "nowrap";
     }
     var maxW = 0;
@@ -10931,8 +11466,8 @@ function _renderAnnualEkList(results, year, listEl, statusEl) {
       if (lines[i].offsetWidth > maxW) maxW = lines[i].offsetWidth;
     }
     for (i = 0; i < lines.length; i++) {
-      lines[i].style.display    = "";
-      lines[i].style.width      = "";
+      lines[i].style.display = "";
+      lines[i].style.width = "";
       lines[i].style.whiteSpace = "";
     }
     if (maxW < 1) return null;
@@ -10942,9 +11477,9 @@ function _renderAnnualEkList(results, year, listEl, statusEl) {
 
   function applyStep(step, modal) {
     step = clampStep(step);
-    var px    = STEPS[step];
+    var px = STEPS[step];
     var value = px + "px";
-    var lyrs  = modal.querySelectorAll(".lyr");
+    var lyrs = modal.querySelectorAll(".lyr");
     for (var i = 0; i < lyrs.length; i++) {
       lyrs[i].style.setProperty("--lyr-fs", value);
       var lines = lyrs[i].querySelectorAll(".lyr-line");
@@ -10960,22 +11495,28 @@ function _renderAnnualEkList(results, year, listEl, statusEl) {
     _pending = true;
     requestAnimationFrame(function () {
       var lyrs = modal.querySelectorAll(".lyr");
-      var s    = lyrs.length ? autoFitStep(lyrs[0]) : null;
+      var s = lyrs.length ? autoFitStep(lyrs[0]) : null;
       if (s !== null) _autoStep = s;
-      var target = (_manualStep !== null) ? _manualStep : _autoStep;
+      var target = _manualStep !== null ? _manualStep : _autoStep;
       if (target !== null) applyStep(target, modal);
       _pending = false;
     });
   }
   function fitSoon() {
-    [80, 300, 600, 1100, 2000].forEach(function (d) { setTimeout(fit, d); });
+    [80, 300, 600, 1100, 2000].forEach(function (d) {
+      setTimeout(fit, d);
+    });
   }
   window.fitLyrLines = fit;
 
   var _resizeTimer;
   window.addEventListener("resize", function () {
     clearTimeout(_resizeTimer);
-    _resizeTimer = setTimeout(fit, 220);
+    _resizeTimer = setTimeout(function () {
+      STEPS = buildSteps();
+      if (_manualStep !== null) _manualStep = clampStep(_manualStep);
+      fit();
+    }, 220);
   });
 
   function buildBar() {
@@ -10994,14 +11535,18 @@ function _renderAnnualEkList(results, year, listEl, statusEl) {
       '<button id="lyr-fs-auto" style="display:none" title="Reset size">↺</button>';
     modal.appendChild(wrap);
 
-    var down  = document.getElementById("lyr-fs-down");
-    var up    = document.getElementById("lyr-fs-up");
-    var auto  = document.getElementById("lyr-fs-auto");
+    var down = document.getElementById("lyr-fs-down");
+    var up = document.getElementById("lyr-fs-up");
+    var auto = document.getElementById("lyr-fs-auto");
     var pause = document.getElementById("lyr-fs-pause");
 
     function stepBy(delta) {
-      var base = (_manualStep !== null) ? _manualStep
-               : (_autoStep   !== null) ? _autoStep   : DEFAULT_STEP;
+      var base =
+        _manualStep !== null
+          ? _manualStep
+          : _autoStep !== null
+            ? _autoStep
+            : DEFAULT_STEP;
       _manualStep = clampStep(base + delta);
       savePref();
       var m = document.querySelector(".lmo");
@@ -11009,8 +11554,12 @@ function _renderAnnualEkList(results, year, listEl, statusEl) {
       refreshAutoBtn();
     }
 
-    bindRepeat(down, function () { stepBy(-1); });
-    bindRepeat(up,   function () { stepBy( 1); });
+    bindRepeat(down, function () {
+      stepBy(-1);
+    });
+    bindRepeat(up, function () {
+      stepBy(1);
+    });
 
     auto.addEventListener("click", function (e) {
       e.stopPropagation();
@@ -11023,7 +11572,8 @@ function _renderAnnualEkList(results, year, listEl, statusEl) {
     pause.addEventListener("click", function (e) {
       e.stopPropagation();
       if (!_audioEl) return;
-      if (_audioEl.paused) _audioEl.play(); else _audioEl.pause();
+      if (_audioEl.paused) _audioEl.play();
+      else _audioEl.pause();
       syncPauseBtn();
     });
   }
@@ -11034,17 +11584,22 @@ function _renderAnnualEkList(results, year, listEl, statusEl) {
     function start(e) {
       e.stopPropagation();
       fn();
-      holdT = setTimeout(function () { repT = setInterval(fn, 140); }, 380);
+      holdT = setTimeout(function () {
+        repT = setInterval(fn, 140);
+      }, 380);
     }
     function stop() {
-      clearTimeout(holdT); clearInterval(repT);
+      clearTimeout(holdT);
+      clearInterval(repT);
       holdT = repT = null;
     }
-    btn.addEventListener("pointerdown",  start);
-    btn.addEventListener("pointerup",    stop);
+    btn.addEventListener("pointerdown", start);
+    btn.addEventListener("pointerup", stop);
     btn.addEventListener("pointerleave", stop);
-    btn.addEventListener("pointercancel",stop);
-    btn.addEventListener("click", function (e) { e.stopPropagation(); });
+    btn.addEventListener("pointercancel", stop);
+    btn.addEventListener("click", function (e) {
+      e.stopPropagation();
+    });
   }
 
   function updateLabel(t) {
@@ -11053,15 +11608,18 @@ function _renderAnnualEkList(results, year, listEl, statusEl) {
   }
   function refreshAutoBtn() {
     var el = document.getElementById("lyr-fs-auto");
-    if (el) el.style.display = (_manualStep !== null) ? "inline-block" : "none";
+    if (el) el.style.display = _manualStep !== null ? "inline-block" : "none";
   }
   function syncPauseBtn() {
     var btn = document.getElementById("lyr-fs-pause");
     if (!btn) return;
-    if (!_audioEl || _audioEl.ended) { btn.style.display = "none"; return; }
+    if (!_audioEl || _audioEl.ended) {
+      btn.style.display = "none";
+      return;
+    }
     btn.style.display = "inline-block";
-    btn.textContent   = _audioEl.paused ? "▶" : "⏸";
-    btn.title         = _audioEl.paused ? "Resume" : "Pause";
+    btn.textContent = _audioEl.paused ? "▶" : "⏸";
+    btn.title = _audioEl.paused ? "Resume" : "Pause";
   }
   function savePref() {
     try {
@@ -11075,7 +11633,13 @@ function _renderAnnualEkList(results, year, listEl, statusEl) {
   }
 
   function getPlayerHeight() {
-    var ids = ["hcj-player-wrap","lm-audio-player","audio-player-wrap","playerWrap","player-wrap"];
+    var ids = [
+      "hcj-player-wrap",
+      "lm-audio-player",
+      "audio-player-wrap",
+      "playerWrap",
+      "player-wrap",
+    ];
     for (var i = 0; i < ids.length; i++) {
       var el = document.getElementById(ids[i]);
       if (el && el.offsetHeight > 20) return el.offsetHeight + 12;
@@ -11083,7 +11647,8 @@ function _renderAnnualEkList(results, year, listEl, statusEl) {
     if (_audioEl) {
       var p = _audioEl.parentElement;
       for (var k = 0; k < 5 && p; k++) {
-        if (p.offsetHeight > 30 && p.offsetHeight < 300) return p.offsetHeight + 12;
+        if (p.offsetHeight > 30 && p.offsetHeight < 300)
+          return p.offsetHeight + 12;
         p = p.parentElement;
       }
     }
@@ -11093,28 +11658,40 @@ function _renderAnnualEkList(results, year, listEl, statusEl) {
     var modal = document.querySelector(".lmo");
     if (!modal) return;
     var inner = modal.querySelector(".lm-card-inner");
-    if (inner) inner.style.paddingBottom = active ? getPlayerHeight() + "px" : "";
+    if (inner)
+      inner.style.paddingBottom = active ? getPlayerHeight() + "px" : "";
   }
 
-  function onAudioEnded() { setScrollPadding(false); syncPauseBtn(); }
+  function onAudioEnded() {
+    setScrollPadding(false);
+    syncPauseBtn();
+  }
   function _attachAudioListeners(el) {
     el.removeEventListener("pause", syncPauseBtn);
-    el.removeEventListener("play",  syncPauseBtn);
+    el.removeEventListener("play", syncPauseBtn);
     el.removeEventListener("ended", onAudioEnded);
     el.addEventListener("pause", syncPauseBtn);
-    el.addEventListener("play",  syncPauseBtn);
+    el.addEventListener("play", syncPauseBtn);
     el.addEventListener("ended", onAudioEnded);
   }
-  document.addEventListener("play", function (e) {
-    if (!e.target || e.target.tagName !== "AUDIO") return;
-    _audioEl = e.target;
-    _attachAudioListeners(_audioEl);
-    syncPauseBtn();
-    setScrollPadding(true);
-  }, true);
-  document.addEventListener("pause", function (e) {
-    if (e.target && e.target.tagName === "AUDIO") syncPauseBtn();
-  }, true);
+  document.addEventListener(
+    "play",
+    function (e) {
+      if (!e.target || e.target.tagName !== "AUDIO") return;
+      _audioEl = e.target;
+      _attachAudioListeners(_audioEl);
+      syncPauseBtn();
+      setScrollPadding(true);
+    },
+    true,
+  );
+  document.addEventListener(
+    "pause",
+    function (e) {
+      if (e.target && e.target.tagName === "AUDIO") syncPauseBtn();
+    },
+    true,
+  );
 
   window._lyrHcjAudioChanged = function (audioEl, isPlaying) {
     if (isPlaying) setScrollPadding(true);
@@ -11129,7 +11706,11 @@ function _renderAnnualEkList(results, year, listEl, statusEl) {
     new MutationObserver(function (muts) {
       for (var i = 0; i < muts.length; i++) {
         var m = muts[i];
-        if (m.type === "attributes" && m.target === modal && m.attributeName === "class") {
+        if (
+          m.type === "attributes" &&
+          m.target === modal &&
+          m.attributeName === "class"
+        ) {
           if (modal.classList.contains("show")) fitSoon();
           return;
         }
@@ -11141,8 +11722,15 @@ function _renderAnnualEkList(results, year, listEl, statusEl) {
           var touchesLyrics = false;
           for (var ai = 0; ai < m.addedNodes.length; ai++) {
             var n = m.addedNodes[ai];
-            if (n.nodeType === 1 && (n.classList && (n.classList.contains("lyr-line") || n.classList.contains("lyr-prose")) || (n.querySelector && n.querySelector(".lyr-line, .lyr-prose")))) {
-              touchesLyrics = true; break;
+            if (
+              n.nodeType === 1 &&
+              ((n.classList &&
+                (n.classList.contains("lyr-line") ||
+                  n.classList.contains("lyr-prose"))) ||
+                (n.querySelector && n.querySelector(".lyr-line, .lyr-prose")))
+            ) {
+              touchesLyrics = true;
+              break;
             }
           }
           if (touchesLyrics) setTimeout(fit, 120);
@@ -11150,17 +11738,27 @@ function _renderAnnualEkList(results, year, listEl, statusEl) {
         }
       }
     }).observe(modal, {
-      attributes: true, attributeFilter: ["class"],
-      childList: true, subtree: true
+      attributes: true,
+      attributeFilter: ["class"],
+      childList: true,
+      subtree: true,
     });
 
     if (modal.classList.contains("show")) fitSoon();
 
-    modal.addEventListener("touchmove", function (e) {
-      if (e.target && e.target.closest && e.target.closest(".lm-card-inner")) {
-        e.stopPropagation();
-      }
-    }, { passive: true });
+    modal.addEventListener(
+      "touchmove",
+      function (e) {
+        if (
+          e.target &&
+          e.target.closest &&
+          e.target.closest(".lm-card-inner")
+        ) {
+          e.stopPropagation();
+        }
+      },
+      { passive: true },
+    );
 
     var clampScrollSoon = function () {
       setTimeout(function () {
@@ -11170,16 +11768,18 @@ function _renderAnnualEkList(results, year, listEl, statusEl) {
         if (inner.scrollTop > max) inner.scrollTop = max;
       }, 50);
     };
-    ["lyr-fs-up","lyr-fs-down","lyr-fs-auto"].forEach(function (id) {
+    ["lyr-fs-up", "lyr-fs-down", "lyr-fs-auto"].forEach(function (id) {
       var b = document.getElementById(id);
       if (b) b.addEventListener("click", clampScrollSoon);
     });
 
     modal.addEventListener("click", function (e) {
-      if (e.target.closest(".lm-nav-btn") ||
-          e.target.closest(".lm-arr")     ||
-          e.target.closest(".lm-dot")     ||
-          e.target.closest("[data-verse]")) {
+      if (
+        e.target.closest(".lm-nav-btn") ||
+        e.target.closest(".lm-arr") ||
+        e.target.closest(".lm-dot") ||
+        e.target.closest("[data-verse]")
+      ) {
         setTimeout(fit, 150);
       }
     });

@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<meta name="app-version" content="83">
+<meta name="app-version" content="90">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -23,12 +23,40 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<link rel="stylesheet" href="./style.css?v=83">
-  <link rel="stylesheet" href="./style-stotram.css?v=87">
+<link rel="stylesheet" href="./style.css?v=91">
+  <link rel="stylesheet" href="./style-stotram.css?v=91">
 </head>
 <body>
 <!-- LOADING -->
 <div class="ls" id="ls">
+  <!-- Sudarshan Chakra flying from bottom-left to top-right -->
+  <div class="sudarshan-fly" aria-hidden="true">
+    <svg viewBox="0 0 100 100" class="sudarshan-svg">
+      <defs>
+        <radialGradient id="sudGrad" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stop-color="#FFF7C2"/>
+          <stop offset="55%" stop-color="#F5C242"/>
+          <stop offset="100%" stop-color="#B8650F"/>
+        </radialGradient>
+      </defs>
+      <g class="sudarshan-spin" style="transform-origin:50px 50px">
+        <circle cx="50" cy="50" r="46" fill="url(#sudGrad)" stroke="#FFE27A" stroke-width="2"/>
+        <circle cx="50" cy="50" r="12" fill="#FFF8D6" stroke="#B8650F" stroke-width="2"/>
+        <g fill="#FFE27A" stroke="#7A3E05" stroke-width="1.2" stroke-linejoin="round">
+          <!-- 8 spokes/blades -->
+          <polygon points="50,2 54,22 50,30 46,22"/>
+          <polygon points="98,50 78,54 70,50 78,46"/>
+          <polygon points="50,98 46,78 50,70 54,78"/>
+          <polygon points="2,50 22,46 30,50 22,54"/>
+          <polygon points="84,16 70,30 64,30 70,24" transform="rotate(0 50 50)"/>
+          <polygon points="84,84 70,70 70,64 76,70" transform="rotate(0 50 50)"/>
+          <polygon points="16,84 30,70 30,64 24,70"/>
+          <polygon points="16,16 30,30 30,24 24,30"/>
+        </g>
+        <circle cx="50" cy="50" r="46" fill="none" stroke="#FFF8D6" stroke-width="1" opacity="0.7"/>
+      </g>
+    </svg>
+  </div>
   <div class="ls-rings">
     <div class="glow1"></div>
     <div class="glow2"></div>
@@ -306,8 +334,6 @@
         <div class="mf-line1">Radha Vallabh</div>
         <div class="mf-line2">Sri Harivangsa</div>
       </div>
-      <!-- Sanskrit Radha at top inside tap area -->
-      <div style="position:absolute;top:14px;left:0;right:0;text-align:center;font-family:'Tiro Devanagari Hindi','Hind Siliguri',serif;font-size:clamp(13px,3.5vw,18px);color:rgba(255,215,0,0.55);letter-spacing:3px;pointer-events:none;">राधा</div>
       <div class="n28name" id="n28name">রাধা</div>
       <div class="n28meaning" id="n28meaning">The Supreme Beloved</div>
       <div class="n28timer-box" style="position:absolute;top:10px;right:12px;z-index:5">
@@ -333,64 +359,52 @@
       <!-- a) Cycle Counts -->
       <div class="n28sp-section">
         <div class="n28sp-title">🔄 Cycle Counts</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:4px">
           <div class="ns"><div class="nv" id="sp28CyclesTod" style="font-size:18px">0</div><div class="nl">Today</div></div>
           <div class="ns"><div class="nv" id="sp28CyclesAll" style="font-size:18px">0</div><div class="nl">All Time</div></div>
         </div>
-        <div class="n28sp-row">
-          <input type="number" class="n28sp-in" id="sp28CycleVal" min="0" placeholder="Cycles" style="width:74px" oninput="prev28Cycles(this.value)">
-          <button class="n28sp-btn add" onclick="adj28Cycles(1)">＋ Add</button>
-          <button class="n28sp-btn ded" onclick="adj28Cycles(-1)">－ Deduct</button>
-        </div>
-        <div style="font-size:10px;color:var(--td);margin-top:4px"><span id="sp28CyclePreview" style="color:var(--a2)"></span></div>
       </div>
 
       <!-- b) Cycle Time -->
       <div class="n28sp-section">
         <div class="n28sp-title">⏱ 28 Names Time</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
           <div class="ns"><div class="nv" id="sp28TimeTod" style="font-size:18px">0m</div><div class="nl">Today</div></div>
           <div class="ns"><div class="nv" id="sp28TimeAll" style="font-size:18px">0m</div><div class="nl">All Time</div></div>
         </div>
-        <div class="n28sp-row">
-          <input type="number" class="n28sp-in" id="sp28TimeMin" min="0" placeholder="Min" style="width:56px" oninput="prev28Time()">
-          <input type="number" class="n28sp-in" id="sp28TimeSec" min="0" max="59" placeholder="Sec" style="width:56px" oninput="prev28Time()">
-          <button class="n28sp-btn add" onclick="adj28Time(1)">＋ Add</button>
-          <button class="n28sp-btn ded" onclick="adj28Time(-1)">－ Deduct</button>
-        </div>
-        <div style="font-size:10px;color:var(--td);margin-top:4px"><span id="sp28TimePreview" style="color:var(--a2)"></span></div>
-      </div>
 
-      <!-- c) 28 Names Jap Bank -->
-      <div class="n28sp-section" style="border-color:rgba(255,215,0,0.25)">
-        <div class="n28sp-title" style="color:var(--gold)">🏦 28 Names Jap Bank</div>
-        <div style="font-size:11px;color:var(--td);margin-bottom:8px;line-height:1.45">
-          Cycles you jap when <strong>no wish is active</strong> are auto-saved here. You can also deposit / withdraw manually and push any amount to your active wish.
-        </div>
-        <div class="ns" style="margin-bottom:10px">
-          <div class="nv" id="sp28BankBal" style="font-size:20px;color:var(--gold)">0 cycles</div>
-          <div class="nl" id="sp28BankTaps">= 0 taps</div>
-        </div>
-        <div class="n28sp-row" style="margin-bottom:8px">
-          <input type="number" class="n28sp-in" id="sp28BankVal" min="0" placeholder="Cycles" style="width:74px">
-          <button class="n28sp-btn add" onclick="adj28Bank(1)">＋ Deposit</button>
-          <button class="n28sp-btn ded" onclick="adj28Bank(-1)">－ Withdraw</button>
-        </div>
-        <div class="n28sp-row">
-          <input type="number" class="n28sp-in" id="sp28BankPush" min="0" placeholder="Cycles" style="width:74px">
-          <button class="n28sp-btn add" style="border-color:rgba(255,215,0,0.5);color:var(--gold)" onclick="pushBankToWish()">➤ Push to Active Wish</button>
+        <!-- Manual time adjust — new labelled layout -->
+        <div class="n28-adj">
+          <div class="n28-adj-head">
+            <div class="n28-adj-title">Adjust Today's 28 Names Time</div>
+            <div class="n28-adj-desc">Enter the minutes &amp; seconds you want to <b style="color:var(--green)">add</b> to or <b style="color:var(--rl)">deduct</b> from today's 28 Names timer. Useful if you chanted offline or want to correct a mistake.</div>
+          </div>
+          <div class="n28-adj-inputs">
+            <label class="n28-adj-field">
+              <span class="n28-adj-lbl">Minutes</span>
+              <input type="number" class="n28sp-in" id="sp28TimeMin" min="0" placeholder="0" oninput="prev28Time()">
+            </label>
+            <label class="n28-adj-field">
+              <span class="n28-adj-lbl">Seconds</span>
+              <input type="number" class="n28sp-in" id="sp28TimeSec" min="0" max="59" placeholder="0" oninput="prev28Time()">
+            </label>
+          </div>
+          <div class="n28-adj-actions">
+            <button class="n28sp-btn add" onclick="adj28Time(1)" title="Add the entered time to today's 28 Names timer">＋ Add Time</button>
+            <button class="n28sp-btn ded" onclick="adj28Time(-1)" title="Deduct the entered time from today's 28 Names timer">－ Deduct Time</button>
+          </div>
+          <div class="n28-adj-preview"><span id="sp28TimePreview"></span></div>
         </div>
       </div>
 
-      <!-- d) Reset Options (consolidated to 2) -->
-      <div class="n28sp-section" style="border-color:rgba(232,51,109,0.2)">
-        <div class="n28sp-title" style="color:var(--rl)">↺ Reset Options</div>
-        <div style="display:flex;flex-direction:column;gap:7px">
-          <button class="n28sp-reset-btn" onclick="cr2('28today')">Reset Today (Count + Time)</button>
-          <button class="n28sp-reset-btn" style="border-color:rgba(232,51,109,0.5);color:var(--rl)" onclick="cr2('28all')">Reset All 28 Names Data</button>
+      <!-- d) Reset Options -->
+      <div class="n28sp-section n28sp-reset">
+        <div class="n28sp-title" style="color:var(--gold)">↺ Reset Options</div>
+        <div class="n28-reset-stack">
+          <button type="button" class="n28-gold-btn" onclick="cr2('28today')">↺ Reset Today's Jap &amp; Time</button>
+          <button type="button" class="n28-gold-btn n28-gold-btn-danger" onclick="cr2('28all')">⚠️ Reset All 28 Names Data &amp; Time</button>
         </div>
       </div>
-
 
     </div>
   </div>
@@ -607,102 +621,121 @@
     </div>
     <div class="sg-body open" id="sgStats">
       <div class="sg" style="margin-bottom:8px">
-        <!-- Row 1 -->
-        <div class="sb"><div class="sv2" id="sTod">0</div><div class="sl">Today</div><div class="ss" id="sTodM">0 malas</div></div>
-        <div class="sb"><div class="sv2" id="sWk">0</div><div class="sl">This Week</div><div class="ss" id="sWkM">0 malas</div></div>
-        <!-- Row 2 -->
-        <div class="sb"><div class="sv2" id="sMo">0</div><div class="sl">This Month</div><div class="ss" id="sMoM">0 malas</div></div>
-        <div class="sb non-gaudiya-stat"><div class="sv2" id="sTot">0</div><div class="sl">Total Jap (Radha + RV)</div><div class="ss" id="sTotM">0 malas</div></div>
-        <!-- Row 3: Radha count + Radha time -->
-        <div class="sb non-gaudiya-stat" id="sbRadhaCount" style="background:rgba(255,215,0,0.05);border-color:rgba(255,215,0,0.18)"><div class="sv2" style="color:var(--gold)" id="sRadhaTot">0</div><div class="sl" style="color:var(--gold)">राधा Lifetime</div><div class="ss" id="sRadhaTotM">0 malas</div><div class="ss" id="sRadhaTotF" style="color:var(--gold);opacity:0.75;font-size:10px;margin-top:2px">0</div></div>
-        <div class="sb non-gaudiya-stat" id="sbRadhaTime" style="background:rgba(255,215,0,0.04);border-color:rgba(255,215,0,0.15)">
-          <div class="sl" style="font-size:9px;color:var(--gold);letter-spacing:1.5px;margin-bottom:6px">⏱ राधा JAP TIME</div>
-          <div style="display:grid;grid-template-columns:1fr;gap:3px;text-align:center">
-            <div><span style="font-family:'EB Garamond',serif;font-size:15px;color:var(--gold)" id="tRadhaTod">0m</span> <span style="font-size:8px;color:var(--td);letter-spacing:1px">TODAY</span></div>
-            <div><span style="font-family:'EB Garamond',serif;font-size:15px;color:var(--gold)" id="tRadhaWk">0m</span> <span style="font-size:8px;color:var(--td);letter-spacing:1px">WEEK</span></div>
-            <div><span style="font-family:'EB Garamond',serif;font-size:15px;color:var(--gold)" id="tRadhaMo">0m</span> <span style="font-size:8px;color:var(--td);letter-spacing:1px">MONTH</span></div>
-            <div><span style="font-family:'EB Garamond',serif;font-size:15px;color:var(--gold)" id="tRadhaLt">0m</span> <span style="font-size:8px;color:var(--td);letter-spacing:1px">LIFETIME</span></div>
+        <!-- ── Deity Cards: unified period layout ── -->
+          <!-- 1. Radha -->
+          <div class="dc-wrap dc-radha non-gaudiya-stat" style="grid-column:1/-1">
+            <div class="dc-title"><span class="dc-dot dc-dot--radha"></span>Radha (राधा)</div>
+            <div class="dc-table">
+              <div class="dc-thead"><div></div><div>Count</div><div>Malas</div><div>Time</div></div>
+              <div class="dc-row"><div class="dc-period">Today</div><div id="sRTod">0</div><div id="sRTodM">0m</div><div id="tRadhaTod">0s</div></div>
+              <div class="dc-row"><div class="dc-period">Week</div><div id="sRWk">0</div><div id="sRWkM">0m</div><div id="tRadhaWk">0s</div></div>
+              <div class="dc-row"><div class="dc-period">Month</div><div id="sRMo">0</div><div id="sRMoM">0m</div><div id="tRadhaMo">0s</div></div>
+              <div class="dc-row dc-row--life"><div class="dc-period">Lifetime</div><div id="sRadhaTot">0</div><div id="sRadhaTotM">0m</div><div id="tRadhaLt">0s</div></div>
+            </div>
+            <span id="sRadhaTotF" style="display:none">0</span>
           </div>
-        </div>
-        <!-- Row 4: RV count + RV time -->
-        <div class="sb non-gaudiya-stat" id="sbRVCount" style="background:rgba(74,144,226,0.05);border-color:rgba(74,144,226,0.18)"><div class="sv2" style="color:var(--a2)" id="sRVTot">0</div><div class="sl" style="color:var(--a2)">RV Lifetime</div><div class="ss" id="sRVTotM">0 malas</div><div class="ss" id="sRVTotF" style="color:var(--a2);opacity:0.75;font-size:10px;margin-top:2px">0</div></div>
-        <div class="sb non-gaudiya-stat" id="sbRVTime" style="background:rgba(74,144,226,0.04);border-color:rgba(74,144,226,0.15)">
-          <div class="sl" style="font-size:9px;color:var(--a2);letter-spacing:1.5px;margin-bottom:6px">⏱ RV JAP TIME</div>
-          <div style="display:grid;grid-template-columns:1fr;gap:3px;text-align:center">
-            <div><span style="font-family:'EB Garamond',serif;font-size:15px;color:var(--a2)" id="tRVTod">0m</span> <span style="font-size:8px;color:var(--td);letter-spacing:1px">TODAY</span></div>
-            <div><span style="font-family:'EB Garamond',serif;font-size:15px;color:var(--a2)" id="tRVWk">0m</span> <span style="font-size:8px;color:var(--td);letter-spacing:1px">WEEK</span></div>
-            <div><span style="font-family:'EB Garamond',serif;font-size:15px;color:var(--a2)" id="tRVMo">0m</span> <span style="font-size:8px;color:var(--td);letter-spacing:1px">MONTH</span></div>
-            <div><span style="font-family:'EB Garamond',serif;font-size:15px;color:var(--a2)" id="tRVLt">0m</span> <span style="font-size:8px;color:var(--td);letter-spacing:1px">LIFETIME</span></div>
+          <!-- 2. RV -->
+          <div class="dc-wrap dc-rv non-gaudiya-stat" style="grid-column:1/-1">
+            <div class="dc-title"><span class="dc-dot dc-dot--rv"></span>Radha Vallabh (RV)</div>
+            <div class="dc-table">
+              <div class="dc-thead"><div></div><div>Count</div><div>Malas</div><div>Time</div></div>
+              <div class="dc-row"><div class="dc-period">Today</div><div id="sRVPTod">0</div><div id="sRVPTodM">0m</div><div id="tRVTod">0s</div></div>
+              <div class="dc-row"><div class="dc-period">Week</div><div id="sRVPWk">0</div><div id="sRVPWkM">0m</div><div id="tRVWk">0s</div></div>
+              <div class="dc-row"><div class="dc-period">Month</div><div id="sRVPMo">0</div><div id="sRVPMoM">0m</div><div id="tRVMo">0s</div></div>
+              <div class="dc-row dc-row--life dc-row--rv"><div class="dc-period">Lifetime</div><div id="sRVTot">0</div><div id="sRVTotM">0m</div><div id="tRVLt">0s</div></div>
+            </div>
+            <span id="sRVTotF" style="display:none">0</span>
           </div>
-        </div>
-        <!-- Row 5: 28 Names count + time -->
-        <div class="sb non-gaudiya-stat" id="sb28Count" style="background:rgba(46,204,113,0.05);border-color:rgba(46,204,113,0.18)"><div class="sv2" style="color:var(--green)" id="s28Tot">0</div><div class="sl" style="color:var(--green)">28 Names Lifetime</div><div class="ss" id="s28TotM">0 cycles</div><div class="ss" id="s28TotF" style="color:var(--green);opacity:0.75;font-size:10px;margin-top:2px">0</div></div>
-        <div class="sb non-gaudiya-stat" id="sb28Time" style="background:rgba(46,204,113,0.04);border-color:rgba(46,204,113,0.15)">
-          <div class="sl" style="font-size:9px;color:var(--green);letter-spacing:1.5px;margin-bottom:6px">⏱ 28 NAMES JAP TIME</div>
-          <div style="display:grid;grid-template-columns:1fr;gap:3px;text-align:center">
-            <div><span style="font-family:'EB Garamond',serif;font-size:15px;color:var(--green)" id="t28Tod">0m</span> <span style="font-size:8px;color:var(--td);letter-spacing:1px">TODAY</span></div>
-            <div><span style="font-family:'EB Garamond',serif;font-size:15px;color:var(--green)" id="t28Wk">0m</span> <span style="font-size:8px;color:var(--td);letter-spacing:1px">WEEK</span></div>
-            <div><span style="font-family:'EB Garamond',serif;font-size:15px;color:var(--green)" id="t28Mo">0m</span> <span style="font-size:8px;color:var(--td);letter-spacing:1px">MONTH</span></div>
-            <div><span style="font-family:'EB Garamond',serif;font-size:15px;color:var(--green)" id="t28Lt">0m</span> <span style="font-size:8px;color:var(--td);letter-spacing:1px">LIFETIME</span></div>
+          <!-- 3. 28 Names -->
+          <div class="dc-wrap dc-28n non-gaudiya-stat" style="grid-column:1/-1">
+            <div class="dc-title"><span class="dc-dot dc-dot--28n"></span>28 Names</div>
+            <div class="dc-table">
+              <div class="dc-thead"><div></div><div>Count</div><div>Cycles</div><div>Time</div></div>
+              <div class="dc-row"><div class="dc-period">Today</div><div id="s28PTod">0</div><div id="s28PTodM">0 cy</div><div id="t28Tod">0s</div></div>
+              <div class="dc-row"><div class="dc-period">Week</div><div id="s28PWk">0</div><div id="s28PWkM">0 cy</div><div id="t28Wk">0s</div></div>
+              <div class="dc-row"><div class="dc-period">Month</div><div id="s28PMo">0</div><div id="s28PMoM">0 cy</div><div id="t28Mo">0s</div></div>
+              <div class="dc-row dc-row--life dc-row--28n"><div class="dc-period">Lifetime</div><div id="s28Tot">0</div><div id="s28TotM">0 cy</div><div id="t28Lt">0s</div></div>
+            </div>
+            <span id="s28TotF" style="display:none">0</span>
           </div>
-        </div>
-        <!-- Row 5b: HK Mahamantra stats — Option C Lotus Petals layout (visible only in Gaudiya Mode) -->
+          <!-- Divider -->
+          <div class="dc-divider non-gaudiya-stat" style="grid-column:1/-1">── COMBINED TOTALS ──</div>
+          <!-- 4. Radha + RV combined -->
+          <div class="dc-wrap dc-combo non-gaudiya-stat" style="grid-column:1/-1">
+            <div class="dc-title dc-title--combo">⊕ Radha + Radha Vallabh</div>
+            <div class="dc-table">
+              <div class="dc-thead"><div></div><div>Count</div><div>Malas</div><div>Time</div></div>
+              <div class="dc-row"><div class="dc-period">Today</div><div id="sTod">0</div><div id="sTodM">0m</div><div id="tTod">0s</div></div>
+              <div class="dc-row"><div class="dc-period">Week</div><div id="sWk">0</div><div id="sWkM">0m</div><div id="tWk">0s</div></div>
+              <div class="dc-row"><div class="dc-period">Month</div><div id="sMo">0</div><div id="sMoM">0m</div><div id="tMo">0s</div></div>
+              <div class="dc-row dc-row--life dc-row--combo"><div class="dc-period">Lifetime</div><div id="sTot">0</div><div id="sTotM">0m</div><div id="tCombLt">0s</div></div>
+            </div>
+          </div>
+          <!-- 5. All combined -->
+          <div class="dc-wrap dc-all non-gaudiya-stat" style="grid-column:1/-1">
+            <div class="dc-title dc-title--all">⊕ Radha + RV + 28 Names</div>
+            <div class="dc-table">
+              <div class="dc-thead"><div></div><div>Count</div><div></div><div>Time</div></div>
+              <div class="dc-row"><div class="dc-period">Today</div><div id="sAllTod">0</div><div></div><div id="tAllTod">0s</div></div>
+              <div class="dc-row"><div class="dc-period">Week</div><div id="sAllWk">0</div><div></div><div id="tAllWk">0s</div></div>
+              <div class="dc-row"><div class="dc-period">Month</div><div id="sAllMo">0</div><div></div><div id="tAllMo">0s</div></div>
+              <div class="dc-row dc-row--life dc-row--all"><div class="dc-period">Lifetime</div><div id="sLtJapAll">0</div><div id="sLtJapAllF" style="display:none">0</div><div id="sLtTime">0m 0s</div></div>
+            </div>
+          </div>
+          <!-- Row 5b: HK Mahamantra stats — Option C Lotus Petals layout (visible only in Gaudiya Mode) -->
         <div class="hk-only-stat" id="sbHKCount" style="grid-column:1/-1;display:none"><!-- legacy compat --></div>
         <div class="hk-only-stat" id="sbHKTime" style="grid-column:1/-1;display:none"><!-- legacy compat --></div>
         <div class="hk-only-stat" style="grid-column:1/-1;padding:0">
           <div class="hkc-wrap">
-            <!-- Ambient glow -->
-            <div class="hkc-glow"></div>
-            <!-- Title -->
-            <div class="hkc-title">
-              <div class="hkc-title-lotus" id="hkcTitleLotus">🪷 হরে কৃষ্ণ</div>
-              <div class="hkc-title-sub">Mahamantra Sadhana</div>
-            </div>
-            <!-- Lifetime hero -->
-            <div class="hkc-hero">
-              <div class="hkc-hero-label">LIFETIME TOTAL</div>
-              <div class="hkc-hero-num" id="sHKTot">0</div>
-              <div class="hkc-hero-sub"><span id="sHKTotM">0 malas</span> · <span id="sHKTotF">0 jap</span></div>
-            </div>
-            <!-- 3-column period stats -->
-            <div class="hkc-periods">
-              <div class="hkc-period">
-                <div class="hkc-period-lbl">TODAY</div>
-                <div class="hkc-period-num" id="sTod2">0</div>
-                <div class="hkc-period-sub"><span id="sTodM2">0m</span> · <span id="tHKTod">0m</span></div>
+              <!-- Ambient glow -->
+              <div class="hkc-glow"></div>
+              <!-- Title -->
+              <div class="hkc-title">
+                <div class="hkc-title-lotus" id="hkcTitleLotus">🪷 হরে কৃষ্ণ</div>
+                <div class="hkc-title-sub">Mahamantra Sadhana</div>
               </div>
-              <div class="hkc-period">
-                <div class="hkc-period-lbl">WEEK</div>
-                <div class="hkc-period-num" id="sWk2">0</div>
-                <div class="hkc-period-sub"><span id="sWkM2">0m</span> · <span id="tHKWk">0m</span></div>
+              <!-- 3-column period stats (Today / Week / Month) — shown first -->
+              <div class="hkc-periods">
+                <div class="hkc-period">
+                  <div class="hkc-period-lbl">TODAY</div>
+                  <div class="hkc-period-num" id="sTod2">0</div>
+                  <div class="hkc-period-sub"><span id="sTodM2">0m</span> · <span id="tHKTod">0m</span></div>
+                </div>
+                <div class="hkc-period">
+                  <div class="hkc-period-lbl">WEEK</div>
+                  <div class="hkc-period-num" id="sWk2">0</div>
+                  <div class="hkc-period-sub"><span id="sWkM2">0m</span> · <span id="tHKWk">0m</span></div>
+                </div>
+                <div class="hkc-period">
+                  <div class="hkc-period-lbl">MONTH</div>
+                  <div class="hkc-period-num" id="sMo2">0</div>
+                  <div class="hkc-period-sub"><span id="sMoM2">0m</span> · <span id="tHKMo">0m</span></div>
+                </div>
               </div>
-              <div class="hkc-period">
-                <div class="hkc-period-lbl">MONTH</div>
-                <div class="hkc-period-num" id="sMo2">0</div>
-                <div class="hkc-period-sub"><span id="sMoM2">0m</span> · <span id="tHKMo">0m</span></div>
+              <!-- Lifetime Total hero — below periods, includes lifetime jap time -->
+              <div class="hkc-hero">
+                <div class="hkc-hero-label">LIFETIME TOTAL</div>
+                <div class="hkc-hero-num" id="sHKTot">0</div>
+                <div class="hkc-hero-sub"><span id="sHKTotM">0 malas</span> · <span id="sHKTotF">0 jap</span></div>
+                <div class="hkc-hero-sub" style="margin-top:4px;font-size:12px;opacity:0.75">⏱ Lifetime Jap Time: <span id="tHKLt">0m</span></div>
               </div>
+              <!-- Hidden stubs so JS setters don't error -->
+              <span id="tHKTod2" style="display:none"></span>
+              <span id="tHKWk2" style="display:none"></span>
+              <span id="tHKMo2" style="display:none"></span>
             </div>
-            <!-- Jap time row -->
-            <div class="hkc-timebar">
-              <span class="hkc-timebar-lbl">⏱ JAP TIME</span>
-              <div class="hkc-timebar-vals">
-                <div class="hkc-tv"><div class="hkc-tv-val" id="tHKTod2">0m</div><div class="hkc-tv-lbl">TODAY</div></div>
-                <div class="hkc-tv"><div class="hkc-tv-val" id="tHKWk2">0m</div><div class="hkc-tv-lbl">WEEK</div></div>
-                <div class="hkc-tv"><div class="hkc-tv-val" id="tHKMo2">0m</div><div class="hkc-tv-lbl">MONTH</div></div>
-                <div class="hkc-tv"><div class="hkc-tv-val" id="tHKLt">0m</div><div class="hkc-tv-lbl">LIFE</div></div>
-              </div>
-            </div>
-          </div>
         </div>
-        <!-- Row 5c: Combined Lifetime Jap (Radha + RV + 28 names) -->
-        <div class="sb wide non-gaudiya-stat" id="sbLtJapAll" style="background:rgba(255,215,0,0.04);border-color:rgba(255,215,0,0.12)"><div class="sv2" style="color:var(--gold)" id="sLtJapAll">0</div><div class="sl" style="color:var(--gold)">Lifetime Jap (Radha + RV + 28 Names)</div><div class="ss" id="sLtJapAllF" style="color:var(--gold);opacity:0.75;font-size:10px;margin-top:2px">0</div></div>
-        <!-- Row 6: Lifetime jap time -->
-        <div class="sb wide non-gaudiya-stat" id="sbLtTime" style="background:rgba(255,215,0,0.04);border-color:rgba(255,215,0,0.12)"><div class="sv2" style="color:var(--gold)" id="sLtTime">0m 0s</div><div class="sl" style="color:var(--gold)">Lifetime Jap Time (Radha + RV + 28 Names)</div></div>
         <!-- Row 7: Last 7 days -->
         <div class="sb wide"><div class="sl" style="font-size:11px">Last 7 Days</div><div class="cbrs" id="cbrs"></div></div>
-        <!-- Row 8: streak + best (renamed) -->
-        <div class="sb"><div class="sv2" id="sStr">0</div><div class="sl">🔥 Active Streak</div><div class="ss">Consecutive days</div></div>
+        <!-- Row 8: streak + best -->
+        <div class="sb"><div class="sv2" id="sStr">0</div><div class="sl">🔥 Active Streak</div><div class="ss">Consecutive target days</div></div>
         <div class="sb"><div class="sv2" id="sBest">0</div><div class="sl">🏆 Personal Best</div><div class="ss">Top day jap</div></div>
+        <!-- Row 9: Best Streak Ever -->
+        <div class="sb wide" id="sbBestStreakEver" style="background:rgba(255,215,0,0.04);border-color:rgba(255,215,0,0.22)">
+          <div class="sv2" style="color:var(--gold)" id="sBestStreakEver">0</div>
+          <div class="sl" style="color:var(--gold);letter-spacing:1.5px">🏅 Best Consecutive Streak</div>
+          <div class="ss" id="sBestStreakEverSub" style="color:var(--td)">Best ever consecutive target days</div>
+        </div>
         <!-- Hidden compatibility nodes for old wide JAP TIME blocks (kept so legacy IDs resolve) -->
         <span id="tTod" style="display:none"></span><span id="tWk" style="display:none"></span><span id="tMo" style="display:none"></span>
       </div>
@@ -720,39 +753,41 @@
       <div style="margin-bottom:10px">
         <div style="font-size:10px;color:var(--td);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px">Date Range</div>
         <div style="display:flex;gap:8px;margin-bottom:8px">
-          <input type="date" class="di" id="histFrom" style="border-color:rgba(255,215,0,0.25)">
-          <input type="date" class="di" id="histTo" style="border-color:rgba(255,215,0,0.25)">
+          <input type="date" class="di" id="histFrom" style="border-color:rgba(255,215,0,0.25)" onchange="histRangeChanged()">
+          <input type="date" class="di" id="histTo" style="border-color:rgba(255,215,0,0.25)" onchange="histRangeChanged()">
         </div>
-        <div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap">
-          <button class="hpb" onclick="histPreset(1)">Today</button>
-          <button class="hpb" onclick="histPreset(7)">Last 7d</button>
-          <button class="hpb" onclick="histPreset(30)">Last 30d</button>
-          <button class="hpb" onclick="histPreset(90)">Last 90d</button>
-          <button class="hpb" onclick="histPresetMonth()">This Month</button>
+        <div style="display:flex;gap:6px;margin-bottom:4px;flex-wrap:wrap" id="histPresetRow">
+          <button class="hpb" data-preset="1"     data-label="Today"      onclick="histPreset(1, this)">Today</button>
+          <button class="hpb" data-preset="7"     data-label="Last 7d"    onclick="histPreset(7, this)">Last 7d</button>
+          <button class="hpb" data-preset="30"    data-label="Last 30d"   onclick="histPreset(30, this)">Last 30d</button>
+          <button class="hpb" data-preset="90"    data-label="Last 90d"   onclick="histPreset(90, this)">Last 90d</button>
+          <button class="hpb" data-preset="month" data-label="This Month" onclick="histPresetMonth(this)">This Month</button>
         </div>
-        <button class="hpb hpb-go" onclick="renderHistory()">🔍 Show History</button>
       </div>
+
+      <!-- Period Totals — moved here, directly under the date-range buttons -->
+      <div id="histTotals" class="hist-totals-card" style="display:none"></div>
 
       <div id="histSummaryLine" style="font-size:11px;color:var(--td);text-align:center;margin-bottom:8px;min-height:16px"></div>
 
       <div id="histTableWrap" style="display:none">
-        <div style="overflow-x:auto;border-radius:12px;border:1px solid rgba(255,215,0,0.15);margin-bottom:10px">
-          <table id="histTable" style="width:100%;border-collapse:collapse;font-family:Inter,sans-serif;font-size:12px">
+        <div class="hist-table-shell">
+          <table id="histTable" class="hist-table">
             <thead>
-              <tr style="background:rgba(255,215,0,0.1);color:var(--gold)">
-                <th style="padding:8px 10px;text-align:left;font-size:10px;letter-spacing:1px;white-space:nowrap">Date</th>
-                <th class="hist-radha-col" style="padding:8px 6px;text-align:center;font-size:10px;letter-spacing:1px">Radha</th>
-                <th class="hist-radha-col" style="padding:8px 6px;text-align:center;font-size:10px;letter-spacing:1px">RV</th>
-                <th class="hist-radha-col" style="padding:8px 6px;text-align:center;font-size:10px;letter-spacing:1px">28 Names</th>
-                <th class="hist-hk-col" style="padding:8px 6px;text-align:center;font-size:10px;letter-spacing:1px;display:none;color:#6DB8FF">HK</th>
-                <th style="padding:8px 6px;text-align:center;font-size:10px;letter-spacing:1px">Total Time</th>
+              <tr>
+                <th class="hist-th hist-th-date">Date</th>
+                <th class="hist-th hist-radha-col">Radha</th>
+                <th class="hist-th hist-radha-col">RV</th>
+                <th class="hist-th hist-radha-col">28 Names</th>
+                <th class="hist-th hist-hk-col" id="histHKColHeader" style="display:none;color:#6DB8FF">हरे कृष्ण महामंत्र</th>
+                <th class="hist-th">Total Time</th>
+                <th class="hist-th hist-th-chev" aria-hidden="true"></th>
               </tr>
             </thead>
             <tbody id="histTableBody"></tbody>
           </table>
         </div>
-        <div id="histTotals" style="background:rgba(255,215,0,0.07);border:1px solid rgba(255,215,0,0.2);border-radius:11px;padding:10px 12px;margin-bottom:10px;font-size:12px;font-family:Inter,sans-serif"></div>
-        <button onclick="copyHistoryText()" style="width:100%;padding:9px;border-radius:11px;border:1px solid rgba(255,215,0,0.25);background:rgba(255,215,0,0.05);color:var(--gold);font-size:12px;font-weight:600;cursor:pointer;font-family:Inter,sans-serif">📋 Copy as Text</button>
+        <button onclick="copyHistoryText()" class="hist-copy-btn">📋 Copy as Text</button>
       </div>
 
       <div id="histDayDetail" style="display:none;margin-top:8px;background:rgba(6,13,31,0.8);border:1px solid rgba(109,184,255,0.25);border-radius:14px;padding:12px">
@@ -766,10 +801,10 @@
   </div>
 
   <!-- TODAY'S MALA SESSION LOG — collapsible -->
-  <div class="cs-wrap" style="background:rgba(46,204,113,0.04);border:1px solid rgba(46,204,113,0.18)">
+  <div class="cs-wrap csg">
     <div class="cs-header" onclick="toggleCs('malaLogBody','malaLogChev')">
-      <h3 style="color:var(--green)">📿 Today's Mala Log <span id="malaLogType" style="opacity:0.6;font-weight:400;font-size:10px;color:var(--gold)"></span> <span id="malaLogCount" style="opacity:0.6;font-weight:400;font-size:11px"></span> <span id="malaLogInline" style="opacity:0.7;font-weight:400;font-size:10px;color:var(--gold);margin-left:4px"></span></h3>
-      <span class="cs-chevron" id="malaLogChev" style="color:var(--green)">▾</span>
+      <h3 style="color:var(--gold)">📿 Today's Mala Log <span id="malaLogType" style="opacity:0.6;font-weight:400;font-size:10px;color:var(--gold)"></span> <span id="malaLogCount" style="opacity:0.6;font-weight:400;font-size:11px"></span> <span id="malaLogInline" style="opacity:0.7;font-weight:400;font-size:10px;color:var(--gold);margin-left:4px"></span></h3>
+      <span class="cs-chevron" id="malaLogChev" style="color:var(--gold)">▾</span>
     </div>
     <div class="cs-body open" id="malaLogBody">
       <div id="malaLogAvg" style="font-size:11px;color:var(--td);margin-bottom:6px;text-align:center;display:none"></div>
@@ -779,28 +814,28 @@
     </div>
   </div>
 
-  <!-- ADD / DEDUCT JAP MANUALLY — merged collapsible with two-tone header -->
-  <div class="cs-wrap" style="border:1px solid rgba(255,215,0,0.2);background:linear-gradient(90deg,rgba(46,204,113,0.07) 0%,rgba(46,204,113,0.07) 50%,rgba(232,51,109,0.07) 50%,rgba(232,51,109,0.07) 100%)">
+  <!-- ADD / DEDUCT JAP MANUALLY — merged collapsible, gold theme -->
+  <div class="cs-wrap csg">
     <div class="cs-header" onclick="toggleCs('addDeductBody','addDeductChev')">
-      <h3 style="background:linear-gradient(90deg,var(--green) 0%,var(--green) 50%,var(--rl) 50%,var(--rl) 100%);-webkit-background-clip:text;background-clip:text;color:transparent">➕ Add ／ ✂️ Deduct Jap Manually</h3>
+      <h3 style="color:var(--gold)">➕ Add ／ ✂️ Deduct Jap Manually</h3>
       <span class="cs-chevron" id="addDeductChev" style="color:var(--gold)">▾</span>
     </div>
     <div class="cs-body" id="addDeductBody">
 
       <!-- ADD JAP sub-section -->
-      <div class="cs-wrap" style="background:rgba(46,204,113,0.06);border:1px solid rgba(46,204,113,0.25);margin-bottom:10px">
+      <div class="cs-wrap" style="background:rgba(196,120,46,0.06);border:1px solid rgba(196,120,46,0.28);margin-bottom:10px">
         <div class="cs-header" onclick="toggleCs('addJapManuallyBody','addJapManuallyChev')">
-          <h3 style="color:var(--green)">➕ Add Jap</h3>
-          <span class="cs-chevron" id="addJapManuallyChev" style="color:var(--green)">▾</span>
+          <h3 style="color:#C87534">➕ Add Jap</h3>
+          <span class="cs-chevron" id="addJapManuallyChev" style="color:#C87534">▾</span>
         </div>
         <div class="cs-body" id="addJapManuallyBody">
           <p style="font-size:12px;color:var(--td);margin-bottom:12px">Jap done on Mala made of Sacred Tulsi Wood / Mala / Finger counts or other digital counter?</p>
 
           <!-- Inner: Today -->
-          <div class="cs-wrap" style="background:rgba(46,204,113,0.05);border:1px solid rgba(46,204,113,0.18);margin-bottom:8px">
+          <div class="cs-wrap" style="background:rgba(196,120,46,0.05);border:1px solid rgba(196,120,46,0.20);margin-bottom:8px">
             <div class="cs-header" onclick="toggleCs('addJapTodayBody','addJapTodayChev')" style="padding:10px 14px">
-              <h3 style="color:var(--green);font-size:10px">📅 TODAY</h3>
-              <span class="cs-chevron" id="addJapTodayChev" style="color:var(--green)">▾</span>
+              <h3 style="color:#C87534;font-size:10px">📅 TODAY</h3>
+              <span class="cs-chevron" id="addJapTodayChev" style="color:#C87534">▾</span>
             </div>
             <div class="cs-body" id="addJapTodayBody">
               <div class="fr"><input type="number" class="fi" id="manualJapIn" placeholder="Number of jap" min="1"><span class="fu">jap</span></div>
@@ -814,20 +849,20 @@
                   <span style="color:var(--td);font-size:11px">s</span>
                 </div>
               </div>
-              <button class="pb" onclick="addManualJap()" style="background:linear-gradient(135deg,#27ae60,#2ecc71)">➕ Add to Today</button>
+              <button class="pb add" onclick="addManualJap()">➕ Add to Today</button>
             </div>
           </div>
 
           <!-- Inner: Other Day -->
-          <div class="cs-wrap" style="background:rgba(46,204,113,0.04);border:1px solid rgba(46,204,113,0.14);margin-bottom:8px">
+          <div class="cs-wrap" style="background:rgba(196,120,46,0.04);border:1px solid rgba(196,120,46,0.16);margin-bottom:8px">
             <div class="cs-header" onclick="toggleCs('addJapOtherBody','addJapOtherChev')" style="padding:10px 14px">
-              <h3 style="color:var(--green);font-size:10px">📆 OTHER DAY</h3>
-              <span class="cs-chevron" id="addJapOtherChev" style="color:var(--green)">▾</span>
+              <h3 style="color:#C87534;font-size:10px">📆 OTHER DAY</h3>
+              <span class="cs-chevron" id="addJapOtherChev" style="color:#C87534">▾</span>
             </div>
             <div class="cs-body" id="addJapOtherBody">
               <div class="fr"><input type="date" class="fi" id="addJapOtherDate" style="font-size:13px"></div>
               <div class="fr"><input type="number" class="fi" id="addJapOtherIn" placeholder="Number of jap" min="1"><span class="fu">jap</span></div>
-              <div style="font-size:11px;color:var(--td);margin-bottom:8px">That day will become: <span id="addJapOtherPreview" style="color:var(--green)">—</span></div>
+              <div style="font-size:11px;color:var(--td);margin-bottom:8px">That day will become: <span id="addJapOtherPreview" style="color:#C87534">—</span></div>
               <div style="margin-top:6px;margin-bottom:8px;padding:8px 10px;background:rgba(255,215,0,0.06);border:1px solid rgba(255,215,0,0.18);border-radius:9px">
                 <div style="font-size:10px;color:var(--gold);margin-bottom:4px;letter-spacing:1px;font-weight:600">⏱️ TIME TAKEN (optional)</div>
                 <div style="display:flex;gap:6px;align-items:center">
@@ -837,21 +872,21 @@
                   <span style="color:var(--td);font-size:11px">s</span>
                 </div>
               </div>
-              <button class="pb" onclick="addOtherDayJap()" style="background:linear-gradient(135deg,#1a6b3c,#27ae60)">➕ Add to Selected Day</button>
+              <button class="pb add" onclick="addOtherDayJap()">➕ Add to Selected Day</button>
             </div>
           </div>
 
           <!-- Inner: Before This App (Lifetime) -->
-          <div class="cs-wrap" style="background:rgba(109,184,255,0.05);border:1px solid rgba(109,184,255,0.18)">
+          <div class="cs-wrap" style="background:rgba(196,120,46,0.04);border:1px solid rgba(196,120,46,0.18)">
             <div class="cs-header" onclick="toggleCs('prevJapBody','prevJapChev')" style="padding:10px 14px">
-              <h3 style="color:var(--a2);font-size:10px">📜 BEFORE THIS APP (LIFETIME)</h3>
-              <span class="cs-chevron" id="prevJapChev" style="color:var(--a2)">▾</span>
+              <h3 style="color:#C87534;font-size:10px">📜 BEFORE THIS APP (LIFETIME)</h3>
+              <span class="cs-chevron" id="prevJapChev" style="color:#C87534">▾</span>
             </div>
             <div class="cs-body" id="prevJapBody">
               <p style="font-size:12px;color:var(--td);margin-bottom:10px">Jap done before using this app? Add to lifetime total.</p>
               <div class="fr"><input type="number" class="fi" id="prevJapIn" placeholder="e.g. 50000" min="1"><span class="fu">jap</span></div>
               <div style="font-size:11px;color:var(--td);margin-bottom:8px">= <span id="prevMalaPreview">0</span> malas · Lifetime: <span id="prevLifetimePreview" style="color:var(--gold)">—</span></div>
-              <button class="pb" onclick="addPrevJap()" style="background:linear-gradient(135deg,#8B5CF6,#6D28D9)">📿 Add to Lifetime</button>
+              <button class="pb deep" onclick="addPrevJap()">📿 Add to Lifetime</button>
             </div>
           </div>
 
@@ -859,24 +894,24 @@
       </div>
 
       <!-- DEDUCT JAP sub-section -->
-      <div class="cs-wrap" style="background:rgba(232,51,109,0.05);border:1px solid rgba(232,51,109,0.25)">
+      <div class="cs-wrap" style="background:rgba(196,120,46,0.06);border:1px solid rgba(196,120,46,0.28)">
         <div class="cs-header" onclick="toggleCs('deductJapMainBody','deductJapMainChev')">
-          <h3 style="color:var(--rl)">✂️ Deduct Jap</h3>
-          <span class="cs-chevron" id="deductJapMainChev" style="color:var(--rl)">▾</span>
+          <h3 style="color:#C87534">✂️ Deduct Jap</h3>
+          <span class="cs-chevron" id="deductJapMainChev" style="color:#C87534">▾</span>
         </div>
         <div class="cs-body" id="deductJapMainBody">
           <p style="font-size:12px;color:var(--td);margin-bottom:12px">Jap you want to deduct — for dedicating to someone, wrong entry, or system bug showing false results.</p>
 
-          <div class="cs-wrap" style="background:rgba(232,51,109,0.05);border:1px solid rgba(232,51,109,0.18);margin-bottom:8px">
+          <div class="cs-wrap" style="background:rgba(196,120,46,0.05);border:1px solid rgba(196,120,46,0.20);margin-bottom:8px">
             <div class="cs-header" onclick="toggleCs('deductTodayBody','deductTodayChev')" style="padding:10px 14px">
-              <h3 style="color:var(--rl);font-size:10px">📅 TODAY</h3>
-              <span class="cs-chevron" id="deductTodayChev" style="color:var(--rl)">▾</span>
+              <h3 style="color:#C87534;font-size:10px">📅 TODAY</h3>
+              <span class="cs-chevron" id="deductTodayChev" style="color:#C87534">▾</span>
             </div>
             <div class="cs-body" id="deductTodayBody">
               <div class="fr"><input type="number" class="fi" id="deductTodayIn" placeholder="Number to deduct" min="1"><span class="fu">jap</span></div>
-              <div style="font-size:11px;color:var(--td);margin-bottom:8px">Today will become: <span id="deductTodayPreview" style="color:var(--rl)">—</span></div>
-              <div style="margin-top:6px;margin-bottom:8px;padding:8px 10px;background:rgba(232,51,109,0.06);border:1px solid rgba(232,51,109,0.22);border-radius:9px">
-                <div style="font-size:10px;color:var(--rl);margin-bottom:4px;letter-spacing:1px;font-weight:600">⏱️ TIME TO DEDUCT (optional)</div>
+              <div style="font-size:11px;color:var(--td);margin-bottom:8px">Today will become: <span id="deductTodayPreview" style="color:#C87534">—</span></div>
+              <div style="margin-top:6px;margin-bottom:8px;padding:8px 10px;background:rgba(196,120,46,0.06);border:1px solid rgba(196,120,46,0.22);border-radius:9px">
+                <div style="font-size:10px;color:#C87534;margin-bottom:4px;letter-spacing:1px;font-weight:600">⏱️ TIME TO DEDUCT (optional)</div>
                 <div style="display:flex;gap:6px;align-items:center">
                   <input type="number" class="fi" id="deductTodayMin" placeholder="Min" min="0" style="width:70px;font-size:13px">
                   <span style="color:var(--td);font-size:11px">m</span>
@@ -884,21 +919,21 @@
                   <span style="color:var(--td);font-size:11px">s</span>
                 </div>
               </div>
-              <button class="pb" onclick="deductTodayJap()" style="background:linear-gradient(135deg,#c0392b,#e74c3c)">✂️ Deduct from Today</button>
+              <button class="pb deduct" onclick="deductTodayJap()">✂️ Deduct from Today</button>
             </div>
           </div>
 
-          <div class="cs-wrap" style="background:rgba(232,51,109,0.04);border:1px solid rgba(232,51,109,0.14);margin-bottom:8px">
+          <div class="cs-wrap" style="background:rgba(196,120,46,0.04);border:1px solid rgba(196,120,46,0.16);margin-bottom:8px">
             <div class="cs-header" onclick="toggleCs('deductOtherBody','deductOtherChev')" style="padding:10px 14px">
-              <h3 style="color:var(--rl);font-size:10px">📆 OTHER DAY</h3>
-              <span class="cs-chevron" id="deductOtherChev" style="color:var(--rl)">▾</span>
+              <h3 style="color:#C87534;font-size:10px">📆 OTHER DAY</h3>
+              <span class="cs-chevron" id="deductOtherChev" style="color:#C87534">▾</span>
             </div>
             <div class="cs-body" id="deductOtherBody">
               <div class="fr"><input type="date" class="fi" id="deductOtherDate" style="font-size:13px"></div>
               <div class="fr"><input type="number" class="fi" id="deductOtherIn" placeholder="Number to deduct" min="1"><span class="fu">jap</span></div>
-              <div style="font-size:11px;color:var(--td);margin-bottom:8px">That day will become: <span id="deductOtherPreview" style="color:var(--rl)">—</span></div>
-              <div style="margin-top:6px;margin-bottom:8px;padding:8px 10px;background:rgba(232,51,109,0.06);border:1px solid rgba(232,51,109,0.22);border-radius:9px">
-                <div style="font-size:10px;color:var(--rl);margin-bottom:4px;letter-spacing:1px;font-weight:600">⏱️ TIME TO DEDUCT (optional)</div>
+              <div style="font-size:11px;color:var(--td);margin-bottom:8px">That day will become: <span id="deductOtherPreview" style="color:#C87534">—</span></div>
+              <div style="margin-top:6px;margin-bottom:8px;padding:8px 10px;background:rgba(196,120,46,0.06);border:1px solid rgba(196,120,46,0.22);border-radius:9px">
+                <div style="font-size:10px;color:#C87534;margin-bottom:4px;letter-spacing:1px;font-weight:600">⏱️ TIME TO DEDUCT (optional)</div>
                 <div style="display:flex;gap:6px;align-items:center">
                   <input type="number" class="fi" id="deductOtherMin" placeholder="Min" min="0" style="width:70px;font-size:13px">
                   <span style="color:var(--td);font-size:11px">m</span>
@@ -906,28 +941,28 @@
                   <span style="color:var(--td);font-size:11px">s</span>
                 </div>
               </div>
-              <button class="pb" onclick="deductOtherJap()" style="background:linear-gradient(135deg,#922b21,#c0392b)">✂️ Deduct from Selected Day</button>
+              <button class="pb deduct" onclick="deductOtherJap()">✂️ Deduct from Selected Day</button>
             </div>
           </div>
 
-          <div class="cs-wrap" style="background:rgba(232,51,109,0.04);border:1px solid rgba(232,51,109,0.14)">
+          <div class="cs-wrap" style="background:rgba(196,120,46,0.04);border:1px solid rgba(196,120,46,0.16)">
             <div class="cs-header" onclick="toggleCs('nameJapDeductBody','nameJapDeductChev')" style="padding:10px 14px">
-              <h3 style="color:var(--rl);font-size:10px">📿 NAME JAP — LIFETIME</h3>
-              <span class="cs-chevron" id="nameJapDeductChev" style="color:var(--rl)">▾</span>
+              <h3 style="color:#C87534;font-size:10px">📿 NAME JAP — LIFETIME</h3>
+              <span class="cs-chevron" id="nameJapDeductChev" style="color:#C87534">▾</span>
             </div>
             <div class="cs-body" id="nameJapDeductBody">
-              <div style="font-size:11px;color:var(--td);margin-bottom:8px">Currently deducted: <span id="nameJapDeductCur" style="color:var(--rl);font-weight:600">0</span> jap (<span id="nameJapDeductMalas" style="color:var(--rl)">0</span> malas)</div>
-              <div style="background:rgba(232,51,109,0.06);border:1px solid rgba(232,51,109,0.18);border-radius:12px;padding:11px;margin-bottom:10px">
-                <div style="font-size:10px;color:var(--rl);letter-spacing:2px;text-transform:uppercase;margin-bottom:8px;font-weight:600">➕ Add to Deduction</div>
-                <div class="fr"><input type="number" class="fi" id="nameJapDeductIn" placeholder="e.g. 5000" min="1" style="border-color:rgba(232,51,109,0.35)"><span class="fu" style="color:var(--rl)">jap</span></div>
-                <div style="font-size:11px;color:var(--td);margin-bottom:8px">New lifetime total will become: <span id="nameJapDeductPreview" style="color:var(--rl)">—</span></div>
-                <button class="pb" onclick="addNameJapDeduct()" style="background:linear-gradient(135deg,#c0392b,#e74c3c)">✂️ Apply Deduction</button>
+              <div style="font-size:11px;color:var(--td);margin-bottom:8px">Currently deducted: <span id="nameJapDeductCur" style="color:#C87534;font-weight:600">0</span> jap (<span id="nameJapDeductMalas" style="color:#C87534">0</span> malas)</div>
+              <div style="background:rgba(196,120,46,0.06);border:1px solid rgba(196,120,46,0.20);border-radius:12px;padding:11px;margin-bottom:10px">
+                <div style="font-size:10px;color:#C87534;letter-spacing:2px;text-transform:uppercase;margin-bottom:8px;font-weight:600">➕ Add to Deduction</div>
+                <div class="fr"><input type="number" class="fi" id="nameJapDeductIn" placeholder="e.g. 5000" min="1" style="border-color:rgba(196,120,46,0.40)"><span class="fu" style="color:#C87534">jap</span></div>
+                <div style="font-size:11px;color:var(--td);margin-bottom:8px">New lifetime total will become: <span id="nameJapDeductPreview" style="color:#C87534">—</span></div>
+                <button class="pb deduct" onclick="addNameJapDeduct()">✂️ Apply Deduction</button>
               </div>
-              <div style="background:rgba(232,51,109,0.03);border:1px solid rgba(232,51,109,0.12);border-radius:12px;padding:11px">
-                <div style="font-size:10px;color:var(--rl);letter-spacing:2px;text-transform:uppercase;margin-bottom:8px;font-weight:600">↩ Remove Deduction</div>
-                <div class="fr"><input type="number" class="fi" id="nameJapRestoreIn" placeholder="Amount to restore" min="1" style="border-color:rgba(232,51,109,0.25)"><span class="fu" style="color:var(--rl)">jap</span></div>
+              <div style="background:rgba(196,120,46,0.03);border:1px solid rgba(196,120,46,0.14);border-radius:12px;padding:11px">
+                <div style="font-size:10px;color:#C87534;letter-spacing:2px;text-transform:uppercase;margin-bottom:8px;font-weight:600">↩ Remove Deduction</div>
+                <div class="fr"><input type="number" class="fi" id="nameJapRestoreIn" placeholder="Amount to restore" min="1" style="border-color:rgba(196,120,46,0.35)"><span class="fu" style="color:#C87534">jap</span></div>
                 <div style="font-size:11px;color:var(--td);margin-bottom:8px">New lifetime total will become: <span id="nameJapRestorePreview" style="color:var(--a2)">—</span></div>
-                <button class="pb" onclick="removeNameJapDeduct()" style="background:linear-gradient(135deg,#1a5e3e,#27ae60)">↩ Restore to Lifetime</button>
+                <button class="pb add" onclick="removeNameJapDeduct()">↩ Restore to Lifetime</button>
               </div>
             </div>
           </div>
@@ -949,8 +984,8 @@
   <!-- Reset section — collapsible (last) -->
   <div class="rs">
     <div class="cs-header" onclick="toggleCs('resetBody','resetChev')" style="padding:13px 16px">
-      <h3 style="color:var(--rl);margin:0;font-size:11px;letter-spacing:2px;text-transform:uppercase;font-weight:600">🔄 Reset Data</h3>
-      <span class="cs-chevron" id="resetChev" style="color:var(--rl)">▾</span>
+      <h3 style="color:var(--gold);margin:0;font-size:11px;letter-spacing:2px;text-transform:uppercase;font-weight:600">🔄 Reset Data</h3>
+      <span class="cs-chevron" id="resetChev" style="color:var(--gold)">▾</span>
     </div>
     <div class="cs-body" id="resetBody">
       <div style="font-size:11px;color:var(--td);margin-bottom:10px;letter-spacing:1px">Choose what to permanently delete. A confirmation will appear before anything is removed.</div>
@@ -1353,6 +1388,6 @@
 <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
     <script src="./stotrams.js?v=82"></script>
     <script src="./panchangData.js"></script>
-    <script src="./app.js?v=87"></script>
+    <script src="./app.js?v=91"></script>
   </body>
 </html>

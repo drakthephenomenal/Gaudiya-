@@ -1,3 +1,36 @@
+/* === GPS dedupe (auto-added): coalesce concurrent getCurrentPosition calls and cache for 60s
+   Fixes double location prompt / double initial load. === */
+(function(){
+  if (typeof navigator === "undefined" || !navigator.geolocation) return;
+  if (navigator.geolocation.__lcDeduped) return;
+  var orig = navigator.geolocation.getCurrentPosition.bind(navigator.geolocation);
+  var waiters = null;
+  var cached = null;
+  navigator.geolocation.getCurrentPosition = function(success, error, options){
+    try {
+      if (cached && Date.now() - cached.ts < 60000) {
+        if (success) { try { success(cached.pos); } catch(e){ console.error(e); } }
+        return;
+      }
+      if (waiters) { waiters.push({ s: success, e: error }); return; }
+      waiters = [{ s: success, e: error }];
+      orig(
+        function(pos){
+          cached = { pos: pos, ts: Date.now() };
+          var w = waiters; waiters = null;
+          w.forEach(function(cb){ if (cb.s) { try { cb.s(pos); } catch(e){ console.error(e); } } });
+        },
+        function(err){
+          var w = waiters; waiters = null;
+          w.forEach(function(cb){ if (cb.e) { try { cb.e(err); } catch(e){ console.error(e); } } });
+        },
+        options || {}
+      );
+    } catch(e){ console.error(e); if (error) try { error(e); } catch(_){} }
+  };
+  navigator.geolocation.__lcDeduped = true;
+})();
+
 // ═══════════════════════════════════════
 // Radha Naam Jap — app.js
 // ═══════════════════════════════════════
@@ -1869,6 +1902,17 @@ function tgs(k) {
     uStats();
     renderHistory && typeof renderHistory === "function" && renderHistory();
     toast(App.S.gaudiyaMode ? "🪷 Gaudiya Mode ON" : "🪷 Gaudiya Mode OFF");
+    return;
+  }
+
+  // ── Location toggle ──
+  if (k === "locationEnabled") {
+    App.S.locationEnabled = !(App.S.locationEnabled !== false);
+    const tgL = document.getElementById("tgLocation");
+    if (tgL) App.S.locationEnabled ? tgL.classList.add("on") : tgL.classList.remove("on");
+    App.save();
+    fbDebouncedPush();
+    toast(App.S.locationEnabled ? "📍 Location enabled — GPS features active" : "📍 Location off — GPS features paused");
     return;
   }
 
@@ -7758,6 +7802,72 @@ function uBStats() {
 
 // ── Calendar ──
 let cald = new Date();
+function setCalendarMode(mode) {
+  App.S.calendarMode = mode;
+  App.save();
+  const g = document.getElementById("calModeGregorian");
+  const p = document.getElementById("calModePanchang");
+  if (g) {
+    const on = mode === "gregorian";
+    g.style.borderColor = on ? "rgba(255,215,0,0.7)" : "rgba(255,215,0,0.22)";
+    g.style.background = on ? "rgba(255,215,0,0.14)" : "rgba(255,215,0,0.04)";
+  }
+  if (p) {
+    const on = mode === "panchang";
+    p.style.borderColor = on ? "rgba(109,184,255,0.7)" : "rgba(109,184,255,0.22)";
+    p.style.background = on ? "rgba(109,184,255,0.14)" : "rgba(109,184,255,0.04)";
+  }
+  renderCal();
+}
+
+function renderCalPanchang(yr, mo, fd) {
+  if (typeof getPanchangData !== "function") return;
+  const lat = (App.S && App.S.lastLat) || 23.0;
+  const lng = (App.S && App.S.lastLng) || 89.5;
+  const dim = new Date(yr, mo + 1, 0).getDate();
+  const g = document.getElementById("cg");
+
+  // Update header with Gaurabda/Maas info
+  const firstDate = new Date(yr, mo, 1, 0, 0, 0);
+  getPanchangData(lat, lng, firstDate).then(function(p0) {
+    const cmyEl = document.getElementById("cmy");
+    if (cmyEl && p0) {
+      const adhik = p0.month && p0.month.isAdhik ? " · Adhik" : "";
+      const maas = (p0.month && p0.month.std) || "";
+      const gaurabda = p0.gaurabdaYear || "";
+      cmyEl.innerHTML =
+        '<div style="font-size:12px;color:#FFD700;font-weight:700;line-height:1.3">' + maas + adhik + ' · ' + gaurabda + ' Gaurabda</div>' +
+        '<div style="font-size:10px;color:rgba(255,255,255,0.4);margin-top:1px">' + MN[mo] + ' ' + yr + '</div>';
+    }
+  }).catch(function(){});
+
+  // Overlay tithi names on each day cell asynchronously
+  var promises = [];
+  for (var d = 1; d <= dim; d++) {
+    (function(day) {
+      var date = new Date(yr, mo, day, 0, 0, 0);
+      var cellIdx = 7 + fd + day - 1; // 7 header labels + offset + day
+      promises.push(
+        getPanchangData(lat, lng, date).then(function(p) {
+          var cell = g.children[cellIdx];
+          if (!cell) return;
+          var existing = cell.querySelector(".cc-tithi");
+          if (existing) existing.remove();
+          var el = document.createElement("div");
+          el.className = "cc-tithi";
+          var tName = (p && p.tithi && p.tithi.name) ? p.tithi.name : "";
+          // Abbreviate long names
+          var abbr = tName.length > 8 ? tName.substring(0, 7) + "." : tName;
+          var pakIcon = (p && p.paksha && p.paksha.gaudiya === "Shukla") ? "☀" : "🌙";
+          el.textContent = abbr;
+          el.title = tName + " · " + ((p && p.paksha && p.paksha.gaudiya) || "");
+          cell.appendChild(el);
+        }).catch(function(){})
+      );
+    })(d);
+  }
+}
+
 function renderCal() {
   const yr = cald.getFullYear(),
     mo = cald.getMonth();
@@ -7825,6 +7935,10 @@ function renderCal() {
   }
   uBStats();
   renderBcGraph();
+  // Panchang overlay — async, adds tithi names after base render
+  if (App.S && App.S.calendarMode === "panchang") {
+    renderCalPanchang(yr, mo, fd);
+  }
 }
 function chm(d) {
   cald.setMonth(cald.getMonth() + d);
@@ -8611,6 +8725,23 @@ window.addEventListener("load", async () => {
   if (App.S.cfg.vib) document.getElementById("tgVib").classList.add("on");
   if (App.S.cfg.sound) document.getElementById("tgSnd").classList.add("on");
 
+  // ── Location toggle init ──
+  const tgLoc = document.getElementById("tgLocation");
+  if (tgLoc && App.S.locationEnabled !== false) tgLoc.classList.add("on");
+
+  // ── Calendar mode buttons init ──
+  const calMode = App.S.calendarMode || "gregorian";
+  const calG = document.getElementById("calModeGregorian");
+  const calP = document.getElementById("calModePanchang");
+  if (calG) {
+    calG.style.borderColor = calMode === "gregorian" ? "rgba(255,215,0,0.7)" : "rgba(255,215,0,0.22)";
+    calG.style.background = calMode === "gregorian" ? "rgba(255,215,0,0.14)" : "rgba(255,215,0,0.04)";
+  }
+  if (calP) {
+    calP.style.borderColor = calMode === "panchang" ? "rgba(109,184,255,0.7)" : "rgba(109,184,255,0.22)";
+    calP.style.background = calMode === "panchang" ? "rgba(109,184,255,0.14)" : "rgba(109,184,255,0.04)";
+  }
+
   // Live previews for stats inputs
   [
     "manualJapIn",
@@ -8664,7 +8795,8 @@ window.addEventListener("load", async () => {
 // PWA ONE-CLICK INSTALL BANNER
 // ═══════════════════════════════════════════════════════
 let deferredPrompt = null;
-let _installBannerShownThisSession = false;
+// Use sessionStorage so the flag survives SW-triggered page reloads within the same session
+let _installBannerShownThisSession = sessionStorage.getItem("_rjInstallShown") === "1";
 
 window.addEventListener("beforeinstallprompt", (e) => {
   e.preventDefault();
@@ -8681,14 +8813,15 @@ window.addEventListener("beforeinstallprompt", (e) => {
   if (dismissed && Date.now() - Number(dismissed) < 3 * 24 * 60 * 60 * 1000)
     return;
 
-  // Wait for app paint to settle, then show once
+  // Wait for app paint to settle fully, then show once
   setTimeout(() => {
     // Re-check in case user installed or dismissed while waiting
     if (_installBannerShownThisSession) return;
     if (window.matchMedia("(display-mode: standalone)").matches) return;
     _installBannerShownThisSession = true;
+    sessionStorage.setItem("_rjInstallShown", "1");
     showInstallBanner();
-  }, 2500);
+  }, 3500);
 });
 
 function showInstallBanner() {
@@ -8696,32 +8829,38 @@ function showInstallBanner() {
   const banner = document.createElement("div");
   banner.id = "installBanner";
   banner.style.cssText = `
-    position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(100px);
-    background:linear-gradient(135deg,#1a0a2e,#0d1f3c);
-    border:1px solid rgba(255,215,0,0.45);border-radius:18px;
-    padding:14px 16px;display:flex;align-items:center;gap:12px;
-    box-shadow:0 6px 32px rgba(255,215,0,0.25);
-    z-index:9999;width:92%;max-width:370px;
-    transition:transform 0.4s cubic-bezier(0.34,1.56,0.64,1);
+    position:fixed;bottom:78px;left:50%;transform:translateX(-50%) translateY(140px);
+    background:linear-gradient(160deg,#0d1a35,#14093a);
+    border:1px solid rgba(255,215,0,0.5);border-radius:22px;
+    padding:20px 18px 16px;
+    box-shadow:0 8px 40px rgba(255,215,0,0.22),0 2px 12px rgba(0,0,0,0.7);
+    z-index:9999;width:92%;max-width:380px;
+    transition:transform 0.45s cubic-bezier(0.34,1.56,0.64,1);
   `;
   banner.innerHTML = `
-    <img src="/icon-192.png" style="width:46px;height:46px;border-radius:12px;flex-shrink:0;">
-    <div style="flex:1;min-width:0">
-      <div style="color:#FFD700;font-weight:700;font-size:14px;font-family:Inter,sans-serif">📲 Install Radha Jap</div>
-      <div style="color:#aaa;font-size:11px;margin-top:3px;font-family:Inter,sans-serif;line-height:1.4">Add to home screen for daily reminders & offline use 🙏</div>
+    <div style="text-align:center;margin-bottom:16px">
+      <div style="font-size:20px;color:#FFD700;font-weight:800;font-family:'EB Garamond',Georgia,serif;letter-spacing:0.3px;line-height:1.2">🪷 Radha Naam Jap</div>
+      <div style="font-size:11px;color:rgba(255,215,0,0.5);letter-spacing:1.5px;text-transform:uppercase;margin-top:4px;font-family:Inter,sans-serif">Add to Home Screen</div>
     </div>
-    <div style="display:flex;flex-direction:column;gap:5px;flex-shrink:0">
-      <button id="installBtn" style="
-        background:linear-gradient(135deg,#FFD700,#FFA500);
-        color:#000;border:none;border-radius:10px;
-        padding:8px 15px;font-weight:700;font-size:13px;
-        cursor:pointer;font-family:Inter,sans-serif;white-space:nowrap;
-      ">Install</button>
-      <button id="dismissInstallBtn" style="
-        background:transparent;color:#666;border:none;
-        font-size:11px;cursor:pointer;font-family:Inter,sans-serif;
-      ">Not now</button>
-    </div>
+    <button id="installBtn" style="
+      display:block;width:100%;
+      background:linear-gradient(135deg,#FFD700 0%,#FFA500 55%,#FF8C00 100%);
+      color:#1a0500;border:none;border-radius:16px;
+      padding:17px 20px;font-weight:800;font-size:15px;
+      cursor:pointer;font-family:Inter,sans-serif;
+      box-shadow:0 4px 24px rgba(255,165,0,0.55),0 1px 4px rgba(0,0,0,0.3);
+      margin-bottom:11px;line-height:1.35;text-align:center;
+      letter-spacing:0.1px;
+    ">📲 Press Install Button now<br><span style="font-size:12px;font-weight:600;opacity:0.82">to get an app icon on your home screen for easy access</span></button>
+    <button id="dismissInstallBtn" style="
+      display:block;width:100%;
+      background:linear-gradient(135deg,#1a4a9a,#2563eb);
+      color:#ddeeff;border:none;border-radius:16px;
+      padding:14px 20px;font-weight:600;font-size:13px;
+      cursor:pointer;font-family:Inter,sans-serif;
+      box-shadow:0 3px 14px rgba(37,99,235,0.3);
+      letter-spacing:0.2px;
+    ">Add To Homescreen Later · Not Now</button>
   `;
   document.body.appendChild(banner);
   // Animate in
@@ -8836,7 +8975,9 @@ if ("serviceWorker" in navigator) {
               Date.now() - Number(dismissed) >= 3 * 24 * 60 * 60 * 1000
             ) {
               _installBannerShownThisSession = true;
-              showInstallBanner();
+              sessionStorage.setItem("_rjInstallShown", "1");
+              // Small delay to let the UI settle before showing
+              setTimeout(showInstallBanner, 1500);
             }
           }
         }

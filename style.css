@@ -29,28 +29,6 @@ body::before{content:'';position:fixed;top:50%;left:50%;transform:translate(-50%
 .ls-ring{display:none;}
 @keyframes spin-fwd{from{transform:rotate(0deg);}to{transform:rotate(360deg);}}
 @keyframes spin-rev{from{transform:rotate(0deg);}to{transform:rotate(-360deg);}}
-
-/* Sudarshan Chakra fly-across (left-bottom -> right-top), avoids center Radha rings */
-.sudarshan-fly{
-  position:absolute;left:-18vmin;bottom:-18vmin;
-  width:22vmin;height:22vmin;max-width:180px;max-height:180px;min-width:90px;min-height:90px;
-  pointer-events:none;z-index:30;
-  animation:sudFly 2.6s cubic-bezier(.22,.7,.3,1) 0.15s 1 forwards;
-  filter:drop-shadow(0 0 12px rgba(255,210,90,0.85)) drop-shadow(0 0 28px rgba(255,160,40,0.55));
-  will-change:transform,opacity;opacity:0;
-}
-.sudarshan-svg{width:100%;height:100%;display:block;}
-.sudarshan-spin{transform-box:fill-box;transform-origin:50% 50%;animation:sudSpin 0.45s linear infinite;}
-@keyframes sudSpin{from{transform:rotate(0deg);}to{transform:rotate(360deg);}}
-@keyframes sudFly{
-  0%   {transform:translate(0,0) scale(0.6);opacity:0;}
-  12%  {opacity:1;}
-  /* curve up-right, dipping outside the central radha rings */
-  50%  {transform:translate(60vw,-55vh) scale(1);opacity:1;}
-  88%  {opacity:1;}
-  100% {transform:translate(125vw,-115vh) scale(0.7);opacity:0;}
-}
-.ls.hide .sudarshan-fly{display:none;}
 /* iOS/iPad Safari fixes */
 @supports (-webkit-touch-callout: none) {
   .ls{height:-webkit-fill-available;}
@@ -2057,3 +2035,7 @@ body.hk-bn #hkLangBtnHi{opacity:0.55;}
   text-shadow: none !important;
 }
 
+
+/* ── Panchang calendar: tithi name overlay ── */
+.cc-tithi{font-size:7px;color:rgba(206,147,216,0.9);line-height:1.1;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;text-align:center;font-family:'Inter',sans-serif;font-weight:500;}
+.cc.today .cc-tithi{color:rgba(206,147,216,1);}

@@ -1,8 +1,8 @@
 // ═══════════════════════════════════════════════════════
 // Radha Naam Jap — Service Worker
-// v86: fixed offline caching for GitHub Pages / subpath installs
+// v110: fix NaN Gaurabda — gaurabdaYear fallback; panchangData versioned; v108: celestial sunrise = solar noon − 6h (ISKCON match); BM end fixed 46→48 min; paran uses apparent daytime length
 // ═══════════════════════════════════════════════════════
-const CACHE = 'radha-jap-v106';
+const CACHE = 'radha-jap-v111';
 
 const LOCAL_ASSETS = [
   './',
@@ -13,6 +13,7 @@ const LOCAL_ASSETS = [
   './stotrams.js',
   './app.js',
   './panchangData.js',
+  './se-bridge.js',
   './guru.jpg',
   './icon-192.png',
   './icon-512.png',
@@ -92,13 +93,30 @@ self.addEventListener('install', (event) => {
 
 self.addEventListener('activate', (event) => {
   event.waitUntil((async () => {
+    // Delete old caches
     const keys = await caches.keys();
     await Promise.all(keys.filter((key) => key !== CACHE).map((key) => caches.delete(key)));
     await self.clients.claim();
+
     const clients = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+
+    // ── KEY FIX ──────────────────────────────────────────────────────────────
+    // Previously we sent BOTH SW_UPDATED (triggers reload) AND SW_READY
+    // (triggers install banner) to every open client in the same activate pass.
+    // The client that received SW_UPDATED reloaded — then the freshly loaded
+    // page received a second beforeinstallprompt AND a SW_READY from the now-
+    // controlling SW, making the install popup appear → disappear → reappear.
+    //
+    // Fix: send SW_UPDATED ONLY to clients that were already open (they need
+    // the reload to get fresh files). Send SW_READY ONLY to brand-new page
+    // loads where the SW is already the controller from the start — those pages
+    // get SW_READY via the 'controllerchange' path in app.js instead.
+    // We no longer broadcast SW_READY here at all; app.js handles it via the
+    // navigator.serviceWorker.controller check on load.
+    // ─────────────────────────────────────────────────────────────────────────
     clients.forEach((client) => {
       client.postMessage({ type: 'SW_UPDATED', version: CACHE });
-      client.postMessage({ type: 'SW_READY' });
+      // SW_READY is intentionally NOT sent here — see app.js serviceWorker init
     });
   })());
 });

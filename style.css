@@ -379,6 +379,7 @@ button.hpb.active{
 .sr .sub{font-size:11px;color:var(--td);margin-top:2px;}
 .tg{width:44px;height:24px;background:rgba(255,255,255,0.1);border-radius:12px;position:relative;cursor:pointer;transition:background 0.3s;flex-shrink:0;}
 .tg.on{background:var(--bg);}
+#tgHorizonMode.on{background:#2176AE;} /* celestial blue — distinct from default purple-blue */
 .tg::after{content:'';position:absolute;width:18px;height:18px;background:white;border-radius:50%;top:3px;left:3px;transition:left 0.3s;}
 .tg.on::after{left:23px;}
 .ei{width:100%;background:rgba(0,0,0,0.3);border:1px solid rgba(74,144,226,0.25);border-radius:9px;
@@ -2036,6 +2037,762 @@ body.hk-bn #hkLangBtnHi{opacity:0.55;}
 }
 
 
-/* ── Panchang calendar: tithi name overlay ── */
-.cc-tithi{font-size:7px;color:rgba(206,147,216,0.9);line-height:1.1;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;text-align:center;font-family:'Inter',sans-serif;font-weight:500;}
-.cc.today .cc-tithi{color:rgba(206,147,216,1);}
+/* ══════════════════════════════════════════════
+   SOLAR COMPASS CARD  (GPS + Horizon unified)
+   ══════════════════════════════════════════════ */
+.scc{
+  background:linear-gradient(160deg,rgba(6,10,25,0.97) 0%,rgba(12,18,40,0.98) 100%);
+  border:1px solid rgba(255,180,0,0.22)!important;
+  border-radius:22px!important;
+  padding:0!important;
+  overflow:hidden;
+  position:relative;
+  box-shadow:0 8px 40px rgba(0,0,0,0.55);
+}
+.scc-topbar{
+  position:absolute;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,transparent,rgba(255,180,0,0.7) 35%,rgba(109,184,255,0.7) 65%,transparent);
+  border-radius:22px 22px 0 0;
+}
+.scc-bottombar{
+  height:1px;
+  background:linear-gradient(90deg,transparent,rgba(109,184,255,0.25),transparent);
+}
+/* ── Header ── */
+.scc-head{
+  display:flex;align-items:center;gap:14px;
+  padding:20px 18px 16px;
+  border-bottom:1px solid rgba(255,255,255,0.06);
+}
+.scc-icon-wrap{
+  flex-shrink:0;width:64px;height:64px;border-radius:50%;
+  background:linear-gradient(145deg,rgba(255,180,0,0.1),rgba(109,184,255,0.08));
+  border:1.5px solid rgba(255,180,0,0.28);
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 4px 18px rgba(255,180,0,0.14),0 0 0 6px rgba(255,180,0,0.04);
+}
+.scc-svg{width:40px;height:40px;display:block;}
+.scc-head-text{flex:1;min-width:0;}
+.scc-title{
+  font-size:19px;font-weight:800;
+  font-family:'EB Garamond','Georgia',serif;
+  background:linear-gradient(135deg,#FFD700 0%,#FFB300 45%,#6DB8FF 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  background-clip:text;letter-spacing:0.3px;line-height:1.2;
+}
+.scc-subtitle{
+  font-size:10px;color:rgba(255,255,255,0.42);margin-top:4px;
+  letter-spacing:1.2px;text-transform:uppercase;font-family:'Inter',sans-serif;
+}
+/* ── Sections ── */
+.scc-section{padding:15px 18px 14px;border-bottom:1px solid rgba(255,255,255,0.05);}
+.scc-section:last-of-type{border-bottom:none;padding-bottom:18px;}
+.scc-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+.scc-row-left{display:flex;align-items:center;gap:10px;}
+.scc-badge{
+  width:34px;height:34px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:16px;flex-shrink:0;
+}
+.scc-badge-gold{background:rgba(255,215,0,0.1);border:1px solid rgba(255,215,0,0.3);}
+.scc-badge-blue{background:rgba(109,184,255,0.1);border:1px solid rgba(109,184,255,0.3);}
+.scc-label{font-size:13px;font-weight:700;font-family:'Inter',sans-serif;line-height:1.2;}
+.scc-label-gold{color:#FFD700;}
+.scc-label-blue{color:#6DB8FF;}
+.scc-sublabel{font-size:10px;color:rgba(255,255,255,0.38);margin-top:2px;}
+.scc-sublabel-blue{color:#a0c8ff!important;font-weight:600;font-size:11px!important;}
+/* ── GPS status pill ── */
+.scc-status-pill{
+  font-size:11px;padding:7px 10px;border-radius:9px;line-height:1.6;
+}
+.scc-status-gold{
+  color:rgba(255,215,0,0.6);
+  background:rgba(255,215,0,0.05);
+  border:1px solid rgba(255,215,0,0.13);
+}
+.scc-hint{font-size:11px;color:rgba(255,255,255,0.3);margin-top:7px;line-height:1.55;}
+.scc-hint-gold{color:rgba(255,215,0,0.65);}
+/* ── Horizon pill grid ── */
+.scc-pill-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:10px;}
+.scc-pill{
+  border-radius:12px;padding:11px 10px 10px;cursor:pointer;
+  transition:background 0.2s,border-color 0.2s,box-shadow 0.2s;
+}
+.scc-pill-apparent{
+  background:rgba(255,215,0,0.09);
+  border:1.5px solid rgba(255,215,0,0.38);
+  box-shadow:0 0 10px rgba(255,215,0,0.1);
+}
+.scc-pill-celestial{
+  background:rgba(109,184,255,0.04);
+  border:1.5px solid rgba(109,184,255,0.16);
+  box-shadow:none;
+}
+.scc-pill-icon{font-size:14px;margin-bottom:4px;}
+.scc-pill-name{font-size:11px;font-weight:700;margin-bottom:3px;}
+.scc-pill-name-gold{color:#FFD700;}
+.scc-pill-name-blue{color:#6DB8FF;}
+.scc-pill-desc{font-size:9.5px;color:rgba(255,255,255,0.38);line-height:1.55;}
+/* ── Horizon desc + affects ── */
+.scc-desc{
+  font-size:11px;color:rgba(255,255,255,0.38);margin:0 0 8px;line-height:1.6;
+  padding:8px 10px;background:rgba(109,184,255,0.04);
+  border-radius:9px;border:1px solid rgba(109,184,255,0.1);
+}
+.scc-affects{font-size:10px;color:rgba(255,255,255,0.26);line-height:1.6;}
+
+/* ── Gaudiya / ISKCON Horizon Mode panel (inside Location) ─────────────── */
+.gd-modes{
+  display:none;
+  margin:16px 0 4px;
+  padding:14px 12px 12px;
+  background:
+    radial-gradient(circle at 50% 0%, rgba(255,179,0,0.10), transparent 70%),
+    linear-gradient(180deg, rgba(255,215,0,0.06), rgba(109,184,255,0.04));
+  border:1px solid rgba(255,215,0,0.28);
+  border-radius:14px;
+  box-shadow:inset 0 0 24px rgba(255,215,0,0.05), 0 4px 18px rgba(0,0,0,0.25);
+}
+.scc-gps-section.gps-on .gd-modes{display:block;}
+.scc-gps-section.gps-on .gd-modes-hint{display:none;}
+.gd-modes-hint{
+  margin:14px 0 4px; padding:10px 12px;
+  font-size:11px; color:rgba(255,215,0,0.65); text-align:center;
+  border:1px dashed rgba(255,215,0,0.28); border-radius:10px;
+  background:rgba(255,215,0,0.04); letter-spacing:0.3px;
+}
+.gd-modes-head{
+  display:flex;align-items:center;justify-content:center;gap:10px;
+  font-size:12px;letter-spacing:2.4px;text-transform:uppercase;
+  color:#FFD700;font-weight:700;
+}
+.gd-modes-orn{color:#FFB300;opacity:0.85;font-size:13px;}
+.gd-modes-title{text-shadow:0 0 12px rgba(255,215,0,0.35);}
+.gd-modes-sub{
+  text-align:center;margin:4px 0 12px;
+  font-size:11px;color:rgba(255,255,255,0.65);letter-spacing:0.4px;
+}
+.gd-tiles{ display:flex;flex-direction:row;gap:10px;width:100%; }
+.gd-tile{
+  flex:1 1 0;min-width:0;min-height:104px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:4px;padding:14px 8px;
+  background:linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.01));
+  border:1.5px solid rgba(255,255,255,0.16);
+  border-radius:14px;cursor:pointer;
+  color:rgba(255,255,255,0.85);font-family:inherit;
+  -webkit-appearance:none;appearance:none;-webkit-tap-highlight-color:transparent;
+  transition:background .2s, border-color .2s, box-shadow .2s, color .2s, transform .15s;
+}
+.gd-tile:active{transform:scale(0.97);}
+.gd-tile-icon{font-size:26px;line-height:1;margin-bottom:2px;}
+.gd-tile-name{font-size:14px;font-weight:700;letter-spacing:0.4px;}
+.gd-tile-tag{font-size:10px;color:rgba(255,255,255,0.55);letter-spacing:0.3px;}
+.gd-tile-note{
+  font-size:9.5px;letter-spacing:1.4px;text-transform:uppercase;
+  color:rgba(255,255,255,0.4);margin-top:2px;
+}
+.gd-tile.active{
+  background:linear-gradient(180deg, rgba(255,215,0,0.20), rgba(255,179,0,0.08));
+  border-color:#FFD700;
+  box-shadow:0 0 18px rgba(255,215,0,0.35), inset 0 0 14px rgba(255,215,0,0.10);
+  color:#FFD700;
+}
+.gd-tile.active .gd-tile-name{color:#FFD700;text-shadow:0 0 10px rgba(255,215,0,0.5);}
+.gd-tile.active .gd-tile-tag{color:rgba(255,215,0,0.78);}
+.gd-tile.active .gd-tile-note{color:rgba(255,215,0,0.6);}
+.gd-modes-desc{ font-size:11px;color:rgba(255,255,255,0.55);line-height:1.55;margin:12px 2px 8px; }
+.gd-modes-affects{
+  font-size:10px;color:rgba(255,215,0,0.55);letter-spacing:0.4px;line-height:1.5;
+  padding-top:8px;border-top:1px solid rgba(255,215,0,0.14);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   HORIZON MODE PILL BUTTONS — active state
+   #horizonPillApparent / #horizonPillCelestial use .active class
+   toggled by _applyHorizonToggleUI() in app.js
+   ══════════════════════════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════════════════
+   PREMIUM GLOSSY BUTTONS — Horizon · Parampara · Engine
+   All 6 buttons share the same premium base; active state glows.
+   ═══════════════════════════════════════════════════════════════ */
+#horizonPillApparent,
+#horizonPillCelestial,
+#ekEngineApp,
+#ekEnginePanchang,
+#ekParSmarta,
+#ekParVaishnav {
+  -webkit-appearance: none;
+  appearance: none;
+  padding: 14px 8px;
+  border-radius: 14px;
+  border: 1.5px solid rgba(255,255,255,0.1);
+  background: linear-gradient(145deg,rgba(255,255,255,0.05),rgba(255,255,255,0.02));
+  color: rgba(255,255,255,0.5);
+  font-family: 'Inter', sans-serif;
+  cursor: pointer;
+  text-align: center;
+  width: 100%;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  transition: background 0.25s, border-color 0.25s, color 0.25s, box-shadow 0.25s, transform 0.15s;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.06);
+}
+
+/* Hover lift (non-active) */
+#horizonPillApparent:not(.active):hover,
+#horizonPillCelestial:not(.active):hover,
+#ekEngineApp:not(.active):hover,
+#ekEnginePanchang:not(.active):hover,
+#ekParSmarta:not(.active):hover,
+#ekParVaishnav:not(.active):hover {
+  background: rgba(255,255,255,0.07);
+  border-color: rgba(255,255,255,0.2);
+  color: rgba(255,255,255,0.75);
+  transform: translateY(-1px);
+}
+
+/* ── ACTIVE GLOW STATES ── */
+#horizonPillApparent.active {
+  background: linear-gradient(145deg,rgba(255,215,0,0.22),rgba(255,165,0,0.12));
+  border-color: rgba(255,215,0,0.9);
+  color: #FFD700;
+  box-shadow: 0 0 22px rgba(255,215,0,0.45), 0 0 8px rgba(255,215,0,0.3), inset 0 1px 0 rgba(255,255,255,0.15);
+}
+#horizonPillCelestial.active {
+  background: linear-gradient(145deg,rgba(109,184,255,0.22),rgba(60,120,255,0.12));
+  border-color: rgba(109,184,255,0.9);
+  color: #6DB8FF;
+  box-shadow: 0 0 22px rgba(109,184,255,0.45), 0 0 8px rgba(109,184,255,0.3), inset 0 1px 0 rgba(255,255,255,0.15);
+}
+#ekParSmarta.active {
+  background: linear-gradient(145deg,rgba(241,196,15,0.25),rgba(255,160,0,0.12));
+  border-color: rgba(241,196,15,0.9);
+  color: #F1C40F;
+  box-shadow: 0 0 22px rgba(241,196,15,0.45), 0 0 8px rgba(241,196,15,0.3), inset 0 1px 0 rgba(255,255,255,0.15);
+}
+#ekParVaishnav.active {
+  background: linear-gradient(145deg,rgba(189,147,249,0.25),rgba(155,89,182,0.12));
+  border-color: rgba(189,147,249,0.9);
+  color: #BD93F9;
+  box-shadow: 0 0 22px rgba(189,147,249,0.45), 0 0 8px rgba(155,89,182,0.35), inset 0 1px 0 rgba(255,255,255,0.15);
+}
+#ekEngineApp.active {
+  background: linear-gradient(145deg,rgba(100,210,255,0.22),rgba(0,180,255,0.12));
+  border-color: rgba(100,210,255,0.9);
+  color: #64D2FF;
+  box-shadow: 0 0 22px rgba(100,210,255,0.45), 0 0 8px rgba(100,210,255,0.3), inset 0 1px 0 rgba(255,255,255,0.15);
+}
+#ekEnginePanchang.active {
+  background: linear-gradient(145deg,rgba(46,204,113,0.22),rgba(0,180,80,0.12));
+  border-color: rgba(46,204,113,0.9);
+  color: #2ECC71;
+  box-shadow: 0 0 22px rgba(46,204,113,0.45), 0 0 8px rgba(46,204,113,0.3), inset 0 1px 0 rgba(255,255,255,0.15);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   SETTINGS — Sacred Times live preview cards
+   cfg-bm-start / cfg-sunrise / cfg-sk-start / cfg-sunset etc.
+   ══════════════════════════════════════════════════════════════ */
+#cfg-bm-start, #cfg-bm-end,
+#cfg-sunrise,
+#cfg-sk-start, #cfg-sk-end,
+#cfg-sunset {
+  font-family: 'EB Garamond', serif;
+  letter-spacing: 0.5px;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   GPS location status text in Sacred Times card
+   ══════════════════════════════════════════════════════════════ */
+#gpsLocationStatus {
+  transition: color 0.3s;
+  word-break: break-word;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   GAUDIYA AUTO-FETCH BANNER — pulsing ⏳ + progress bar
+   ══════════════════════════════════════════════════════════════ */
+@keyframes ek-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.5; transform: scale(0.85); }
+}
+@keyframes ek-progress {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(400%); }
+}
+
+.ek-pulse-icon {
+  display: inline-block;
+  animation: ek-pulse 1.4s ease-in-out infinite;
+}
+
+.ek-progress-bar {
+  width: 30%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, #FFD700, transparent);
+  animation: ek-progress 1.6s ease-in-out infinite;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   PREMIUM GOLDEN EKADASHI CARDS
+   ═══════════════════════════════════════════════════════════════ */
+
+@keyframes ek-glow-pulse {
+  0%, 100% { box-shadow: 0 0 18px 3px rgba(255,215,0,0.22), 0 0 40px 8px rgba(255,180,0,0.10), inset 0 1px 0 rgba(255,255,220,0.10); }
+  50%       { box-shadow: 0 0 30px 8px rgba(255,215,0,0.38), 0 0 60px 18px rgba(255,180,0,0.18), inset 0 1px 0 rgba(255,255,220,0.18); }
+}
+
+@keyframes ek-upcoming-beacon {
+  0%, 100% { opacity: 1; transform: scale(1); box-shadow: 0 0 0 0 rgba(255,215,0,0.7); }
+  50%       { opacity: 0.85; transform: scale(1.04); box-shadow: 0 0 0 8px rgba(255,215,0,0.0); }
+}
+
+@keyframes ek-shimmer {
+  0%   { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+@keyframes ek-badge-glow {
+  0%, 100% { box-shadow: 0 0 6px 1px rgba(255,215,0,0.4); }
+  50%       { box-shadow: 0 0 14px 4px rgba(255,215,0,0.75); }
+}
+
+.ek-premium-card {
+  position: relative;
+  background: linear-gradient(160deg,
+    rgba(40,28,8,0.97) 0%,
+    rgba(28,18,4,0.99) 40%,
+    rgba(35,24,6,0.97) 100%
+  );
+  border: 1.5px solid rgba(255,200,60,0.38);
+  border-radius: 20px;
+  padding: 0 0 14px 0;
+  margin-bottom: 16px;
+  overflow: hidden;
+  animation: ek-glow-pulse 4s ease-in-out infinite;
+  transition: transform 0.2s ease;
+}
+
+.ek-premium-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg,
+    transparent 0%,
+    rgba(255,215,0,0.15) 15%,
+    rgba(255,215,0,0.9) 40%,
+    #FFD700 50%,
+    rgba(255,215,0,0.9) 60%,
+    rgba(255,215,0,0.15) 85%,
+    transparent 100%
+  );
+  background-size: 200% auto;
+  animation: ek-shimmer 3s linear infinite;
+}
+
+.ek-premium-card::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255,215,0,0.25), transparent);
+}
+
+.ek-premium-card.ek-upcoming-next {
+  border-color: rgba(255,215,0,0.75);
+  animation: ek-glow-pulse 2.5s ease-in-out infinite;
+}
+
+/* Name centred — large golden */
+.ek-card-name-wrap {
+  text-align: center;
+  padding: 18px 16px 10px;
+  position: relative;
+}
+
+.ek-card-name {
+  font-family: 'Cinzel Decorative', 'EB Garamond', serif;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  background: linear-gradient(180deg, #FFE57A 0%, #FFD700 45%, #C8960C 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-shadow: none;
+  line-height: 1.2;
+  display: block;
+}
+
+/* "NEXT" badge on most-upcoming */
+.ek-next-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin: 4px auto 0;
+  padding: 3px 12px;
+  background: linear-gradient(135deg, rgba(255,215,0,0.22), rgba(255,180,0,0.14));
+  border: 1px solid rgba(255,215,0,0.55);
+  border-radius: 20px;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 2px;
+  color: #FFD700;
+  text-transform: uppercase;
+  animation: ek-badge-glow 2s ease-in-out infinite;
+}
+
+/* Divider below name */
+.ek-card-divider {
+  height: 1px;
+  margin: 0 20px 12px;
+  background: linear-gradient(90deg, transparent, rgba(255,215,0,0.35), transparent);
+}
+
+/* Body content area */
+.ek-card-body {
+  padding: 0 16px;
+}
+
+/* Gaurabda + Vaishnava month row */
+.ek-month-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.ek-month-badge {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  padding: 3px 10px;
+  border-radius: 20px;
+  border: 1px solid rgba(255,215,0,0.28);
+  background: rgba(255,215,0,0.07);
+  color: rgba(255,215,0,0.78);
+}
+
+.ek-gaurabda-badge {
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  padding: 2px 8px;
+  border-radius: 20px;
+  border: 1px solid rgba(189,147,249,0.28);
+  background: rgba(155,89,182,0.10);
+  color: rgba(189,147,249,0.75);
+}
+
+.ek-adhik-badge {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  padding: 2px 9px;
+  border-radius: 20px;
+  border: 1px solid rgba(206,147,216,0.5);
+  background: rgba(206,147,216,0.14);
+  color: #CE93D8;
+}
+
+/* Paksha + Parampara row */
+.ek-tags-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+/* Tithi section */
+.ek-tithi-section {
+  background: rgba(0,0,0,0.3);
+  border: 1px solid rgba(255,215,0,0.10);
+  border-radius: 12px;
+  padding: 10px 13px;
+  margin-bottom: 10px;
+}
+
+.ek-tithi-label {
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 2px;
+  color: rgba(255,215,0,0.45);
+  text-transform: uppercase;
+  margin-bottom: 5px;
+}
+
+.ek-tithi-start {
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(255,225,130,0.9);
+  margin-bottom: 2px;
+}
+
+.ek-tithi-end {
+  font-size: 11px;
+  color: rgba(255,255,255,0.32);
+}
+
+/* Fast date — gold prominent */
+.ek-fast-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255,215,0,0.06);
+  border: 1px solid rgba(255,215,0,0.18);
+  border-radius: 12px;
+  padding: 10px 13px;
+  margin-bottom: 8px;
+}
+
+.ek-fast-label {
+  font-size: 9px;
+  color: rgba(255,215,0,0.55);
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+
+.ek-fast-date {
+  font-size: 13px;
+  font-weight: 700;
+  color: #FFD700;
+  flex: 1;
+}
+
+/* Parana section */
+.ek-parana-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-wrap: wrap;
+  background: rgba(255,215,0,0.04);
+  border: 1px solid rgba(255,215,0,0.16);
+  border-radius: 10px;
+  padding: 8px 12px;
+  margin-bottom: 10px;
+  font-size: 10px;
+  color: rgba(255,225,150,0.85);
+}
+
+/* Edit / Remove buttons row */
+.ek-actions-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.ek-btn-edit {
+  flex: 1;
+  padding: 8px;
+  border-radius: 10px;
+  border: 1px solid rgba(109,184,255,0.35);
+  background: rgba(74,144,226,0.10);
+  color: #6DB8FF;
+  font-size: 13px;
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  font-weight: 600;
+}
+
+.ek-btn-remove {
+  flex: 1;
+  padding: 8px;
+  border-radius: 10px;
+  border: 1px solid rgba(232,51,109,0.3);
+  background: rgba(232,51,109,0.09);
+  color: #e8336d;
+  font-size: 13px;
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  font-weight: 600;
+}
+
+/* ── Range Filter UI ─────────────────────── */
+.ek-range-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  background: rgba(255,215,0,0.04);
+  border: 1px solid rgba(255,215,0,0.18);
+  border-radius: 14px;
+  padding: 10px 12px;
+  margin-bottom: 14px;
+}
+
+.ek-range-bar label {
+  font-size: 9px;
+  color: rgba(255,215,0,0.55);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.ek-range-input {
+  flex: 1;
+  min-width: 110px;
+  background: rgba(0,0,0,0.45);
+  border: 1px solid rgba(255,215,0,0.28);
+  border-radius: 9px;
+  padding: 6px 9px;
+  color: #FFE57A;
+  font-size: 12px;
+  font-family: 'Inter', sans-serif;
+  outline: none;
+}
+
+.ek-range-clear {
+  padding: 6px 12px;
+  border-radius: 9px;
+  border: 1px solid rgba(255,215,0,0.3);
+  background: rgba(255,215,0,0.08);
+  color: #FFD700;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  white-space: nowrap;
+}
+
+.ek-count-label {
+  font-size: 9px;
+  color: rgba(255,215,0,0.45);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  text-align: center;
+  margin-bottom: 10px;
+  font-weight: 600;
+}
+
+/* ── Range Filter UI OVERRIDE (v2) ─────────── */
+.ek-range-bar {
+  display: flex !important;
+  align-items: flex-end !important;
+  gap: 8px !important;
+  flex-wrap: nowrap !important;
+  padding: 8px 10px !important;
+}
+
+.ek-range-bar label { display: none; }
+
+.ek-range-dates {
+  display: flex;
+  align-items: flex-end;
+  flex: 1;
+  gap: 6px;
+  min-width: 0;
+}
+
+.ek-range-field {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  gap: 2px;
+}
+
+.ek-range-lbl {
+  font-size: 8px;
+  color: rgba(255,215,0,0.5);
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  font-weight: 700;
+  padding-left: 2px;
+}
+
+.ek-range-sep {
+  font-size: 14px;
+  color: rgba(255,215,0,0.4);
+  flex-shrink: 0;
+  padding-bottom: 8px;
+}
+
+.ek-range-input {
+  width: 100% !important;
+  min-width: 0 !important;
+  flex: none !important;
+  box-sizing: border-box;
+  padding: 7px 8px !important;
+}
+
+.ek-range-clear {
+  flex-shrink: 0;
+  width: 32px !important;
+  height: 32px !important;
+  padding: 0 !important;
+  border-radius: 50% !important;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px !important;
+  margin-bottom: 2px;
+}
+
+/* ── Fast date glow animation ─────────────── */
+@keyframes ek-fast-glow {
+  0%, 100% { text-shadow: 0 0 8px rgba(255,215,0,0.6), 0 0 20px rgba(255,200,0,0.3); }
+  50%       { text-shadow: 0 0 18px rgba(255,215,0,0.95), 0 0 40px rgba(255,200,0,0.55), 0 0 60px rgba(255,180,0,0.25); }
+}
+
+/* ── Larger card inner text ───────────────── */
+.ek-tithi-section { padding: 12px 16px; }
+.ek-tithi-label   { font-size: 9px; margin-bottom: 6px; }
+.ek-tithi-start   { font-size: 15px !important; margin-bottom: 4px; }
+.ek-tithi-end     { font-size: 13px !important; }
+
+.ek-fast-row {
+  justify-content: center !important;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 12px 16px !important;
+}
+.ek-fast-label { font-size: 10px !important; }
+.ek-fast-date  {
+  font-size: 16px !important;
+  text-align: center;
+  flex: none !important;
+  animation: ek-fast-glow 2s ease-in-out infinite;
+}
+
+.ek-parana-row { font-size: 11px !important; padding: 10px 14px !important; flex-wrap: wrap; }
+
+.ek-month-badge   { font-size: 11px !important; padding: 4px 13px !important; }
+.ek-gaurabda-badge{ font-size: 10px !important; padding: 3px 10px !important; }
+.ek-adhik-badge   { font-size: 10px !important; padding: 3px 10px !important; }
+
+/* bigger paksha/parampara tags */
+.ek-tags-row span { font-size: 11px !important; padding: 4px 13px !important; }
+
+/* Hide Edit/Remove action buttons */
+.ek-actions-row { display: none !important; }
+
+/* ── Fast row: centred column layout ───────── */
+.ek-fast-row {
+  flex-direction: column !important;
+  align-items: center !important;
+  text-align: center !important;
+  padding: 14px 16px !important;
+}
+.ek-fast-label { display: none; }
+.ek-fast-date {
+  font-size: 17px !important;
+  font-weight: 800 !important;
+  text-align: center;
+  width: 100%;
+  animation: ek-fast-glow 2s ease-in-out infinite;
+  color: #FFD700 !important;
+}

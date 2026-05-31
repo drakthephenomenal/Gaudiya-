@@ -603,18 +603,26 @@ async function _fetchFromProkerala(lat, lng, date) {
 async function getPanchangData(lat, lng, date) {
   date = date || new Date();
 
+  let result;
   try {
     // Try Prokerala API (most accurate)
-    const result = await _fetchFromProkerala(lat, lng, date);
+    result = await _fetchFromProkerala(lat, lng, date);
     console.log('[Panchang] Source: Prokerala API ✅');
-    return result;
   } catch (apiErr) {
     console.warn('[Panchang] API failed, using local engine:', apiErr.message);
     // Fall back to improved local engine
-    const result = _localCompute(lat, lng, date);
+    result = _localCompute(lat, lng, date);
     console.log('[Panchang] Source: Local engine (Meeus + udaya tithi)');
-    return result;
   }
+
+  // ── GUARANTEED: always ensure gaurabdaYear is set (fixes NaN in older cached builds) ──
+  if (result && (result.gaurabdaYear === undefined || result.gaurabdaYear === null || isNaN(result.gaurabdaYear))) {
+    const _gy = _gaurabdaYear(date);
+    result.gaurabdaYear = _gy;
+    result.gaurabda = _gy;
+  }
+
+  return result;
 }
 
 // ─── Convenience formatter (unchanged API for app.js) ────────────────

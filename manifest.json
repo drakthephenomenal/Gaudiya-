@@ -41,13 +41,61 @@
       "purpose": "maskable"
     }
   ],
+  "shortcuts": [
+    {
+      "name": "Jap Counter",
+      "short_name": "Jap",
+      "description": "Open the Radha Naam Jap counter",
+      "url": "./#jap",
+      "icons": [
+        {
+          "src": "./icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "28 Names of Radha",
+      "short_name": "28 Names",
+      "description": "Chant the 28 Names of Radha",
+      "url": "./#28names",
+      "icons": [
+        {
+          "src": "./icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Stats",
+      "short_name": "Stats",
+      "description": "View your Jap sadhana statistics",
+      "url": "./#stats",
+      "icons": [
+        {
+          "src": "./icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    }
+  ],
   "screenshots": [
     {
       "src": "./icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "form_factor": "narrow",
-      "label": "Radha Naam Jap home screen"
+      "label": "Radha Naam Jap — Daily jap counter with Brahma Muhurta timings"
+    },
+    {
+      "src": "./icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Radha Naam Jap — Sadhana tracker and calendar"
     }
   ],
   "prefer_related_applications": false,

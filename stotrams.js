@@ -1,6 +1,7 @@
 // ═══════════════════════════════════════════════════════
 // Radha Naam Jap — stotrams.js
 // Stotram list & lyrics (separated for easier maintenance)
+// v91: version aligned with app.js / style.css
 // ═══════════════════════════════════════════════════════
 
 // ── STOTRAM LIST (lyrics removed to keep file size manageable — same IDs as original) ──

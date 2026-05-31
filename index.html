@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<meta name="app-version" content="90">
+<meta name="app-version" content="108">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -23,8 +23,8 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<link rel="stylesheet" href="./style.css?v=91">
-  <link rel="stylesheet" href="./style-stotram.css?v=91">
+<link rel="stylesheet" href="./style.css?v=108">
+  <link rel="stylesheet" href="./style-stotram.css?v=108">
 </head>
 <body>
 <!-- LOADING -->
@@ -200,8 +200,10 @@
     <button class="tbtn start" id="timerBtn" onclick="App.toggleTimer()">▶ Start</button>
   </div>
   <div class="timer-today" id="timerToday">Auto-starts when you tap · pauses after 6s</div>
-  <div class="bead-frame-wrap" id="beadFrameWrap">
+  <div class="bead-frame-wrap" id="beadFrameWrap" role="region" aria-label="Mala bead progress">
     <svg class="bead-frame" id="beadFrame" aria-hidden="true"></svg>
+    <!-- ARIA live region: announces mala completions and jap count to screen readers -->
+    <div id="japAnnounce" aria-live="polite" aria-atomic="true" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;"></div>
     <div class="ps">
       <!-- Daily: blue bar + jap count + undo -->
       <div class="pc pc-bar" style="position:relative;">
@@ -246,7 +248,7 @@
     </div>
   </div>
   <div class="tzr">
-    <div class="tz" id="tz" style="border-radius:18px;" ontouchstart="App.ht(event)" onmousedown="App.ht(event)">
+    <div class="tz" id="tz" style="border-radius:18px;" aria-label="Tap to chant Radha Naam" role="button" tabindex="0" ontouchstart="App.ht(event)" onmousedown="App.ht(event)">
       <div class="mf" id="mf">
         <div class="mf-line1">Radha Ballabh</div>
         <div class="mf-line2">Sri Harivansh</div>
@@ -300,8 +302,19 @@
       </div>
     </div>
 
+    <!-- 28 Names Daily Progress Bar -->
+    <div id="n28ProgressWrap" style="padding:4px 4px 6px;display:none;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+        <span style="font-size:9px;color:rgba(189,147,249,0.6);letter-spacing:1.5px;text-transform:uppercase;font-weight:700;">Daily Progress</span>
+        <span id="n28ProgressLabel" style="font-size:10px;color:#BD93F9;font-weight:700;">0 / 0 cycles</span>
+      </div>
+      <div style="height:6px;background:rgba(189,147,249,0.12);border-radius:10px;overflow:hidden;box-shadow:inset 0 1px 3px rgba(0,0,0,0.4);">
+        <div id="n28ProgressBar" style="height:100%;width:0%;background:linear-gradient(90deg,rgba(189,147,249,0.8),rgba(150,80,255,0.9));border-radius:10px;transition:width 0.5s ease;box-shadow:0 0 8px rgba(189,147,249,0.5);"></div>
+      </div>
+    </div>
+
     <!-- Tap area: Radha name at top, meaning, pause button -->
-    <div class="n28tz" id="tz28" ontouchstart="App.h28(event)" onmousedown="App.h28(event)">
+    <div class="n28tz" id="tz28" aria-label="Tap to chant 28 Names of Radha" role="button" tabindex="0" ontouchstart="App.h28(event)" onmousedown="App.h28(event)">
       <div class="mf" id="mf28" style="border-radius:22px;">
         <div class="mf-line1">Radha Vallabh</div>
         <div class="mf-line2">Sri Harivangsa</div>
@@ -458,43 +471,16 @@
   </div>
   <div style="padding:4px 14px 6px;font-size:11px;color:var(--td);text-align:center;letter-spacing:1px;">Tap a date to see details</div>
 
-  <!-- Brahmacharya Progress Graph — dedicated area below calendar -->
-  <div class="bc-graph-section">
-    <div class="bc-graph-section-title">📈 Brahmacharya Streak</div>
-    <div class="bc-graph-legend-row">
-      <span class="bc-legend-dot" style="background:#22c55e"></span><span class="bc-legend-text">Maintained</span>
-      <span class="bc-legend-dot" style="background:#ef4444;margin-left:18px"></span><span class="bc-legend-text">Broken</span>
-    </div>
-    <div class="bc-range-row" id="bcRangeRow">
-      <button class="bc-range-btn" onclick="bcShiftRange(-90)">&#8249; Prev 90d</button>
-      <span class="bc-range-label" id="bcRangeLabel">Last 90 days</span>
-      <button class="bc-range-btn" id="bcRangeNext" onclick="bcShiftRange(90)">Next 90d &#8250;</button>
-    </div>
-    <div class="bc-graph-scroll-wrap">
-      <canvas id="bcGraph" class="bc-graph-canvas" width="300" height="360"></canvas>
-    </div>
-  </div>
-</div>
-  <!-- EKADASHI MANAGER (moved from Settings) -->
   <!-- EKADASHI MANAGER -->
   <div class="sc" style="background:rgba(18,8,40,0.6);border-color:rgba(155,89,182,0.35);">
     <h3 style="color:#BD93F9;">📅 Ekadashi Manager</h3>
-
-    <!-- Parampara Toggle -->
-    <div style="background:rgba(0,0,0,0.3);border-radius:12px;padding:13px;margin-bottom:14px;">
-      <div style="font-size:10px;color:rgba(189,147,249,0.7);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:10px;font-weight:700;">🔱 Parampara</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
-        <button id="ekParSmarta" onclick="saveEkParampara('smarta')" style="padding:10px 6px;border-radius:10px;border:2px solid rgba(241,196,15,0.5);background:rgba(241,196,15,0.18);color:#F1C40F;font-size:12px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;">☀️ Smarta</button>
-        <button id="ekParVaishnav" onclick="saveEkParampara('vaishnava')" style="padding:10px 6px;border-radius:10px;border:2px solid rgba(155,89,182,0.3);background:transparent;color:rgba(189,147,249,0.6);font-size:12px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;">🌸 Vaishnava</button>
-      </div>
-      <div id="ekParamparaNote" style="font-size:11px;color:rgba(255,255,255,0.4);line-height:1.6;"></div>
-    </div>
 
     <!-- AUTO-FETCH (Primary) -->
     <div style="background:rgba(0,0,0,0.35);border:1px solid rgba(46,204,113,0.25);border-radius:12px;padding:14px;margin-bottom:14px;">
       <div style="font-size:10px;color:rgba(46,204,113,0.8);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px;font-weight:700;">✨ Auto-Fetch from GPS</div>
       <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:12px;line-height:1.5;">Calculates Ekadashi tithi times astronomically for your exact location — 2 months back &amp; 6 months ahead. No manual entry needed. Respects your Parampara.</div>
       <button id="panchangFetchBtn" onclick="fetchPanchangEkadashis()" style="display:block;width:100%;padding:13px;border-radius:10px;border:none;background:linear-gradient(135deg,rgba(46,204,113,0.75),rgba(22,160,133,0.7));color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;box-shadow:0 3px 14px rgba(46,204,113,0.2);margin-bottom:8px;">🌙 Auto-Fetch from GPS</button>
+      <button id="ekRefreshBtn" onclick="recalculateAllEkadashis()" style="display:block;width:100%;padding:11px;border-radius:10px;border:1px solid rgba(109,184,255,0.4);background:rgba(109,184,255,0.08);color:#6DB8FF;font-size:13px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;margin-bottom:8px;">🔄 Recalculate All with Live GPS</button>
       <div id="panchangStatus" style="font-size:11px;color:rgba(255,255,255,0.45);text-align:center;min-height:16px;"></div>
     </div>
 
@@ -547,10 +533,45 @@
     </div>
 
     <!-- Saved list -->
-    <div style="font-size:10px;color:rgba(189,147,249,0.55);letter-spacing:1px;text-transform:uppercase;margin-bottom:10px;font-weight:600;">Saved Ekadashis</div>
+    <div style="font-size:10px;color:rgba(189,147,249,0.55);letter-spacing:1px;text-transform:uppercase;margin-bottom:10px;font-weight:600;">🪔 Upcoming Ekadashis</div>
+
+    <!-- Date Range Filter -->
+    <div class="ek-range-bar">
+      <div class="ek-range-dates">
+        <div class="ek-range-field">
+          <span class="ek-range-lbl">FROM</span>
+          <input type="date" class="ek-range-input" id="ekRangeFrom" onchange="renderEkadashiList()">
+        </div>
+        <div class="ek-range-sep">→</div>
+        <div class="ek-range-field">
+          <span class="ek-range-lbl">TO</span>
+          <input type="date" class="ek-range-input" id="ekRangeTo" onchange="renderEkadashiList()">
+        </div>
+      </div>
+      <button class="ek-range-clear" onclick="clearEkRange()">✕</button>
+    </div>
+
+    <div class="ek-count-label" id="ekCountLabel"></div>
     <div id="ekadashiList"></div>
   </div>
 
+  <!-- Brahmacharya Progress Graph — dedicated area below Ekadashi Manager -->
+  <div class="bc-graph-section">
+    <div class="bc-graph-section-title">📈 Brahmacharya Streak</div>
+    <div class="bc-graph-legend-row">
+      <span class="bc-legend-dot" style="background:#22c55e"></span><span class="bc-legend-text">Maintained</span>
+      <span class="bc-legend-dot" style="background:#ef4444;margin-left:18px"></span><span class="bc-legend-text">Broken</span>
+    </div>
+    <div class="bc-range-row" id="bcRangeRow">
+      <button class="bc-range-btn" onclick="bcShiftRange(-90)">&#8249; Prev 90d</button>
+      <span class="bc-range-label" id="bcRangeLabel">Last 90 days</span>
+      <button class="bc-range-btn" id="bcRangeNext" onclick="bcShiftRange(90)">Next 90d &#8250;</button>
+    </div>
+    <div class="bc-graph-scroll-wrap">
+      <canvas id="bcGraph" class="bc-graph-canvas" width="300" height="360"></canvas>
+    </div>
+  </div>
+</div>
 
 
 
@@ -1107,108 +1128,257 @@
         </div>
       </div>
     </div>
-  </div>
-
-  <!-- MAHAMANTRA LANGUAGE TOGGLE — below Gaudiya card -->
-  <div class="sc hk-only-stat" id="hkLangCard" style="background:linear-gradient(135deg,rgba(6,13,31,0.95),rgba(10,22,40,0.98));border:1px solid rgba(109,184,255,0.2);padding:18px 16px 16px;position:relative;overflow:visible;box-sizing:border-box;">
-    <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,#6DB8FF,transparent);border-radius:20px 20px 0 0;"></div>
-    <!-- Header -->
-    <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;">
-      <div style="font-size:24px;flex-shrink:0;line-height:1;">🗣️</div>
-      <div style="flex:1;min-width:0;">
-        <div style="font-size:16px;font-weight:bold;font-family:'EB Garamond','Georgia',serif;background:linear-gradient(135deg,#6DB8FF,#a0d4ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;letter-spacing:0.5px;line-height:1.2;">Mahamantra Language</div>
-        <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-top:3px;">Active: <span id="hkLangNewLabel" style="color:#6DB8FF;">हिंदी</span></div>
+    <!-- Auto-fetch progress banner — shown when Gaudiya mode triggers panchang computation -->
+    <div id="gaudiyaFetchBanner" style="display:none;margin-top:12px;background:rgba(241,196,15,0.08);border:1.5px solid rgba(241,196,15,0.4);border-radius:12px;padding:12px 14px;text-align:center;">
+      <div style="font-size:20px;margin-bottom:5px;" class="ek-pulse-icon">⏳</div>
+      <div style="font-size:13px;font-weight:700;color:#FFD700;margin-bottom:3px;">Computing ISKCON Ekadashis…</div>
+      <div id="gaudiyaFetchStatus" style="font-size:11px;color:rgba(255,255,255,0.5);line-height:1.5;">Fetching panchang data for your location</div>
+      <div style="margin-top:8px;height:3px;border-radius:2px;background:rgba(255,215,0,0.15);overflow:hidden;">
+        <div class="ek-progress-bar"></div>
       </div>
-    </div>
-    <!-- Two buttons side by side -->
-    <div style="display:flex;gap:10px;width:100%;box-sizing:border-box;">
-      <div onclick="if(App.S.hkLang!=='hi')tgs('hkLang')" id="hkLangBtnHi"
-        style="flex:1;padding:16px 8px;border-radius:14px;text-align:center;cursor:pointer;border:2px solid rgba(255,215,0,0.35);background:rgba(255,215,0,0.06);transition:all 0.25s;box-sizing:border-box;">
-        <div style="font-size:22px;margin-bottom:6px;">🕉️</div>
-        <div style="font-size:17px;color:#FFD700;font-family:'Tiro Devanagari Hindi',serif;font-weight:700;line-height:1.2;">हिन्दी</div>
-        <div style="font-size:10px;color:rgba(255,215,0,0.5);letter-spacing:1.5px;margin-top:4px;font-family:'Inter',sans-serif;">HINDI</div>
-      </div>
-      <div onclick="if(App.S.hkLang!=='bn')tgs('hkLang')" id="hkLangBtnBn"
-        style="flex:1;padding:16px 8px;border-radius:14px;text-align:center;cursor:pointer;border:2px solid rgba(109,184,255,0.25);background:rgba(109,184,255,0.05);transition:all 0.25s;box-sizing:border-box;">
-        <div style="font-size:22px;margin-bottom:6px;">🪷</div>
-        <div style="font-size:17px;color:#6DB8FF;font-family:'Hind Siliguri',serif;font-weight:700;line-height:1.2;">বাংলা</div>
-        <div style="font-size:10px;color:rgba(109,184,255,0.5);letter-spacing:1.5px;margin-top:4px;font-family:'Inter',sans-serif;">BANGLA</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- PREMIUM LOCATION TOGGLE -->
-  <div class="sc" style="background:linear-gradient(135deg,rgba(0,210,120,0.06),rgba(0,160,90,0.03));border-color:rgba(46,204,113,0.32);position:relative;overflow:hidden;">
-    <div style="position:absolute;top:-18px;right:-14px;font-size:70px;opacity:0.05;pointer-events:none;line-height:1;">📍</div>
-    <div style="display:flex;align-items:center;gap:14px;margin-bottom:12px;">
-      <div style="font-size:26px;flex-shrink:0;">📍</div>
-      <div style="flex:1;">
-        <div style="font-size:15px;font-weight:700;color:#2ecc71;font-family:'EB Garamond',Georgia,serif;letter-spacing:0.3px;">Premium Location</div>
-        <div style="font-size:10px;color:rgba(46,204,113,0.55);font-weight:600;letter-spacing:1.5px;text-transform:uppercase;margin-top:2px;">GPS Enhanced Features</div>
-      </div>
-      <div class="tg" id="tgLocation" onclick="tgs('locationEnabled')"></div>
-    </div>
-    <div style="font-size:12px;color:rgba(255,255,255,0.48);line-height:1.65;background:rgba(0,0,0,0.22);border-radius:10px;padding:10px 12px;">
-      📿 <b style="color:rgba(46,204,113,0.8);">Why location?</b> Your GPS coordinates calculate exact <b>Brahma Muhurta</b> &amp; <b>Sandhya Kal</b> timings, auto-detect all <b>tithis</b> (Ekadashi, Purnima, Amavasya, Pratipada, Dwadashi &amp; more) astronomically, and power <b>daily reminders</b> — all computed privately on your device. No data leaves your phone.
     </div>
   </div>
 
   <!-- TARGETS -->
   <div class="sc">
-    <h3>📿 Mala Size &amp; Targets</h3>
-    <div class="fr" style="margin-bottom:4px"><input type="number" class="fi" id="msIn" min="1" placeholder="108"><span class="fu">per mala</span></div>
-    <div style="font-size:11px;color:var(--td);margin-bottom:10px">Default 108 beads per mala</div>
-    <button class="pb" onclick="svm()" style="margin-bottom:14px">Save Mala Size</button>
+    <h3>🎯 Jap Targets</h3>
 
+    <!-- ── Radha Naam Jap: Daily + Lifetime side-by-side ── -->
     <div class="non-gaudiya-setting">
-      <div style="font-size:10px;color:var(--td);letter-spacing:1px;margin-bottom:5px;text-transform:uppercase">Daily Target</div>
-      <div class="fr" style="margin-bottom:4px"><input type="number" class="fi" id="dtIn" placeholder="Jap count / day" oninput="syncTargetJapToMala('dt')"><span class="fu">jap</span></div>
-      <div class="fr" style="margin-bottom:4px"><input type="number" class="fi" id="dtMalaIn" placeholder="Or: malas / day" oninput="syncTargetMalaToJap('dt')"><span class="fu" style="color:var(--gold)">malas</span></div>
-      <div style="font-size:11px;color:var(--td);margin-bottom:10px">= <span id="dtMala">0</span> malas per day</div>
-      <button class="pb" onclick="svt('d')" style="margin-bottom:14px">Save Daily Target</button>
+      <div style="font-size:9px;color:rgba(255,215,0,0.55);letter-spacing:2px;text-transform:uppercase;font-weight:700;margin-bottom:10px;">📿 Radha Naam Jap Targets</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <!-- Daily -->
+        <div style="background:linear-gradient(160deg,rgba(255,215,0,0.09),rgba(10,8,25,0.85));border:1.5px solid rgba(255,215,0,0.38);border-radius:16px;padding:14px 10px;display:flex;flex-direction:column;gap:7px;box-shadow:0 4px 18px rgba(255,215,0,0.12),inset 0 1px 0 rgba(255,255,255,0.07);box-sizing:border-box;">
+          <div style="font-size:9px;color:rgba(255,215,0,0.7);letter-spacing:1.5px;text-transform:uppercase;font-weight:700;text-align:center;">Daily</div>
+          <div style="display:flex;align-items:center;gap:4px;"><input type="number" class="fi" style="font-size:12px;padding:7px 8px;" id="dtIn" placeholder="Jap/day" oninput="syncTargetJapToMala('dt')"><span class="fu" style="font-size:10px;min-width:26px;">jap</span></div>
+          <div style="display:flex;align-items:center;gap:4px;"><input type="number" class="fi" style="font-size:12px;padding:7px 8px;" id="dtMalaIn" placeholder="Malas/day" oninput="syncTargetMalaToJap('dt')"><span class="fu" style="color:var(--gold);font-size:10px;min-width:26px;">malas</span></div>
+          <div style="font-size:10px;color:var(--td);text-align:center;">= <span id="dtMala">0</span> malas/day</div>
+          <button class="pb" style="padding:10px 8px;font-size:12px;" onclick="svt('d')">Save Daily</button>
+        </div>
+        <!-- Lifetime -->
+        <div style="background:linear-gradient(160deg,rgba(255,152,0,0.09),rgba(10,8,25,0.85));border:1.5px solid rgba(255,152,0,0.38);border-radius:16px;padding:14px 10px;display:flex;flex-direction:column;gap:7px;box-shadow:0 4px 18px rgba(255,152,0,0.12),inset 0 1px 0 rgba(255,255,255,0.07);box-sizing:border-box;">
+          <div style="font-size:9px;color:rgba(255,152,0,0.8);letter-spacing:1.5px;text-transform:uppercase;font-weight:700;text-align:center;">Lifetime</div>
+          <div style="display:flex;align-items:center;gap:4px;"><input type="number" class="fi" style="font-size:12px;padding:7px 8px;" id="ltIn" placeholder="Jap total" oninput="syncTargetJapToMala('lt')"><span class="fu" style="font-size:10px;min-width:26px;">jap</span></div>
+          <div style="display:flex;align-items:center;gap:4px;"><input type="number" class="fi" style="font-size:12px;padding:7px 8px;" id="ltMalaIn" placeholder="Malas total" oninput="syncTargetMalaToJap('lt')"><span class="fu" style="color:var(--gold);font-size:10px;min-width:26px;">malas</span></div>
+          <div style="display:flex;align-items:center;gap:4px;"><input type="number" step="0.5" min="0" class="fi" style="font-size:12px;padding:7px 8px;" id="ltCroreIn" placeholder="Crore" oninput="syncTargetCroreToJap()"><span class="fu" style="color:#ff9933;font-size:10px;font-weight:700;min-width:26px;">crore</span></div>
+          <div style="font-size:10px;color:var(--td);text-align:center;"><span id="ltMala">0</span>m · <span id="ltCroreDisp" style="color:#ff9933;font-weight:600;">0</span> cr</div>
+          <button class="pb" style="padding:10px 8px;font-size:12px;background:linear-gradient(135deg,rgba(255,152,0,0.5),rgba(200,90,0,0.35));box-shadow:0 0 16px rgba(255,152,0,0.25);" onclick="svt('l')">Save Lifetime</button>
+        </div>
+      </div>
     </div>
 
-    <div style="font-size:10px;color:var(--td);letter-spacing:1px;margin-bottom:5px;text-transform:uppercase">Lifetime Target</div>
-    <div class="fr" style="margin-bottom:4px"><input type="number" class="fi" id="ltIn" placeholder="Jap count lifetime" oninput="syncTargetJapToMala('lt')"><span class="fu">jap</span></div>
-    <div class="fr" style="margin-bottom:4px"><input type="number" class="fi" id="ltMalaIn" placeholder="Or: malas lifetime" oninput="syncTargetMalaToJap('lt')"><span class="fu" style="color:var(--gold)">malas</span></div>
-    <div class="fr" style="margin-bottom:4px"><input type="number" step="0.5" min="0" class="fi" id="ltCroreIn" placeholder="Or: crore lifetime" oninput="syncTargetCroreToJap()"><span class="fu" style="color:#ff9933;font-weight:700">crore</span></div>
-    <div style="font-size:11px;color:var(--td);margin-bottom:10px">= <span id="ltMala">0</span> malas · <span id="ltCroreDisp" style="color:#ff9933;font-weight:600">0</span> crore</div>
-    <button class="pb" onclick="svt('l')">Save Lifetime Target</button>
-    <div class="non-gaudiya-setting" style="margin-top:18px;padding-top:14px;border-top:1px solid rgba(255,215,0,0.15)">
-      <div style="font-size:11px;color:var(--gold);letter-spacing:2px;text-transform:uppercase;margin-bottom:10px;font-weight:600">📿 राधावल्लभ श्री हरिवंश Targets</div>
-      <div class="fr" style="margin-bottom:4px"><input type="number" class="fi" id="dtRVIn" placeholder="Jap count / day" oninput="syncTargetJapToMala('dtRV')"><span class="fu">jap</span></div>
-      <div class="fr" style="margin-bottom:4px"><input type="number" class="fi" id="dtRVMalaIn" placeholder="Or: malas / day" oninput="syncTargetMalaToJap('dtRV')"><span class="fu" style="color:var(--gold)">malas</span></div>
-      <div style="font-size:11px;color:var(--td);margin-bottom:10px">= <span id="dtRVMala">0</span> malas per day</div>
-      <button class="pb" onclick="svtRV('d')" style="margin-bottom:14px;background:linear-gradient(135deg,rgba(255,215,0,0.4),rgba(255,180,0,0.3))">Save RV Daily Target</button>
-      <!-- RV Lifetime Target removed — shared with राधा -->
+    <!-- ── RV Daily + 28 Names Daily side-by-side ── -->
+    <div class="non-gaudiya-setting" style="margin-top:14px;padding-top:14px;border-top:1px solid rgba(255,215,0,0.12)">
+      <div style="font-size:9px;color:rgba(255,215,0,0.55);letter-spacing:2px;text-transform:uppercase;font-weight:700;margin-bottom:10px;">📿 Radha Vallabh Sri Harivangsa Targets</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <!-- RV Daily -->
+        <div style="background:linear-gradient(160deg,rgba(255,215,0,0.09),rgba(10,8,25,0.85));border:1.5px solid rgba(255,215,0,0.38);border-radius:16px;padding:14px 10px;display:flex;flex-direction:column;gap:7px;box-shadow:0 4px 18px rgba(255,215,0,0.12),inset 0 1px 0 rgba(255,255,255,0.07);box-sizing:border-box;">
+          <div style="font-size:9px;color:rgba(255,215,0,0.7);letter-spacing:1.5px;text-transform:uppercase;font-weight:700;text-align:center;">Daily</div>
+          <div style="display:flex;align-items:center;gap:4px;"><input type="number" class="fi" style="font-size:12px;padding:7px 8px;" id="dtRVIn" placeholder="Jap/day" oninput="syncTargetJapToMala('dtRV')"><span class="fu" style="font-size:10px;min-width:26px;">jap</span></div>
+          <div style="display:flex;align-items:center;gap:4px;"><input type="number" class="fi" style="font-size:12px;padding:7px 8px;" id="dtRVMalaIn" placeholder="Malas/day" oninput="syncTargetMalaToJap('dtRV')"><span class="fu" style="color:var(--gold);font-size:10px;min-width:26px;">malas</span></div>
+          <div style="font-size:10px;color:var(--td);text-align:center;">= <span id="dtRVMala">0</span> malas/day</div>
+          <button class="pb" style="padding:10px 8px;font-size:12px;" onclick="svtRV('d')">Save Daily</button>
+        </div>
+        <!-- 28 Names Daily Target -->
+        <div style="background:linear-gradient(160deg,rgba(189,147,249,0.10),rgba(10,8,25,0.85));border:1.5px solid rgba(189,147,249,0.38);border-radius:16px;padding:14px 10px;display:flex;flex-direction:column;gap:7px;box-shadow:0 4px 18px rgba(189,147,249,0.12),inset 0 1px 0 rgba(255,255,255,0.07);box-sizing:border-box;">
+          <div style="font-size:9px;color:rgba(189,147,249,0.8);letter-spacing:1.5px;text-transform:uppercase;font-weight:700;text-align:center;">⭐ 28 Names Daily</div>
+          <div style="display:flex;align-items:center;gap:4px;"><input type="number" class="fi" style="font-size:12px;padding:7px 8px;" id="dt28CycleIn" placeholder="Cycles/day" min="1" oninput="sync28CycleTarget()"><span class="fu" style="color:#BD93F9;font-size:10px;min-width:30px;">cycles</span></div>
+          <div style="font-size:10px;color:var(--td);text-align:center;">= <span id="dt28JapDisp">0</span> japs/day</div>
+          <div style="font-size:9px;color:rgba(189,147,249,0.45);text-align:center;line-height:1.4;">1 cycle = 28 names</div>
+          <button class="pb" style="padding:10px 8px;font-size:12px;background:linear-gradient(135deg,rgba(189,147,249,0.45),rgba(120,60,200,0.35));color:#BD93F9;box-shadow:0 0 16px rgba(189,147,249,0.25);" onclick="svt28()">Save Daily</button>
+        </div>
+      </div>
     </div>
-    <div class="hk-only-block" style="margin-top:18px;padding-top:14px;border-top:1px solid rgba(109,184,255,0.2)">
-      <div id="hkDailyTargetLabel" style="font-size:11px;color:#6DB8FF;letter-spacing:2px;text-transform:uppercase;margin-bottom:10px;font-weight:600">🪷 हरे कृष्ण महामंत्र Targets</div>
-      <div class="fr" style="margin-bottom:4px"><input type="number" class="fi" id="dtHKIn" placeholder="Jap count / day" oninput="syncTargetJapToMala('dtHK')"><span class="fu">jap</span></div>
-      <div class="fr" style="margin-bottom:4px"><input type="number" class="fi" id="dtHKMalaIn" placeholder="Or: malas / day" oninput="syncTargetMalaToJap('dtHK')"><span class="fu" style="color:#6DB8FF">malas</span></div>
-      <div style="font-size:11px;color:var(--td);margin-bottom:10px">= <span id="dtHKMala">0</span> malas per day</div>
-      <button class="pb" onclick="svtHK('d')" style="margin-bottom:14px;background:linear-gradient(135deg,rgba(109,184,255,0.4),rgba(74,144,226,0.3));color:#6DB8FF">Save HK Daily Target</button>
+
+    <!-- ── HK Daily + Language side-by-side ── -->
+    <div class="hk-only-block" style="margin-top:14px;padding-top:14px;border-top:1px solid rgba(109,184,255,0.15)">
+      <div id="hkDailyTargetLabel" style="font-size:9px;color:rgba(109,184,255,0.7);letter-spacing:2px;text-transform:uppercase;font-weight:700;margin-bottom:10px;">🪷 Hare Krishna Mahamantra Targets</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <!-- HK Daily -->
+        <div style="background:linear-gradient(160deg,rgba(109,184,255,0.09),rgba(10,8,25,0.85));border:1.5px solid rgba(109,184,255,0.38);border-radius:16px;padding:14px 10px;display:flex;flex-direction:column;gap:7px;box-shadow:0 4px 18px rgba(109,184,255,0.12),inset 0 1px 0 rgba(255,255,255,0.07);box-sizing:border-box;">
+          <div style="font-size:9px;color:rgba(109,184,255,0.8);letter-spacing:1.5px;text-transform:uppercase;font-weight:700;text-align:center;">Daily</div>
+          <div style="display:flex;align-items:center;gap:4px;"><input type="number" class="fi" style="font-size:12px;padding:7px 8px;" id="dtHKIn" placeholder="Jap/day" oninput="syncTargetJapToMala('dtHK')"><span class="fu" style="font-size:10px;min-width:26px;">jap</span></div>
+          <div style="display:flex;align-items:center;gap:4px;"><input type="number" class="fi" style="font-size:12px;padding:7px 8px;" id="dtHKMalaIn" placeholder="Malas/day" oninput="syncTargetMalaToJap('dtHK')"><span class="fu" style="color:#6DB8FF;font-size:10px;min-width:26px;">malas</span></div>
+          <div style="font-size:10px;color:var(--td);text-align:center;">= <span id="dtHKMala">0</span> malas/day</div>
+          <button class="pb" style="padding:10px 8px;font-size:12px;background:linear-gradient(135deg,rgba(109,184,255,0.4),rgba(74,144,226,0.3));color:#6DB8FF;box-shadow:0 0 16px rgba(109,184,255,0.2);" onclick="svtHK('d')">Save Daily</button>
+        </div>
+        <!-- Mahamantra Language selector -->
+        <div style="background:linear-gradient(160deg,rgba(109,184,255,0.08),rgba(10,8,25,0.85));border:1.5px solid rgba(109,184,255,0.28);border-radius:16px;padding:12px 10px;display:flex;flex-direction:column;align-items:center;gap:8px;box-shadow:0 4px 18px rgba(109,184,255,0.10),inset 0 1px 0 rgba(255,255,255,0.06);box-sizing:border-box;">
+          <div style="font-size:9px;color:rgba(109,184,255,0.7);letter-spacing:1.5px;text-transform:uppercase;font-weight:700;text-align:center;">Mahamantra Language</div>
+          <div onclick="setHKLangDirect('hi')" id="hkLangBtnHi"
+            style="width:100%;padding:9px 6px;border-radius:11px;text-align:center;cursor:pointer;border:1.5px solid rgba(255,215,0,0.3);background:rgba(255,215,0,0.06);transition:all 0.25s;box-sizing:border-box;">
+            <div style="font-size:17px;margin-bottom:3px;">🕉️</div>
+            <div style="font-size:13px;color:#FFD700;font-family:'Hind Siliguri',serif;font-weight:700;">हिन्दी</div>
+            <div style="font-size:9px;color:rgba(255,215,0,0.5);letter-spacing:1px;margin-top:2px;">HINDI</div>
+          </div>
+          <div onclick="setHKLangDirect('bn')" id="hkLangBtnBn"
+            style="width:100%;padding:9px 6px;border-radius:11px;text-align:center;cursor:pointer;border:1.5px solid rgba(109,184,255,0.25);background:rgba(109,184,255,0.05);transition:all 0.25s;box-sizing:border-box;">
+            <div style="font-size:17px;margin-bottom:3px;">🪷</div>
+            <div style="font-size:14px;color:#6DB8FF;font-family:'Hind Siliguri',serif;font-weight:700;">বাংলা</div>
+            <div style="font-size:9px;color:rgba(109,184,255,0.5);letter-spacing:1px;margin-top:2px;">BANGLA</div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 
+  <!-- ═══ UNIFIED: Location · Horizon · Parampara · Live Times ═══ -->
+  <div class="sc" style="background:rgba(8,12,35,0.82);border:1px solid rgba(255,215,0,0.25);padding:18px 15px 15px;">
 
+    <!-- Header -->
+    <div style="text-align:center;margin-bottom:16px;">
+      <div style="font-size:15px;font-weight:800;background:linear-gradient(135deg,#FFD700,#FFA500);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;letter-spacing:0.5px;">⏱️ Sacred Times</div>
+      <div style="font-size:10px;color:rgba(255,255,255,0.32);margin-top:3px;letter-spacing:0.5px;">Location · Horizon Mode · Parampara</div>
+    </div>
 
-    <!-- CALENDAR VIEW TOGGLE -->
-  <div class="sc" style="background:rgba(109,184,255,0.04);border-color:rgba(109,184,255,0.2);">
-    <h3 style="color:#6DB8FF;">📅 Calendar View</h3>
-    <div style="font-size:12px;color:var(--td);margin-bottom:14px;">Choose how dates appear on the B&amp;C calendar.</div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-      <div id="calModeGregorian" onclick="setCalendarMode('gregorian')" style="padding:16px 10px;border-radius:16px;text-align:center;cursor:pointer;border:2px solid rgba(255,215,0,0.65);background:rgba(255,215,0,0.12);transition:all 0.25s;">
-        <div style="font-size:24px;margin-bottom:7px;">📆</div>
-        <div style="font-size:14px;color:#FFD700;font-weight:700;">Default</div>
-        <div style="font-size:10px;color:rgba(255,215,0,0.5);margin-top:3px;letter-spacing:1px;font-family:Inter,sans-serif;">GREGORIAN</div>
+    <!-- GPS Location -->
+    <div style="display:flex;align-items:center;gap:12px;background:rgba(255,215,0,0.07);border:1px solid rgba(255,215,0,0.2);border-radius:13px;padding:11px 14px;margin-bottom:16px;" id="solarCompassCard">
+      <div style="font-size:20px;line-height:1;">📍</div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:13px;font-weight:700;color:#FFD700;line-height:1.2;">GPS Location</div>
+        <div style="font-size:10px;color:rgba(255,255,255,0.4);margin-top:3px;" id="gpsLocationStatus">Auto-detect for accurate times 🙏</div>
       </div>
-      <div id="calModePanchang" onclick="setCalendarMode('panchang')" style="padding:16px 10px;border-radius:16px;text-align:center;cursor:pointer;border:2px solid rgba(109,184,255,0.22);background:rgba(109,184,255,0.04);transition:all 0.25s;">
-        <div style="font-size:24px;margin-bottom:7px;">🪷</div>
-        <div style="font-size:14px;color:#6DB8FF;font-weight:700;">Panchang</div>
-        <div style="font-size:10px;color:rgba(109,184,255,0.5);margin-top:3px;letter-spacing:1px;font-family:Inter,sans-serif;">TITHI DATES</div>
+      <div class="tg" id="tgGpsLocation" onclick="tgs('gpsLocation')" style="flex-shrink:0;"></div>
+    </div>
+
+    <!-- Horizon Mode -->
+    <div style="font-size:9px;color:rgba(255,255,255,0.32);letter-spacing:2px;text-transform:uppercase;font-weight:700;margin-bottom:8px;">🌅 Horizon Mode</div>
+    <div id="horizonModeSection" style="margin-bottom:4px;">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <button id="horizonPillApparent" onclick="setHorizonMode('apparent')" style="display:flex;flex-direction:column;align-items:center;padding:12px 8px 14px;border-radius:14px;border:none;cursor:pointer;font-family:'Inter',sans-serif;background:rgba(0,0,0,0.3);transition:all 0.2s;">
+          <div style="font-size:22px;line-height:1;">🌅</div>
+          <div style="font-weight:700;font-size:13px;margin-top:6px;letter-spacing:0.3px;">Earthy Sky</div>
+          <div style="font-size:10px;opacity:0.5;margin-top:1px;margin-bottom:10px;">90.833°</div>
+          <!-- 2×2 time grid: top-left Brahma Muhurta, top-right Sandhya Kal, bottom-left Sunrise, bottom-right Sunset -->
+          <div style="width:100%;display:grid;grid-template-columns:1fr 1fr;gap:7px;">
+            <div style="background:rgba(255,215,0,0.06);border:1px solid rgba(255,215,0,0.18);border-radius:9px;padding:7px 5px;text-align:center;">
+              <div style="font-size:14px;margin-bottom:2px;">🌄</div>
+              <div style="font-size:9px;color:rgba(255,215,0,0.6);letter-spacing:0.5px;margin-bottom:3px;">B.MUHURTA</div>
+              <div id="hm-app-bm" style="font-size:15px;font-weight:800;color:#FFD700;letter-spacing:-0.3px;">—</div>
+            </div>
+            <div style="background:rgba(109,184,255,0.06);border:1px solid rgba(109,184,255,0.18);border-radius:9px;padding:7px 5px;text-align:center;">
+              <div style="font-size:14px;margin-bottom:2px;">🔔</div>
+              <div style="font-size:9px;color:rgba(109,184,255,0.6);letter-spacing:0.5px;margin-bottom:3px;">SANDHYA</div>
+              <div id="hm-app-sk" style="font-size:15px;font-weight:800;color:#6DB8FF;letter-spacing:-0.3px;">—</div>
+            </div>
+            <div style="background:rgba(255,160,48,0.06);border:1px solid rgba(255,160,48,0.18);border-radius:9px;padding:7px 5px;text-align:center;">
+              <div style="font-size:14px;margin-bottom:2px;">☀️</div>
+              <div style="font-size:9px;color:rgba(255,160,48,0.6);letter-spacing:0.5px;margin-bottom:3px;">SUNRISE</div>
+              <div id="hm-app-sunrise" style="font-size:15px;font-weight:800;color:#FFA030;letter-spacing:-0.3px;">—</div>
+            </div>
+            <div style="background:rgba(189,147,249,0.06);border:1px solid rgba(189,147,249,0.18);border-radius:9px;padding:7px 5px;text-align:center;">
+              <div style="font-size:14px;margin-bottom:2px;">🌇</div>
+              <div style="font-size:9px;color:rgba(189,147,249,0.6);letter-spacing:0.5px;margin-bottom:3px;">SUNSET</div>
+              <div id="hm-app-sunset" style="font-size:15px;font-weight:800;color:#BD93F9;letter-spacing:-0.3px;">—</div>
+            </div>
+          </div>
+        </button>
+        <button id="horizonPillCelestial" onclick="setHorizonMode('celestial')" style="display:flex;flex-direction:column;align-items:center;padding:12px 8px 14px;border-radius:14px;border:none;cursor:pointer;font-family:'Inter',sans-serif;background:rgba(0,0,0,0.3);transition:all 0.2s;">
+          <div style="font-size:22px;line-height:1;">🔭</div>
+          <div style="font-weight:700;font-size:13px;margin-top:6px;letter-spacing:0.3px;">Celestial</div>
+          <div style="font-size:10px;opacity:0.5;margin-top:1px;margin-bottom:10px;">90°</div>
+          <!-- Same 2×2 time grid layout -->
+          <div style="width:100%;display:grid;grid-template-columns:1fr 1fr;gap:7px;">
+            <div style="background:rgba(255,215,0,0.06);border:1px solid rgba(255,215,0,0.18);border-radius:9px;padding:7px 5px;text-align:center;">
+              <div style="font-size:14px;margin-bottom:2px;">🌄</div>
+              <div style="font-size:9px;color:rgba(255,215,0,0.6);letter-spacing:0.5px;margin-bottom:3px;">B.MUHURTA</div>
+              <div id="hm-cel-bm" style="font-size:15px;font-weight:800;color:#FFD700;letter-spacing:-0.3px;">—</div>
+            </div>
+            <div style="background:rgba(109,184,255,0.06);border:1px solid rgba(109,184,255,0.18);border-radius:9px;padding:7px 5px;text-align:center;">
+              <div style="font-size:14px;margin-bottom:2px;">🔔</div>
+              <div style="font-size:9px;color:rgba(109,184,255,0.6);letter-spacing:0.5px;margin-bottom:3px;">SANDHYA</div>
+              <div id="hm-cel-sk" style="font-size:15px;font-weight:800;color:#6DB8FF;letter-spacing:-0.3px;">—</div>
+            </div>
+            <div style="background:rgba(255,160,48,0.06);border:1px solid rgba(255,160,48,0.18);border-radius:9px;padding:7px 5px;text-align:center;">
+              <div style="font-size:14px;margin-bottom:2px;">☀️</div>
+              <div style="font-size:9px;color:rgba(255,160,48,0.6);letter-spacing:0.5px;margin-bottom:3px;">SUNRISE</div>
+              <div id="hm-cel-sunrise" style="font-size:15px;font-weight:800;color:#FFA030;letter-spacing:-0.3px;">—</div>
+            </div>
+            <div style="background:rgba(189,147,249,0.06);border:1px solid rgba(189,147,249,0.18);border-radius:9px;padding:7px 5px;text-align:center;">
+              <div style="font-size:14px;margin-bottom:2px;">🌇</div>
+              <div style="font-size:9px;color:rgba(189,147,249,0.6);letter-spacing:0.5px;margin-bottom:3px;">SUNSET</div>
+              <div id="hm-cel-sunset" style="font-size:15px;font-weight:800;color:#BD93F9;letter-spacing:-0.3px;">—</div>
+            </div>
+          </div>
+        </button>
+      </div>
+      <div id="horizonModeLabel" style="font-size:10px;color:rgba(255,255,255,0.3);text-align:center;margin-top:5px;min-height:14px;"></div>
+      <div id="horizonModeDesc" style="display:none;"></div>
+      <div class="tg" id="tgHorizonMode" style="display:none;"></div>
+    </div>
+
+    <!-- Hidden IDs kept so JS doesn't crash — Current Times now shown inside Horizon buttons -->
+    <span id="cfg-bm-start" style="display:none"></span>
+    <span id="cfg-bm-end" style="display:none"></span>
+    <span id="cfg-sunrise" style="display:none"></span>
+    <span id="cfg-sk-start" style="display:none"></span>
+    <span id="cfg-sk-end" style="display:none"></span>
+    <span id="cfg-sunset" style="display:none"></span>
+
+    <!-- Divider -->
+    <div style="height:1px;background:rgba(255,255,255,0.07);margin:12px 0;"></div>
+
+    <!-- Parampara — hidden in Gaudiya mode (ISKCON rules are fixed, not user-selectable) -->
+    <div class="non-gaudiya-setting">
+      <div style="font-size:9px;color:rgba(255,255,255,0.32);letter-spacing:2px;text-transform:uppercase;font-weight:700;margin-bottom:8px;">🔱 Ekadashi Parampara</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
+        <button id="ekParSmarta" onclick="saveEkParampara('smarta')">
+          <div style="font-size:20px;line-height:1;">☀️</div>
+          <div style="font-weight:700;font-size:12px;margin-top:5px;">Smarta</div>
+        </button>
+        <button id="ekParVaishnav" onclick="saveEkParampara('vaishnava')">
+          <div style="font-size:20px;line-height:1;">🌸</div>
+          <div style="font-weight:700;font-size:12px;margin-top:5px;">Vaishnava</div>
+        </button>
+      </div>
+      <div id="ekParamparaNote" style="font-size:10px;color:rgba(255,255,255,0.38);line-height:1.6;min-height:12px;margin-bottom:12px;"></div>
+    </div>
+    <!-- Gaudiya mode: fixed Vaishnava/ISKCON rule — no user choice needed -->
+    <div class="hk-only-block" style="margin-bottom:12px;">
+      <div style="font-size:9px;color:rgba(255,215,0,0.45);letter-spacing:2px;text-transform:uppercase;font-weight:700;margin-bottom:6px;">🔱 Ekadashi Parampara</div>
+      <div style="background:rgba(255,215,0,0.07);border:1px solid rgba(255,215,0,0.2);border-radius:10px;padding:9px 12px;font-size:11px;color:rgba(255,215,0,0.75);line-height:1.5;">
+        🌸 <strong>Vaishnava / ISKCON</strong> — Arunodaya Viddha rule applied automatically in Gaudiya Mode. No manual selection needed.
       </div>
     </div>
+
+    <div style="height:1px;background:rgba(255,255,255,0.07);margin:12px 0;"></div>
+
+    <!-- Tithi Engine selector — standard mode only -->
+    <div class="non-gaudiya-setting">
+      <div style="font-size:9px;color:rgba(255,255,255,0.32);letter-spacing:2px;text-transform:uppercase;font-weight:700;margin-bottom:8px;">⚙️ Tithi Calculation Engine</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
+        <button id="ekEngineApp" onclick="saveEkTithiEngine('app')">
+          <div style="font-size:20px;line-height:1;">🔭</div>
+          <div style="font-weight:700;font-size:12px;margin-top:5px;">App Engine</div>
+          <div style="font-size:9px;opacity:0.6;margin-top:3px;">Swiss Ephemeris</div>
+        </button>
+        <button id="ekEnginePanchang" onclick="saveEkTithiEngine('panchang')">
+          <div style="font-size:20px;line-height:1;">🗓️</div>
+          <div style="font-weight:700;font-size:12px;margin-top:5px;">Panchang</div>
+        </button>
+      </div>
+      <div style="font-size:10px;color:rgba(255,255,255,0.35);line-height:1.5;margin-bottom:8px;">
+        Both engines respect your Horizon Mode and Parampara. Only the tithi boundary source differs.
+      </div>
+      <!-- Calculation progress banner — shown whenever any engine fetch is running -->
+      <div id="engineCalcBanner" style="display:none;background:rgba(46,204,113,0.07);border:1.5px solid rgba(46,204,113,0.35);border-radius:12px;padding:11px 14px;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span class="ek-pulse-icon" style="font-size:22px;">⏳</span>
+          <div style="flex:1;">
+            <div style="font-size:12px;font-weight:700;color:#2ecc71;margin-bottom:2px;" id="engineCalcTitle">Calculating Ekadashis…</div>
+            <div style="font-size:10px;color:rgba(255,255,255,0.45);line-height:1.4;" id="engineCalcSub">This may take a few seconds. Results appear in B&amp;C as they're found.</div>
+          </div>
+        </div>
+        <div style="margin-top:9px;height:3px;border-radius:2px;background:rgba(46,204,113,0.12);overflow:hidden;">
+          <div class="ek-progress-bar" style="background:linear-gradient(90deg,transparent,#2ecc71,transparent);"></div>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- Next Ekadashi + Parana preview — directly below Parampara -->
+    <div id="cfg-next-ekadashi"></div>
+
   </div>
 
   <!-- PREFERENCES -->
@@ -1348,7 +1518,7 @@
   </div>
 </div>
 
-<!-- PWA INSTALL GUIDE MODAL -->
+<!-- PWA INSTALL GUIDE MODAL (manual install steps, shown when auto-prompt unavailable) -->
 <div class="pwa-mo" id="pwaMo" onclick="if(event.target===this)closePwaGuide()">
   <div class="pwa-sheet">
     <div class="pwa-title">📲 Install as App</div>
@@ -1395,8 +1565,12 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
-    <script src="./stotrams.js?v=82"></script>
-    <script src="./panchangData.js"></script>
-    <script src="./app.js?v=91"></script>
+    <!-- Swiss Ephemeris WASM — Moshier mode (~1 arcsec, no data files needed) -->
+    <!-- Gives tithi boundary accuracy matching ISKCON/Drik Panchang exactly -->
+    <script src="https://cdn.jsdelivr.net/npm/swisseph-wasm@1.0.4/dist/swisseph.js"></script>
+    <script src="./se-bridge.js?v=1"></script>
+    <script src="./stotrams.js?v=91"></script>
+    <script src="./panchangData.js?v=3"></script>
+    <script src="./app.js?v=111"></script>
   </body>
 </html>

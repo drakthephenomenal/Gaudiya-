@@ -7202,20 +7202,13 @@ async function fetchPanchangEkadashis() {
               let skFastingDate = skStartStr;
               let skIsViddha = false;
               const skParampara = isGaudiyaFetch ? "vaishnava" : (App.S.ekParampara || "smarta");
-              // Timezone-safe midnight: subtract time components (avoids local-tz shift on UTC servers)
-              // Do NOT use yesterday.setHours(0,0,0,0) — that gives local-timezone midnight
-              // and mutates the 'yesterday' Date object, breaking subsequent date arithmetic.
-              const yesterdayMidnightMs = yesterday.getTime()
-                - yesterday.getHours() * 3600000
-                - yesterday.getMinutes() * 60000
-                - yesterday.getSeconds() * 1000
-                - yesterday.getMilliseconds();
+              // FIX: use full Date comparison (ekStart is a Date object) vs Arunodaya timestamp
               if (skParampara === "vaishnava") {
                 // Ekadashi started (= Dashami ended) after Arunodaya of yesterday → Viddha
-                const arunodayaYestMs = yesterdayMidnightMs + arunodayaY * 3600000;
+                const arunodayaYestMs = new Date(yesterday).setHours(0,0,0,0) + arunodayaY * 3600000;
                 if (ekStart.getTime() >= arunodayaYestMs) { skFastingDate = skEndStr; skIsViddha = true; }
               } else {
-                const sunriseYestMs = yesterdayMidnightMs + modeSrY * 3600000;
+                const sunriseYestMs = new Date(yesterday).setHours(0,0,0,0) + modeSrY * 3600000;
                 if (ekStart.getTime() >= sunriseYestMs) skFastingDate = skEndStr;
               }
 
@@ -8024,7 +8017,7 @@ function _updateCfgTimesPreview() {
       try {
         const ekStartDt = new Date((ek.startDate || fd) + "T" + (ek.startTime || "06:00") + ":00");
         const ekEndDt   = new Date((ek.endDate   || fd) + "T" + (ek.endTime   || "06:00") + ":00");
-        const par = _computeParanaWindow({ ekStart: ekStartDt, ekEnd: ekEndDt }, _pLat, _pLng, fd);
+        const par = _computeParanaWindow({ ekStart: ekStartDt, ekEnd: ekEndDt, paksha: ek.paksha }, _pLat, _pLng, fd);
         if (par) {
           const _pd = new Date(par.date + "T00:00:00");
           const _pdt = _pd.getDate();
@@ -8040,8 +8033,10 @@ function _updateCfgTimesPreview() {
             '<span style="font-size:10px;color:#FFE566;font-weight:600;">' +
             _fmtTime12(par.windowStart) + '</span>' +
             '<span style="font-size:9px;color:rgba(255,215,0,0.45);"> → </span>' +
-            '<span style="font-size:10px;color:#FFE566;font-weight:600;">🌟 ' + _fmtTime12(par.recommendedEnd) + '</span>' +
-            (par.hardDeadline
+            (par.hardDeadline && par.hardDeadline < par.recommendedEnd
+              ? '<span style="font-size:10px;color:#FF6B6B;font-weight:600;">⏰ ' + _fmtTime12(par.hardDeadline) + '</span>'
+              : '<span style="font-size:10px;color:#FFE566;font-weight:600;">🌟 ' + _fmtTime12(par.recommendedEnd) + '</span>') +
+            (par.hardDeadline && par.hardDeadline >= par.recommendedEnd
               ? '<span style="font-size:9px;color:rgba(255,100,100,0.7);"> (⏰ latest ' + _fmtTime12(par.hardDeadline) + ')</span>'
               : '') +
             '</div>';
@@ -8451,7 +8446,7 @@ function renderEkadashiList() {
       try {
         const _ekStartDt = new Date(sd + "T" + (startTime || "06:00") + ":00");
         const _ekEndDt   = new Date(ed + "T" + (endTime   || "06:00") + ":00");
-        const _ekObjP    = { ekStart: _ekStartDt, ekEnd: _ekEndDt };
+        const _ekObjP    = { ekStart: _ekStartDt, ekEnd: _ekEndDt, paksha };
         const _pLat = App.S && App.S.lastLat;
         const _pLng = App.S && App.S.lastLng;
         if (!_pLat || !_pLng) {
@@ -8467,8 +8462,12 @@ function renderEkadashiList() {
               `<span style="color:rgba(255,215,0,0.45);">·</span>` +
               `<span style="font-weight:700;">${_fmtTime12(_par.windowStart)}</span>` +
               `<span style="color:rgba(255,215,0,0.4);">→</span>` +
-              `<span style="font-weight:700;color:#FFD700;">🌟 ${_fmtTime12(_par.recommendedEnd)}</span>` +
-              (_par.hardDeadline ? `<span style="color:rgba(255,100,100,0.65);font-size:9px;">(⏰ ${_fmtTime12(_par.hardDeadline)})</span>` : '') +
+              (_par.hardDeadline && _par.hardDeadline < _par.recommendedEnd
+                ? `<span style="font-weight:700;color:#FF6B6B;">⏰ ${_fmtTime12(_par.hardDeadline)}</span>`
+                : `<span style="font-weight:700;color:#FFD700;">🌟 ${_fmtTime12(_par.recommendedEnd)}</span>`) +
+              (_par.hardDeadline && _par.hardDeadline >= _par.recommendedEnd
+                ? `<span style="color:rgba(255,100,100,0.65);font-size:9px;">(⏰ ${_fmtTime12(_par.hardDeadline)})</span>`
+                : '') +
               `</div>`;
         }
       } catch (_pe) {}
@@ -12849,10 +12848,19 @@ function _computeParanaWindow(ek, lat, lng, fastingDate) {
     // Ekadashi ends at endDeg (120° shukla / 300° krishna), Dvadashi ends 12° later
     let hardDeadline = null;
     if (ek.ekEnd instanceof Date) {
-      const dvEndDeg = ek.paksha === "shukla" ? 144 : 324;
+      const isShukla = ek.paksha === "shukla";
+      const dvEndDeg = isShukla ? 144 : 324;
+      // Calibrate the Meeus formula error: at ekEnd (API-accurate) the elongation
+      // should be exactly 132° (Shukla) or 312° (Krishna). Meeus can be ~2° off;
+      // we shift the search target by the same offset so the crossing is found at
+      // the correct UTC time rather than up to ~3–4 hours too early or too late.
+      const ekEndExpected = isShukla ? 132 : 312;
+      const elongAtEkEnd  = _moonElongation(ek.ekEnd);
+      const elongError    = elongAtEkEnd - ekEndExpected;
+      const correctedTarget = ((dvEndDeg + elongError) % 360 + 360) % 360;
       const searchLo = ek.ekEnd;
       const searchHi = new Date(ek.ekEnd.getTime() + 30 * 60 * 60 * 1000);
-      const dvadashiEndDt = _findElongCrossing(dvEndDeg, searchLo, searchHi);
+      const dvadashiEndDt = _findElongCrossing(correctedTarget, searchLo, searchHi);
 
       const isSameDay =
         dvadashiEndDt.getFullYear() === paranaDay.getFullYear() &&

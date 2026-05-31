@@ -7230,13 +7230,25 @@ async function fetchPanchangEkadashis() {
               );
               if (!skExists) {
                 const skObj = { paksha: ekPaksha, ekEnd: ekEndDate };
-                const skParana = _computeParanaWindow(skObj, lat, lng, skFastingDate);
+                // Fetch parana day panchang to get API-accurate Dvadashi end time
+                let _skDvadashiEnd = null;
+                try {
+                  const _skParanaDO = new Date(skFastingDate + "T12:00:00");
+                  _skParanaDO.setDate(_skParanaDO.getDate() + 1);
+                  const _pdSkParana = await getPanchangData(lat, lng, _skParanaDO);
+                  if (_pdSkParana && _pdSkParana.tithi && _pdSkParana.tithi.endDate instanceof Date) {
+                    _skDvadashiEnd = _pdSkParana.tithi.endDate;
+                  }
+                } catch (_) {}
+                const skParana = _computeParanaWindow(skObj, lat, lng, skFastingDate, _skDvadashiEnd);
                 App.S.customEkadashi.push({
                   name: skName, paksha: ekPaksha,
                   startDate: skStartStr, startTime: skStartTime,
                   endDate: skEndStr, endTime: skEndTime,
                   autoFetched: true, source: isGaudiyaFetch ? "gaudiya" : "panchang",
                   fastingDate: skFastingDate, isViddha: skIsViddha,
+                  parana: skParana || null,
+                  dvadashiEndIso: _skDvadashiEnd ? _skDvadashiEnd.toISOString() : null,
                 });
                 App.S.occasions[skFastingDate] = skLabel;
                 added++;
@@ -7370,7 +7382,17 @@ async function fetchPanchangEkadashis() {
                 paksha,
                 ekEnd: ekEnd || new Date(scanDate.getTime() + 23 * 3600000),
               };
-              const parana = _computeParanaWindow(ekObj, lat, lng, fastingDate);
+              // Fetch parana day panchang to get API-accurate Dvadashi end time
+              let _dvadashiEnd = null;
+              try {
+                const _paranaDateObj = new Date(fastingDate + "T12:00:00");
+                _paranaDateObj.setDate(_paranaDateObj.getDate() + 1);
+                const _pdParana = await getPanchangData(lat, lng, _paranaDateObj);
+                if (_pdParana && _pdParana.tithi && _pdParana.tithi.endDate instanceof Date) {
+                  _dvadashiEnd = _pdParana.tithi.endDate;
+                }
+              } catch (_) {}
+              const parana = _computeParanaWindow(ekObj, lat, lng, fastingDate, _dvadashiEnd);
               App.S.customEkadashi.push({
                 name,
                 paksha,
@@ -7381,6 +7403,7 @@ async function fetchPanchangEkadashis() {
                 fastingDate: fastingDate,
                 isViddha:    isViddha,
                 parana:      parana || null,
+                dvadashiEndIso: _dvadashiEnd ? _dvadashiEnd.toISOString() : null,
                 autoFetched: true,
                 source:      _entrySource,
               });
@@ -8017,7 +8040,8 @@ function _updateCfgTimesPreview() {
       try {
         const ekStartDt = new Date((ek.startDate || fd) + "T" + (ek.startTime || "06:00") + ":00");
         const ekEndDt   = new Date((ek.endDate   || fd) + "T" + (ek.endTime   || "06:00") + ":00");
-        const par = _computeParanaWindow({ ekStart: ekStartDt, ekEnd: ekEndDt, paksha: ek.paksha }, _pLat, _pLng, fd);
+        const _dvEndUpcoming = ek.dvadashiEndIso ? new Date(ek.dvadashiEndIso) : undefined;
+        const par = _computeParanaWindow({ ekStart: ekStartDt, ekEnd: ekEndDt, paksha: ek.paksha }, _pLat, _pLng, fd, _dvEndUpcoming);
         if (par) {
           const _pd = new Date(par.date + "T00:00:00");
           const _pdt = _pd.getDate();
@@ -8452,7 +8476,8 @@ function renderEkadashiList() {
         if (!_pLat || !_pLng) {
           paranaHtml = `<div class="ek-parana-row"><span style="color:rgba(255,215,0,0.5)">☀️ Parana</span><span style="color:rgba(255,255,255,0.3);font-size:9px;">— turn on GPS for accurate time</span></div>`;
         } else {
-          const _par = _computeParanaWindow(_ekObjP, _pLat, _pLng, fastingDate);
+          const _dvEnd = e.dvadashiEndIso ? new Date(e.dvadashiEndIso) : undefined;
+          const _par = _computeParanaWindow(_ekObjP, _pLat, _pLng, fastingDate, _dvEnd);
           if (_par)
             paranaHtml =
               `<div class="ek-parana-row">` +
@@ -12809,7 +12834,7 @@ function _computeYearEkadashis(year, lat, lng) {
 //   HARD DEADLINE   : Dvadashi tithi end on Paran day — must not eat after this.
 // Both endpoints are returned so the UI can show them distinctly.
 // If Dvadashi ends on a later day → no hard deadline → only recommendedEnd applies.
-function _computeParanaWindow(ek, lat, lng, fastingDate) {
+function _computeParanaWindow(ek, lat, lng, fastingDate, dvadashiEnd) {
   try {
     // Parana day = day after fasting day
     const [fy, fm, fd] = fastingDate.split("-").map(Number);
@@ -12844,24 +12869,26 @@ function _computeParanaWindow(ek, lat, lng, fastingDate) {
     const recommendedEnd = isGaudiya
       ? windowStart + apparentDayLen * (1/3)   // windowStart is already celestial or apparent per mode
       : windowStart + modeDayLen * (1/5);       // Smarta: 1/5 of mode-aware daytime
-    // HARD DEADLINE = Dvadashi tithi end on Paran day (binary search)
-    // Ekadashi ends at endDeg (120° shukla / 300° krishna), Dvadashi ends 12° later
+    // HARD DEADLINE = Dvadashi tithi end on Paran day
+    // Priority: (1) API-accurate dvadashiEnd Date passed in by caller,
+    //           (2) Meeus calibrated fallback from ek.ekEnd
     let hardDeadline = null;
-    if (ek.ekEnd instanceof Date) {
-      const isShukla = ek.paksha === "shukla";
-      const dvEndDeg = isShukla ? 144 : 324;
-      // Calibrate the Meeus formula error: at ekEnd (API-accurate) the elongation
-      // should be exactly 132° (Shukla) or 312° (Krishna). Meeus can be ~2° off;
-      // we shift the search target by the same offset so the crossing is found at
-      // the correct UTC time rather than up to ~3–4 hours too early or too late.
-      const ekEndExpected = isShukla ? 132 : 312;
-      const elongAtEkEnd  = _moonElongation(ek.ekEnd);
-      const elongError    = elongAtEkEnd - ekEndExpected;
-      const correctedTarget = ((dvEndDeg + elongError) % 360 + 360) % 360;
-      const searchLo = ek.ekEnd;
-      const searchHi = new Date(ek.ekEnd.getTime() + 30 * 60 * 60 * 1000);
-      const dvadashiEndDt = _findElongCrossing(correctedTarget, searchLo, searchHi);
+    const dvadashiEndDt = (dvadashiEnd instanceof Date)
+      ? dvadashiEnd
+      : (() => {
+          if (!(ek.ekEnd instanceof Date)) return null;
+          const isShukla = ek.paksha === "shukla";
+          const dvEndDeg = isShukla ? 144 : 324;
+          // Calibrate Meeus error using API-accurate ekEnd as anchor
+          const ekEndExpected = isShukla ? 132 : 312;
+          const elongAtEkEnd  = _moonElongation(ek.ekEnd);
+          const elongError    = elongAtEkEnd - ekEndExpected;
+          const correctedTarget = ((dvEndDeg + elongError) % 360 + 360) % 360;
+          const searchHi = new Date(ek.ekEnd.getTime() + 30 * 60 * 60 * 1000);
+          return _findElongCrossing(correctedTarget, ek.ekEnd, searchHi);
+        })();
 
+    if (dvadashiEndDt instanceof Date) {
       const isSameDay =
         dvadashiEndDt.getFullYear() === paranaDay.getFullYear() &&
         dvadashiEndDt.getMonth()    === paranaDay.getMonth()    &&

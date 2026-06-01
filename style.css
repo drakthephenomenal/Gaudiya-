@@ -165,7 +165,29 @@ body::before{content:'';position:fixed;top:50%;left:50%;transform:translate(-50%
 .fr{display:flex;gap:10px;align-items:center;margin-bottom:8px;}
 .fu{color:var(--td);font-size:12px;min-width:55px;}
 .fn2{font-size:11px;color:var(--td);margin-bottom:6px;}
-/* ── Premium Copper-Plated Buttons (.pb) ── */
+/* ── Premium Sapphire Export Button (.pb-export) ── */
+.pb.pb-export{
+  background:
+    radial-gradient(120% 80% at 50% -20%, rgba(60,180,255,0.32), transparent 58%),
+    linear-gradient(180deg,#001824 0%,#000C15 100%);
+  border:1px solid rgba(60,180,255,0.55);
+  color:#7DD4FF;
+  text-shadow:0 1px 2px rgba(0,0,0,0.80),0 0 16px rgba(60,180,255,0.35);
+  box-shadow:
+    inset 0 1px 0 rgba(120,220,255,0.30),
+    inset 0 -1px 0 rgba(0,0,0,0.65),
+    0 0 0 1px rgba(0,60,100,0.45),
+    0 8px 22px -8px rgba(0,0,0,0.85),
+    0 2px 18px rgba(60,180,255,0.28);}
+.pb.pb-export::before{background:linear-gradient(180deg,rgba(120,220,255,0.22) 0%,rgba(120,220,255,0) 42%,rgba(0,0,0,0) 65%,rgba(0,0,0,0.25) 100%);}
+.pb.pb-export::after{background:linear-gradient(110deg,transparent 0%,rgba(120,220,255,0.22) 50%,transparent 100%);}
+.pb.pb-export:hover{border-color:rgba(60,180,255,0.85);
+  box-shadow:inset 0 1px 0 rgba(120,220,255,0.45),0 0 0 1px rgba(0,80,130,0.50),0 12px 28px -10px rgba(0,0,0,0.90),0 2px 20px rgba(60,180,255,0.45);}
+@keyframes exportGlow{
+  0%,100%{box-shadow:inset 0 1px 0 rgba(120,220,255,0.28),0 0 0 1px rgba(0,60,100,0.45),0 4px 16px -6px rgba(0,0,0,0.85),0 0 18px rgba(60,180,255,0.22);}
+  50%{box-shadow:inset 0 1px 0 rgba(120,220,255,0.42),0 0 0 1px rgba(0,80,130,0.50),0 4px 16px -6px rgba(0,0,0,0.85),0 0 32px rgba(60,180,255,0.48);}
+}
+.pb.pb-export{animation:exportGlow 2.8s ease-in-out infinite;}
 /* ── Premium Gold-Plated Action Buttons (.pb) ── */
 .pb{position:relative;width:100%;padding:15px 18px;
   background:
@@ -325,30 +347,63 @@ button.hpb.active{
 /* CALENDAR */
 #vc{background:radial-gradient(ellipse at top,#061228 0%,var(--bd) 60%);padding:22px 12px 80px;overflow-y:auto;overflow-x:hidden;}
 .ch{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
-.cnb{background:rgba(74,144,226,0.1);border:1px solid rgba(74,144,226,0.25);border-radius:9px;
-  color:var(--a2);width:34px;height:34px;cursor:pointer;font-size:18px;display:flex;align-items:safe center;justify-content:safe center;}
-.cmy{font-family:'Cinzel Decorative',serif;font-size:13px;color:var(--a2);}
-.cg{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;width:100%;box-sizing:border-box;}
-.cdl{text-align:center;font-size:10px;color:var(--td);padding:4px 0;}
-.cc{aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
-  border-radius:9px;font-size:12px;font-weight:700;color:#060D1F;background:#FFFFFF;cursor:pointer;
-  min-width:0;overflow:hidden;border:1px solid rgba(0,0,0,0.10);}
-.cc.today{border:2px solid var(--a2);color:var(--a2);}
-.cc.hd{background:#FFFFFF;color:#060D1F;}
-.cc.hd .ccc{color:#333;}
-.cc.tm{background:#FFFFFF;color:#060D1F;}
-.cc.tm .ccc{color:#333;}
-.cc.occ{border-bottom:4px solid var(--gold);}
-.ccc{font-size:9px;color:#444;font-weight:700;}
+.cmy{font-family:'Cinzel Decorative',serif;font-size:13px;color:var(--a2);text-shadow:0 0 12px rgba(109,184,255,0.3);}
+.cg{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;width:100%;box-sizing:border-box;}
+.cdl{text-align:center;font-size:10px;color:var(--td);padding:4px 0;letter-spacing:0.5px;}
 
-/* Brahmacharya calendar cell coloring */
-.cc.bc-m{border-top:5px solid var(--green);box-shadow:inset 0 3px 0 0 var(--green);}
-.cc.bc-b{border-top:5px solid var(--red);box-shadow:inset 0 3px 0 0 var(--red);}
-.cc.bc-m.hd{border-top:5px solid var(--green);box-shadow:inset 0 3px 0 0 var(--green);}
-.cc.bc-b.hd{border-top:5px solid var(--red);box-shadow:inset 0 3px 0 0 var(--red);}
-.cc.bc-m .ccc{color:#333;}.cc.bc-b .ccc{color:#333;}
-.cc.bc-m.hd .ccc{color:#333;}.cc.bc-b.hd .ccc{color:#333;}
-.cco{font-size:9px;color:#060D1F;width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:0 3px;text-align:center;font-weight:800;letter-spacing:-0.2px;}
+/* Calendar nav buttons — premium */
+.cnb{
+  background:
+    linear-gradient(180deg,rgba(74,144,226,0.18) 0%,rgba(74,144,226,0.06) 100%);
+  border:1px solid rgba(74,144,226,0.40);border-radius:11px;
+  color:var(--a2);width:36px;height:36px;cursor:pointer;font-size:20px;display:flex;align-items:safe center;justify-content:safe center;
+  box-shadow:inset 0 1px 0 rgba(109,184,255,0.22),0 3px 10px rgba(0,0,0,0.45);
+  transition:all 0.2s;}
+.cnb:active{transform:scale(0.92);box-shadow:inset 0 2px 5px rgba(0,0,0,0.5);}
+
+/* Calendar day cells — premium dark glass with soft glow */
+.cc{
+  aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  border-radius:11px;font-size:12px;font-weight:700;
+  color:rgba(255,255,255,0.82);
+  background:linear-gradient(180deg,rgba(255,255,255,0.08) 0%,rgba(255,255,255,0.03) 100%);
+  cursor:pointer;min-width:0;overflow:hidden;
+  border:1px solid rgba(255,255,255,0.10);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,0.10),0 1px 4px rgba(0,0,0,0.35);
+  transition:all 0.15s ease;}
+.cc:active{transform:scale(0.88);}
+.cc.today{
+  border:2px solid rgba(109,184,255,0.75);
+  color:#B8D8FF;
+  background:linear-gradient(180deg,rgba(74,144,226,0.22) 0%,rgba(30,60,120,0.18) 100%);
+  box-shadow:inset 0 1px 0 rgba(109,184,255,0.22),0 0 10px rgba(74,144,226,0.30),0 2px 6px rgba(0,0,0,0.4);}
+.cc.hd{
+  background:linear-gradient(180deg,rgba(255,255,255,0.09) 0%,rgba(255,255,255,0.04) 100%);
+  color:rgba(255,255,255,0.82);}
+.cc.hd .ccc{color:rgba(255,255,255,0.55);}
+.cc.tm{
+  background:linear-gradient(180deg,rgba(255,255,255,0.08) 0%,rgba(255,255,255,0.03) 100%);
+  color:rgba(255,255,255,0.82);}
+.cc.tm .ccc{color:rgba(255,255,255,0.5);}
+.cc.occ{
+  border-bottom:3px solid var(--gold);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,0.10),0 0 8px rgba(255,215,0,0.22),0 1px 4px rgba(0,0,0,0.35);}
+.ccc{font-size:8px;color:rgba(255,255,255,0.45);font-weight:700;letter-spacing:-0.2px;}
+
+/* Brahmacharya calendar cell coloring — no green for maintained; broken gets subtle red only */
+.cc.bc-m{
+  border:1px solid rgba(255,255,255,0.12);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,0.10),0 1px 4px rgba(0,0,0,0.35);}
+.cc.bc-b{
+  border:1px solid rgba(231,76,60,0.45);
+  box-shadow:inset 0 1px 0 rgba(255,100,80,0.12),0 0 6px rgba(231,76,60,0.18),0 1px 4px rgba(0,0,0,0.35);}
+.cc.bc-m.hd{border:1px solid rgba(255,255,255,0.12);box-shadow:inset 0 1px 0 rgba(255,255,255,0.10);}
+.cc.bc-b.hd{border:1px solid rgba(231,76,60,0.45);box-shadow:inset 0 1px 0 rgba(255,100,80,0.12),0 0 6px rgba(231,76,60,0.18);}
+.cc.bc-m .ccc{color:rgba(255,255,255,0.45);}
+.cc.bc-b .ccc{color:rgba(255,120,100,0.7);}
+.cc.bc-m.hd .ccc{color:rgba(255,255,255,0.45);}
+.cc.bc-b.hd .ccc{color:rgba(255,120,100,0.7);}
+.cco{font-size:9px;color:rgba(255,215,0,0.85);width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:0 3px;text-align:center;font-weight:800;letter-spacing:-0.2px;text-shadow:0 0 6px rgba(255,215,0,0.5);}
 .cd{background:rgba(74,144,226,0.07);border:1px solid rgba(74,144,226,0.18);border-radius:14px;padding:14px;margin-top:12px;min-height:55px;}
 .cd h4{font-family:'EB Garamond',serif;font-size:15px;color:var(--a2);margin-bottom:6px;}
 .cd p{font-size:13px;color:var(--tl);}
@@ -395,12 +450,49 @@ button.hpb.active{
 .brk-collapse-body{max-height:0;overflow:hidden;transition:max-height 0.35s ease,padding 0.3s ease;padding:0;}
 .brk-collapse-body.open{max-height:200px;padding:8px 0 0;}
 .bsr{display:flex;gap:10px;margin-bottom:12px;}
-.bsb{flex:1;text-align:center;padding:14px 6px;border-radius:14px;border:1px solid;}
-.bsb.g{background:rgba(46,204,113,0.1);border-color:rgba(46,204,113,0.3);}
-.bsb.r{background:rgba(231,76,60,0.1);border-color:rgba(231,76,60,0.3);}
-.bsb .bv{font-family:'EB Garamond',serif;font-size:32px;line-height:1;}
-.bsb.g .bv{color:var(--green);}.bsb.r .bv{color:var(--red);}
-.bsb .bl{font-size:10px;text-transform:uppercase;letter-spacing:1px;margin-top:3px;color:var(--td);}
+/* BC Stat Cards — premium glossy dynamic */
+.bsb{
+  position:relative;flex:1;text-align:center;padding:16px 6px 14px;border-radius:16px;border:1px solid;
+  overflow:hidden;isolation:isolate;
+  transition:transform 0.2s ease,box-shadow 0.25s ease;}
+.bsb:active{transform:scale(0.96);}
+.bsb::before{content:'';position:absolute;inset:0;border-radius:inherit;
+  background:linear-gradient(180deg,rgba(255,255,255,0.10) 0%,transparent 50%);
+  pointer-events:none;}
+.bsb.g{
+  background:
+    radial-gradient(110% 65% at 50% -10%, rgba(46,204,113,0.25), transparent 62%),
+    linear-gradient(180deg,rgba(20,50,35,0.90) 0%,rgba(5,15,10,0.95) 100%);
+  border-color:rgba(46,204,113,0.55);
+  box-shadow:
+    inset 0 1px 0 rgba(100,255,160,0.22),
+    inset 0 -1px 0 rgba(0,0,0,0.50),
+    0 4px 20px -6px rgba(0,0,0,0.7),
+    0 0 16px rgba(46,204,113,0.14);
+  animation:bcGlowGreen 3s ease-in-out infinite;}
+@keyframes bcGlowGreen{
+  0%,100%{box-shadow:inset 0 1px 0 rgba(100,255,160,0.20),0 4px 20px -6px rgba(0,0,0,0.70),0 0 12px rgba(46,204,113,0.12);}
+  50%{box-shadow:inset 0 1px 0 rgba(100,255,160,0.32),0 4px 20px -6px rgba(0,0,0,0.70),0 0 24px rgba(46,204,113,0.32);}
+}
+.bsb.r{
+  background:
+    radial-gradient(110% 65% at 50% -10%, rgba(231,76,60,0.22), transparent 62%),
+    linear-gradient(180deg,rgba(50,12,10,0.90) 0%,rgba(15,3,3,0.95) 100%);
+  border-color:rgba(231,76,60,0.50);
+  box-shadow:
+    inset 0 1px 0 rgba(255,120,100,0.20),
+    inset 0 -1px 0 rgba(0,0,0,0.50),
+    0 4px 20px -6px rgba(0,0,0,0.7),
+    0 0 16px rgba(231,76,60,0.14);
+  animation:bcGlowRed 3s ease-in-out infinite;}
+@keyframes bcGlowRed{
+  0%,100%{box-shadow:inset 0 1px 0 rgba(255,120,100,0.18),0 4px 20px -6px rgba(0,0,0,0.70),0 0 12px rgba(231,76,60,0.12);}
+  50%{box-shadow:inset 0 1px 0 rgba(255,120,100,0.30),0 4px 20px -6px rgba(0,0,0,0.70),0 0 24px rgba(231,76,60,0.30);}
+}
+.bsb .bv{font-family:'EB Garamond',serif;font-size:34px;line-height:1;}
+.bsb.g .bv{color:#4DED9A;text-shadow:0 0 16px rgba(46,204,113,0.6),0 0 32px rgba(46,204,113,0.25);}
+.bsb.r .bv{color:#FF7068;text-shadow:0 0 16px rgba(231,76,60,0.6),0 0 32px rgba(231,76,60,0.25);}
+.bsb .bl{font-size:9px;text-transform:uppercase;letter-spacing:1.5px;margin-top:4px;color:rgba(255,255,255,0.45);font-weight:600;}
 .bcal{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:12px;width:100%;box-sizing:border-box;}
 .bcl{aspect-ratio:1;border-radius:7px;display:flex;flex-direction:column;align-items:center;justify-content:center;
   font-size:11px;cursor:pointer;border:1px solid transparent;min-width:0;overflow:hidden;}
@@ -416,7 +508,22 @@ button.hpb.active{
 .bci{width:75px;background:rgba(0,0,0,0.3);border:1px solid rgba(231,76,60,0.3);border-radius:9px;
   padding:7px 11px;color:var(--tl);font-size:15px;text-align:center;font-family:'Inter',sans-serif;}
 .n2s{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
-.ns{background:rgba(74,144,226,0.07);border:1px solid rgba(74,144,226,0.15);border-radius:12px;padding:11px;text-align:center;}
+/* BC Summary 2×2 Grid (.ns) — premium glossy */
+.ns{
+  position:relative;
+  background:
+    radial-gradient(110% 60% at 50% -10%, rgba(74,144,226,0.18), transparent 60%),
+    linear-gradient(180deg,rgba(8,16,42,0.92) 0%,rgba(4,8,22,0.96) 100%);
+  border:1px solid rgba(74,144,226,0.35);
+  border-radius:14px;padding:13px 8px;text-align:center;
+  overflow:hidden;isolation:isolate;
+  box-shadow:
+    inset 0 1px 0 rgba(109,184,255,0.18),
+    inset 0 -1px 0 rgba(0,0,0,0.45),
+    0 4px 16px -4px rgba(0,0,0,0.60),
+    0 0 12px rgba(74,144,226,0.10);}
+.ns::before{content:'';position:absolute;inset:0;border-radius:inherit;
+  background:linear-gradient(180deg,rgba(109,184,255,0.10) 0%,transparent 50%);pointer-events:none;}
 .nv{font-family:'EB Garamond',serif;font-size:24px;color:var(--gold);}
 .nl{font-size:9px;color:var(--td);text-transform:uppercase;letter-spacing:1px;margin-top:2px;}
 
@@ -596,19 +703,53 @@ button.n28-gold-btn-danger,
 .mdb.cf{background:linear-gradient(135deg,var(--rose),#8B0000);color:white;}
 .mdb.ca{background:rgba(255,255,255,0.06);color:var(--td);}
 
-/* Google Sign-In button */
-.google-btn{width:100%;padding:12px;border-radius:11px;border:1px solid rgba(255,255,255,0.15);
-  background:rgba(255,255,255,0.08);color:var(--tl);font-size:14px;font-weight:500;
+/* Google Sign-In button — premium glossy */
+.google-btn{
+  position:relative;width:100%;padding:14px;border-radius:14px;
+  border:1px solid rgba(255,255,255,0.22);
+  background:linear-gradient(180deg,rgba(255,255,255,0.14) 0%,rgba(255,255,255,0.06) 100%);
+  color:var(--tl);font-size:14px;font-weight:600;
   cursor:pointer;font-family:'Inter',sans-serif;display:flex;align-items:center;justify-content:center;gap:10px;
-  margin-bottom:10px;transition:background 0.2s;}
-.google-btn:active{background:rgba(255,255,255,0.15);}
-.google-btn svg{width:20px;height:20px;flex-shrink:0;}
-.zoho-btn{width:100%;padding:12px;border-radius:11px;border:1px solid rgba(255,215,0,0.2);
-  background:rgba(255,165,0,0.08);color:var(--tl);font-size:14px;font-weight:500;
+  margin-bottom:11px;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.28),
+    inset 0 -1px 0 rgba(0,0,0,0.35),
+    0 4px 18px rgba(0,0,0,0.45),
+    0 0 0 1px rgba(255,255,255,0.06);
+  transition:all 0.2s;overflow:hidden;isolation:isolate;letter-spacing:0.3px;}
+.google-btn::before{content:'';position:absolute;inset:0;border-radius:inherit;
+  background:linear-gradient(180deg,rgba(255,255,255,0.18) 0%,transparent 45%);pointer-events:none;}
+.google-btn::after{content:'';position:absolute;left:-60%;top:0;height:100%;width:50%;
+  background:linear-gradient(110deg,transparent,rgba(255,255,255,0.14),transparent);
+  transform:skewX(-18deg);transition:left 0.55s ease;pointer-events:none;}
+.google-btn:hover::after{left:120%;}
+.google-btn:hover{border-color:rgba(255,255,255,0.36);filter:brightness(1.12);}
+.google-btn:active{transform:translateY(1px) scale(0.992);box-shadow:inset 0 2px 6px rgba(0,0,0,0.5);}
+.google-btn svg{width:20px;height:20px;flex-shrink:0;filter:drop-shadow(0 0 4px rgba(255,255,255,0.15));}
+
+/* Zoho Sign-In button — premium amber glossy */
+.zoho-btn{
+  position:relative;width:100%;padding:14px;border-radius:14px;
+  border:1px solid rgba(247,168,27,0.45);
+  background:linear-gradient(180deg,rgba(247,168,27,0.18) 0%,rgba(180,100,0,0.10) 100%);
+  color:#F7C55A;font-size:14px;font-weight:600;
   cursor:pointer;font-family:'Inter',sans-serif;display:flex;align-items:center;justify-content:center;gap:10px;
-  margin-bottom:10px;transition:background 0.2s;}
-.zoho-btn:active{background:rgba(255,165,0,0.18);}
-.zoho-btn svg{width:20px;height:20px;flex-shrink:0;}
+  margin-bottom:11px;
+  box-shadow:
+    inset 0 1px 0 rgba(255,210,80,0.28),
+    inset 0 -1px 0 rgba(0,0,0,0.40),
+    0 4px 18px rgba(0,0,0,0.45),
+    0 2px 12px rgba(247,168,27,0.18);
+  transition:all 0.2s;overflow:hidden;isolation:isolate;letter-spacing:0.3px;}
+.zoho-btn::before{content:'';position:absolute;inset:0;border-radius:inherit;
+  background:linear-gradient(180deg,rgba(255,210,80,0.20) 0%,transparent 45%);pointer-events:none;}
+.zoho-btn::after{content:'';position:absolute;left:-60%;top:0;height:100%;width:50%;
+  background:linear-gradient(110deg,transparent,rgba(255,210,80,0.18),transparent);
+  transform:skewX(-18deg);transition:left 0.55s ease;pointer-events:none;}
+.zoho-btn:hover::after{left:120%;}
+.zoho-btn:hover{border-color:rgba(247,168,27,0.70);filter:brightness(1.12);}
+.zoho-btn:active{transform:translateY(1px) scale(0.992);box-shadow:inset 0 2px 6px rgba(0,0,0,0.5);}
+.zoho-btn svg{width:20px;height:20px;flex-shrink:0;filter:drop-shadow(0 0 5px rgba(247,168,27,0.5));}
 
 /* Auto-sync status pill */
 .sync-pill{display:inline-flex;align-items:center;gap:6px;background:rgba(46,204,113,0.1);
@@ -2207,55 +2348,6 @@ body.hk-bn #hkLangBtnHi{opacity:0.55;}
   padding-top:8px;border-top:1px solid rgba(255,215,0,0.14);
 }
 
-/* ══════════════════════════════════════════════════════════════
-   HORIZON MODE PILL BUTTONS — active state
-   #horizonPillApparent / #horizonPillCelestial use .active class
-   toggled by _applyHorizonToggleUI() in app.js
-   ══════════════════════════════════════════════════════════════ */
-/* ═══════════════════════════════════════════════════════════════
-   PREMIUM GLOSSY BUTTONS — Horizon · Parampara · Engine
-   All 6 buttons share the same premium base; active state glows.
-   ═══════════════════════════════════════════════════════════════ */
-#horizonPillApparent,
-#horizonPillCelestial,
-#ekEngineApp,
-#ekEnginePanchang,
-#ekParSmarta,
-#ekParVaishnav {
-  -webkit-appearance: none;
-  appearance: none;
-  padding: 14px 8px;
-  border-radius: 14px;
-  border: 1.5px solid rgba(255,255,255,0.1);
-  background: linear-gradient(145deg,rgba(255,255,255,0.05),rgba(255,255,255,0.02));
-  color: rgba(255,255,255,0.5);
-  font-family: 'Inter', sans-serif;
-  cursor: pointer;
-  text-align: center;
-  width: 100%;
-  box-sizing: border-box;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 5px;
-  transition: background 0.25s, border-color 0.25s, color 0.25s, box-shadow 0.25s, transform 0.15s;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.06);
-}
-
-/* Hover lift (non-active) */
-#horizonPillApparent:not(.active):hover,
-#horizonPillCelestial:not(.active):hover,
-#ekEngineApp:not(.active):hover,
-#ekEnginePanchang:not(.active):hover,
-#ekParSmarta:not(.active):hover,
-#ekParVaishnav:not(.active):hover {
-  background: rgba(255,255,255,0.07);
-  border-color: rgba(255,255,255,0.2);
-  color: rgba(255,255,255,0.75);
-  transform: translateY(-1px);
-}
-
 /* ── ACTIVE GLOW STATES ── */
 #horizonPillApparent.active {
   background: linear-gradient(145deg,rgba(255,215,0,0.22),rgba(255,165,0,0.12));
@@ -2268,18 +2360,6 @@ body.hk-bn #hkLangBtnHi{opacity:0.55;}
   border-color: rgba(109,184,255,0.9);
   color: #6DB8FF;
   box-shadow: 0 0 22px rgba(109,184,255,0.45), 0 0 8px rgba(109,184,255,0.3), inset 0 1px 0 rgba(255,255,255,0.15);
-}
-#ekParSmarta.active {
-  background: linear-gradient(145deg,rgba(241,196,15,0.25),rgba(255,160,0,0.12));
-  border-color: rgba(241,196,15,0.9);
-  color: #F1C40F;
-  box-shadow: 0 0 22px rgba(241,196,15,0.45), 0 0 8px rgba(241,196,15,0.3), inset 0 1px 0 rgba(255,255,255,0.15);
-}
-#ekParVaishnav.active {
-  background: linear-gradient(145deg,rgba(189,147,249,0.25),rgba(155,89,182,0.12));
-  border-color: rgba(189,147,249,0.9);
-  color: #BD93F9;
-  box-shadow: 0 0 22px rgba(189,147,249,0.45), 0 0 8px rgba(155,89,182,0.35), inset 0 1px 0 rgba(255,255,255,0.15);
 }
 #ekEngineApp.active {
   background: linear-gradient(145deg,rgba(100,210,255,0.22),rgba(0,180,255,0.12));
@@ -2336,15 +2416,6 @@ body.hk-bn #hkLangBtnHi{opacity:0.55;}
   height: 100%;
   background: linear-gradient(90deg, transparent, #FFD700, transparent);
   animation: ek-progress 1.6s ease-in-out infinite;
-}
-
-/* ═══════════════════════════════════════════════════════════════
-   PREMIUM GOLDEN EKADASHI CARDS
-   ═══════════════════════════════════════════════════════════════ */
-
-@keyframes ek-glow-pulse {
-  0%, 100% { box-shadow: 0 0 18px 3px rgba(255,215,0,0.22), 0 0 40px 8px rgba(255,180,0,0.10), inset 0 1px 0 rgba(255,255,220,0.10); }
-  50%       { box-shadow: 0 0 30px 8px rgba(255,215,0,0.38), 0 0 60px 18px rgba(255,180,0,0.18), inset 0 1px 0 rgba(255,255,220,0.18); }
 }
 
 @keyframes ek-upcoming-beacon {
@@ -2460,16 +2531,6 @@ body.hk-bn #hkLangBtnHi{opacity:0.55;}
   padding: 0 16px;
 }
 
-/* Gaurabda + Vaishnava month row */
-.ek-month-row {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  flex-wrap: wrap;
-  margin-bottom: 10px;
-}
-
 .ek-month-badge {
   font-size: 10px;
   font-weight: 700;
@@ -2501,16 +2562,6 @@ body.hk-bn #hkLangBtnHi{opacity:0.55;}
   border: 1px solid rgba(206,147,216,0.5);
   background: rgba(206,147,216,0.14);
   color: #CE93D8;
-}
-
-/* Paksha + Parampara row */
-.ek-tags-row {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  flex-wrap: wrap;
-  margin-bottom: 12px;
 }
 
 /* Tithi section */
@@ -2569,21 +2620,6 @@ body.hk-bn #hkLangBtnHi{opacity:0.55;}
   font-weight: 700;
   color: #FFD700;
   flex: 1;
-}
-
-/* Parana section */
-.ek-parana-row {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  flex-wrap: wrap;
-  background: rgba(255,215,0,0.04);
-  border: 1px solid rgba(255,215,0,0.16);
-  border-radius: 10px;
-  padding: 8px 12px;
-  margin-bottom: 10px;
-  font-size: 10px;
-  color: rgba(255,225,150,0.85);
 }
 
 /* Edit / Remove buttons row */
@@ -2768,14 +2804,9 @@ body.hk-bn #hkLangBtnHi{opacity:0.55;}
   animation: ek-fast-glow 2s ease-in-out infinite;
 }
 
-.ek-parana-row { font-size: 11px !important; padding: 10px 14px !important; flex-wrap: wrap; }
-
 .ek-month-badge   { font-size: 11px !important; padding: 4px 13px !important; }
 .ek-gaurabda-badge{ font-size: 10px !important; padding: 3px 10px !important; }
 .ek-adhik-badge   { font-size: 10px !important; padding: 3px 10px !important; }
-
-/* bigger paksha/parampara tags */
-.ek-tags-row span { font-size: 11px !important; padding: 4px 13px !important; }
 
 /* Hide Edit/Remove action buttons */
 .ek-actions-row { display: none !important; }

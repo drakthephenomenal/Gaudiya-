@@ -794,9 +794,11 @@
   font-size:   13px !important;
   font-weight: 400 !important;
 }
-#lyr-fs-auto {
-  opacity:     0.85;
-  font-size:   13px !important;
-  color:       rgba(255, 195, 70, 0.95) !important;
-  padding:     6px 8px !important;
+/* On wide screens (iPad/desktop, aspect ≥ 2/3) the card inner has
+   right: calc(50vw − 27.33dvh). Shift the control inward so it sits
+   on the golden parchment rather than the dark frame border. */
+@media (min-aspect-ratio: 2/3) {
+  #lyr-fs-ctrl {
+    right: calc(50vw - 27.33dvh + 4px);
+  }
 }

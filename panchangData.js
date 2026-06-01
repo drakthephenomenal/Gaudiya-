@@ -625,6 +625,211 @@ async function getPanchangData(lat, lng, date) {
   return result;
 }
 
+// ═══════════════════════════════════════════════════════════════════
+//  EKADASHI DETECTOR — getEkadashiInfo(lat, lng, date)
+//
+//  Given a date and GPS coords, returns:
+//   • isEkadashi      — true if today is Ekadashi (Shukla or Krishna)
+//   • paksha          — 'shukla' | 'krishna'
+//   • ekadashiEndTime — exact time Ekadashi tithi ends (local)
+//   • paranaDate      — JS Date of next morning (Dwadashi day)
+//   • paranaStart     — sunrise time on Dwadashi (Parana opens)
+//   • paranaEnd       — Dwadashi tithi end time (Parana must close before this)
+//   • paranaEndLatest — earliest of [paranaEnd, 1/5th day after sunrise] (strict rule)
+//   • isAdhikMaas     — true if within Adhik/Purushottama Maas window
+//   • name            — Ekadashi name if found in hardcoded table (or '')
+//
+//  Parana rule (Vaishnava / ISKCON):
+//   - Break fast AFTER sunrise on Dwadashi
+//   - BEFORE Dwadashi tithi ends
+//   - BEFORE 1/5th of daytime has elapsed (= sunrise + ~2h 24m for ~12h day)
+//   - If Dwadashi ends before sunrise → special "Viddha" case flagged
+// ═══════════════════════════════════════════════════════════════════
+
+// Known Ekadashi names by month index (0-based) + paksha
+// monthIdx = Purnimanta index (matches _lunarMonthIdx output)
+const _EKADASHI_NAMES = {
+  // Shukla Ekadashis (tithiNum = 11)
+  shukla: [
+    'Utpanna Ekadashi',   // 0 Margashirsha
+    'Saphala Ekadashi',   // 1 Pausha — wait, Pausha Shukla = Putrada
+    'Putrada Ekadashi',   // actually Pausha Shukla
+    'Jaya Ekadashi',      // Magha Shukla
+    'Amalaki Ekadashi',   // Phalguna Shukla
+    'Kamada Ekadashi',    // Chaitra Shukla
+    'Mohini Ekadashi',    // Vaishakha Shukla
+    'Nirjala Ekadashi',   // Jyeshtha Shukla (most important)
+    'Yogini Ekadashi',    // Ashadha Krishna (actually Krishna side)
+    'Devshayani Ekadashi',// Ashadha Shukla
+    'Padmini Ekadashi',   // Adhik Maas Shukla
+    'Shravana Putrada Ekadashi', // Shravana Shukla
+    'Parsva Ekadashi',    // Bhadrapada Shukla
+    'Pasankusha Ekadashi',// Ashwin Shukla
+    'Prabodhini Ekadashi',// Kartik Shukla (very auspicious)
+    'Mokshada Ekadashi',  // Margashirsha Shukla
+  ],
+  krishna: [
+    'Utpatti Ekadashi',   // 0
+    'Saphala Ekadashi',   // Pausha Krishna
+    'Shattila Ekadashi',  // Magha Krishna
+    'Vijaya Ekadashi',    // Phalguna Krishna
+    'Papamochani Ekadashi',// Chaitra Krishna
+    'Varuthini Ekadashi', // Vaishakha Krishna
+    'Apara Ekadashi',     // Jyeshtha Krishna
+    'Parama Ekadashi',    // Adhik Maas Krishna
+    'Kamika Ekadashi',    // Shravana Krishna
+    'Aja Ekadashi',       // Bhadrapada Krishna
+    'Indira Ekadashi',    // Ashwin Krishna
+    'Rama Ekadashi',      // Kartik Krishna
+  ],
+};
+
+// Month-based name lookup (simplified, accurate for major ones)
+const _EK_NAME_BY_MONTH_PAKSHA = {
+  // key: "monthIdx_paksha", value: name
+  '8_shukla':  'Utpanna Ekadashi',
+  '9_shukla':  'Putrada Ekadashi',
+  '10_shukla': 'Jaya Ekadashi',
+  '11_shukla': 'Amalaki Ekadashi',
+  '0_shukla':  'Kamada Ekadashi',
+  '1_shukla':  'Mohini Ekadashi',
+  '2_shukla':  'Nirjala Ekadashi',
+  '3_shukla':  'Devshayani Ekadashi',
+  '4_shukla':  'Shravana Putrada Ekadashi',
+  '5_shukla':  'Parsva Ekadashi',
+  '6_shukla':  'Pasankusha Ekadashi',
+  '7_shukla':  'Prabodhini Ekadashi',
+  '8_krishna': 'Utpatti Ekadashi',  // wait, Utpatti = Margashirsha Krishna
+  '9_krishna': 'Saphala Ekadashi',
+  '10_krishna':'Shattila Ekadashi',
+  '11_krishna':'Vijaya Ekadashi',
+  '0_krishna': 'Papamochani Ekadashi',
+  '1_krishna': 'Varuthini Ekadashi',
+  '2_krishna': 'Apara Ekadashi',
+  '3_krishna': 'Yogini Ekadashi',
+  '4_krishna': 'Kamika Ekadashi',
+  '5_krishna': 'Aja Ekadashi',
+  '6_krishna': 'Indira Ekadashi',
+  '7_krishna': 'Rama Ekadashi',
+  // Adhik Maas special
+  'adhik_shukla':  'Padmini Ekadashi',
+  'adhik_krishna': 'Parama Ekadashi',
+};
+
+/**
+ * getEkadashiInfo(lat, lng, date)
+ *
+ * Returns Ekadashi detection + Parana window for a given date.
+ * Uses the same getPanchangData() API/fallback pipeline.
+ *
+ * @param {number} lat
+ * @param {number} lng
+ * @param {Date}   date
+ * @returns {Promise<{
+ *   isEkadashi: boolean,
+ *   paksha: string,
+ *   tithiNum: number,
+ *   ekadashiEndTime: string|null,   // HH:MM am/pm
+ *   ekadashiEndDate: Date|null,
+ *   paranaDate: string|null,        // "YYYY-MM-DD"
+ *   paranaStart: string|null,       // sunrise on Dwadashi "HH:MM am/pm"
+ *   paranaEnd: string|null,         // Dwadashi tithi end "HH:MM am/pm"
+ *   paranaEndStrict: string|null,   // earliest of paranaEnd & 1/5th day
+ *   viddha: boolean,                // Dwadashi ends before sunrise (rare)
+ *   name: string,                   // Ekadashi name
+ *   isAdhikMaas: boolean,
+ *   source: string,                 // 'api' | 'local'
+ * }>}
+ */
+async function getEkadashiInfo(lat, lng, date) {
+  date = date || new Date();
+
+  // 1. Get panchang for requested date
+  const p = await getPanchangData(lat, lng, date);
+  const tithiNum = p.tithiNum || p.tithi?.num;
+  const isEkadashi = (tithiNum === 11 || tithiNum === 27);
+
+  const paksha     = tithiNum <= 15 ? 'shukla' : 'krishna';
+  const isAdhik    = p.isAdhikMaas || false;
+  const monthIdx   = p.monthIdx !== undefined ? p.monthIdx : (p.month?.idx ?? 0);
+
+  // Ekadashi name
+  let name = '';
+  if (isEkadashi) {
+    const key = isAdhik
+      ? `adhik_${paksha}`
+      : `${monthIdx}_${paksha}`;
+    name = _EK_NAME_BY_MONTH_PAKSHA[key] || '';
+  }
+
+  if (!isEkadashi) {
+    return {
+      isEkadashi: false,
+      tithiNum,
+      paksha,
+      ekadashiEndTime: null,
+      ekadashiEndDate: null,
+      paranaDate: null,
+      paranaStart: null,
+      paranaEnd: null,
+      paranaEndStrict: null,
+      viddha: false,
+      name: '',
+      isAdhikMaas: isAdhik,
+      source: p._source || 'local',
+    };
+  }
+
+  // 2. Ekadashi ends at:
+  const ekEnd = p.tithi?.endDate || null;
+
+  // 3. Parana = next morning (Dwadashi day)
+  const nextDay = new Date(date.getFullYear(), date.getMonth(), date.getDate() + 1);
+  const pDwadashi = await getPanchangData(lat, lng, nextDay);
+
+  // 4. Sunrise on Dwadashi morning
+  const srH = _getSunriseHour(lat, lng, nextDay);
+  const srMin = Math.round((srH % 1) * 60);
+  const sunriseMoment = new Date(
+    nextDay.getFullYear(), nextDay.getMonth(), nextDay.getDate(),
+    Math.floor(srH), srMin, 0
+  );
+
+  // 5. Dwadashi tithi end time (from Dwadashi day panchang)
+  const dwadEnd = pDwadashi.tithi?.endDate || null;
+
+  // 6. Viddha check: does Dwadashi end BEFORE sunrise?
+  const viddha = dwadEnd ? dwadEnd < sunriseMoment : false;
+
+  // 7. Strict Parana end = min(dwadashiEnd, sunrise + 1/5 of daytime)
+  // Standard daytime ≈ 12 hours → 1/5 = 2h 24m
+  const oneFifthDay = new Date(sunriseMoment.getTime() + (12 * 3600000) / 5);
+  let paranaEndStrict = null;
+  if (dwadEnd) {
+    paranaEndStrict = dwadEnd < oneFifthDay ? dwadEnd : oneFifthDay;
+  } else {
+    paranaEndStrict = oneFifthDay;
+  }
+
+  return {
+    isEkadashi: true,
+    tithiNum,
+    paksha,
+    ekadashiEndTime:   ekEnd   ? _fmtHHMM(ekEnd)              : null,
+    ekadashiEndDate:   ekEnd,
+    paranaDate:        _dateStr(nextDay),
+    paranaStart:       _fmtHHMM(sunriseMoment),
+    paranaEnd:         dwadEnd ? _fmtHHMM(dwadEnd)            : null,
+    paranaEndDate:     dwadEnd,
+    paranaEndStrict:   _fmtHHMM(paranaEndStrict),
+    paranaEndStrictDate: paranaEndStrict,
+    viddha,
+    name,
+    isAdhikMaas:       isAdhik,
+    source:            p._source || 'local',
+  };
+}
+
 // ─── Convenience formatter (unchanged API for app.js) ────────────────
 function formatPanchang(p) {
   const t = p.tithi, n = p.nakshatra, y = p.yoga, k = p.karana;

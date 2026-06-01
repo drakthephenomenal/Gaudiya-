@@ -1395,8 +1395,8 @@ function shareApp() {
     "Radha Vallabh Sri Harivangsa \uD83D\uDE4F\n\n" +
     "Boost your Naam Jap experience with this little app —\n" ;
     // [REMOVED]: "track Brahmacharya, Ekadashi, daily Jap & lots of statistics \u2728 \uD83E\uDEB7\n\n" +
-    "\uD83D\uDC49 " +
-    url;
+    // [ORPHAN] "\uD83D\uDC49 " +
+    // [ORPHAN] url;
   if (navigator.share) {
     navigator
       .share({ text: shareText })
@@ -7303,17 +7303,17 @@ function _updateCfgTimesPreview() {
     }
 
     // [REMOVED]: const upcoming = (App.S.customEkadashi || [])
-      .filter(ek => {
-        if (!ek || typeof ek !== "object") return false;
-        const isManual = !ek.autoFetched;
-        if (isGaudiyaMode) return (ek.source === "gaudiya" || isManual);
-        // Standard mode: filter by selected engine (engine is guaranteed non-null here due to guard above)
+      // [ORPHAN] .filter(ek => {
+        // [ORPHAN] if (!ek || typeof ek !== "object") return false;
+        // [ORPHAN] const isManual = !ek.autoFetched;
+        // [ORPHAN] if (isGaudiyaMode) return (ek.source === "gaudiya" || isManual);
+        // [ORPHAN] // Standard mode: filter by selected engine (engine is guaranteed non-null here due to guard above)
         // [REMOVED]: const engine = App.S.ekTithiEngine;
-        const expectedSource = engine === "panchang" ? "panchang" : "gps";
-        return isManual || ek.source === expectedSource;
-      })
-      .filter(ek => (ek.fastingDate || ek.startDate || "") >= today)
-      .slice(0, 2);
+        // [ORPHAN] const expectedSource = engine === "panchang" ? "panchang" : "gps";
+        // [ORPHAN] return isManual || ek.source === expectedSource;
+      // [ORPHAN] })
+      // [ORPHAN] .filter(ek => (ek.fastingDate || ek.startDate || "") >= today)
+      // [ORPHAN] .slice(0, 2);
 
     if (!upcoming.length) { cfgEk.innerHTML = ""; return; }
 
@@ -7399,9 +7399,9 @@ function _updateCfgTimesPreview() {
 
     cfgEk.innerHTML = null;
       // [REMOVED]: '<div style="font-size:9px;color:rgba(255,215,0,0.5);letter-spacing:2px;text-transform:uppercase;font-weight:700;margin-top:10px;margin-bottom:8px;">🌙 Upcoming Ekadashis</div>' +
-      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">' +
-      upcoming.map((ek, i) => _ekCard(ek, i)).join("") +
-      '</div>';
+      // [ORPHAN] '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">' +
+      // [ORPHAN] upcoming.map((ek, i) => _ekCard(ek, i)).join("") +
+      // [ORPHAN] '</div>';
   }
 }
 
@@ -7426,19 +7426,19 @@ function _fmtTime12(t24) {
 // [REMOVED]: // Vaishnava month names — Gaurabda deity name + traditional Hindu name
 // Index 0=Chaitra … 11=Phalguna (Purnimanta order)
 // [REMOVED]: const _VAISHNAVA_MONTH_NAMES = [
-  { deity: "Vishnu",      hindu: "Chaitra"      },
-  { deity: "Madhusudana", hindu: "Vaishakha"    },
-  { deity: "Trivikrama",  hindu: "Jyeshtha"     },
-  { deity: "Vamana",      hindu: "Ashadha"      },
-  { deity: "Sridhara",    hindu: "Shravana"     },
-  { deity: "Hrishikesha", hindu: "Bhadrapada"   },
-  { deity: "Padmanabha",  hindu: "Ashwin"       },
-  { deity: "Damodara",    hindu: "Kartik"       },
-  { deity: "Keshava",     hindu: "Margashirsha" },
-  { deity: "Narayana",    hindu: "Pausha"       },
-  { deity: "Madhava",     hindu: "Magha"        },
-  { deity: "Govinda",     hindu: "Phalguna"     },
-];
+  // [ORPHAN] { deity: "Vishnu",      hindu: "Chaitra"      },
+  // [ORPHAN] { deity: "Madhusudana", hindu: "Vaishakha"    },
+  // [ORPHAN] { deity: "Trivikrama",  hindu: "Jyeshtha"     },
+  // [ORPHAN] { deity: "Vamana",      hindu: "Ashadha"      },
+  // [ORPHAN] { deity: "Sridhara",    hindu: "Shravana"     },
+  // [ORPHAN] { deity: "Hrishikesha", hindu: "Bhadrapada"   },
+  // [ORPHAN] { deity: "Padmanabha",  hindu: "Ashwin"       },
+  // [ORPHAN] { deity: "Damodara",    hindu: "Kartik"       },
+  // [ORPHAN] { deity: "Keshava",     hindu: "Margashirsha" },
+  // [ORPHAN] { deity: "Narayana",    hindu: "Pausha"       },
+  // [ORPHAN] { deity: "Madhava",     hindu: "Magha"        },
+  // [ORPHAN] { deity: "Govinda",     hindu: "Phalguna"     },
+// [ORPHAN] ];
 
 // Gaurabda Year from a Gregorian date (approx: Gaurabda 1 = 1486 CE)
 // Gaurabda year increments on Gaura Purnima (Phalguna Purnima, roughly Feb/Mar).
@@ -8091,9 +8091,9 @@ function renderCal() {
         .replace(/\s*[☀️🌙]\s*(Shukla|Krishna)(\s*Paksha)?/g, "") // remove paksha labels
         .replace(/\s*\(Mahadvadashi[^)]*\)/g, "") // remove Mahadvadashi note
         // [REMOVED]: .replace(/\s*\(Arunodaya[^)]*\)/g, "") // remove Arunodaya note
-        .replace(/\s+\d{1,2}:\d{2}\s*(AM|PM)[\s\S]*$/i, "") // remove time ranges
+        // [ORPHAN] .replace(/\s+\d{1,2}:\d{2}\s*(AM|PM)[\s\S]*$/i, "") // remove time ranges
         // [REMOVED]: .replace(/\s*·\s*(Smarta|Vaishnava|Gaudiya)[^·]*/gi, "") // remove parampara
-        .trim();
+        // [ORPHAN] .trim();
       inner += '<span class="cco">' + escHtml(occShort) + "</span>";
     }
     c.innerHTML = inner;
@@ -11945,8 +11945,8 @@ function _renderAnnualEkList(results, year, listEl, statusEl) {
   if (!results.length) {
     listEl.innerHTML = null;
       // [REMOVED]: '<div style="font-size:12px;color:rgba(255,255,255,0.4);text-align:center;padding:10px;">No Ekadashis found for ' +
-      year +
-      "</div>";
+      // [ORPHAN] year +
+      // [ORPHAN] "</div>";
     return;
   }
   // [REMOVED]: const parampara = App.S.ekParampara || "smarta";
@@ -11967,7 +11967,7 @@ function _renderAnnualEkList(results, year, listEl, statusEl) {
 
       // [REMOVED]: const paranaHtml = r.parana
         // [REMOVED]: ? `<div style="margin-top:6px;padding:5px 8px;background:rgba(255,215,0,0.08);border:1px solid rgba(255,215,0,0.22);border-radius:7px;display:flex;align-items:center;gap:5px;flex-wrap:wrap;"><span style="font-size:10px;color:#FFD700;font-weight:700;">☀️ Parana</span><span style="font-size:9px;color:rgba(255,215,0,0.55);">|</span><span style="font-size:10px;color:#FFE566;">${_fmtDateDMY(r.parana.date)}</span><span style="font-size:9px;color:rgba(255,215,0,0.55);">·</span><span style="font-size:10px;color:#FFE566;font-weight:600;">${_fmtTime12(r.parana.windowStart)}</span><span style="font-size:9px;color:rgba(255,215,0,0.45);"> → </span><span style="font-size:10px;color:#FFE566;font-weight:600;">🌟 ${_fmtTime12(r.parana.recommendedEnd)}</span>${r.parana.hardDeadline ? '<span style="font-size:9px;color:rgba(255,100,100,0.7);"> (⏰ latest ' + _fmtTime12(r.parana.hardDeadline) + ')</span>' : ''}</div>`
-        : "";
+        // [ORPHAN] : "";
 
       return `<div style="background:rgba(74,144,226,0.07);border:1px solid rgba(74,144,226,0.18);border-radius:10px;padding:9px 11px;margin-bottom:7px;">
       <div style="font-size:11px;color:#6DB8FF;font-weight:700;margin-bottom:2px;">${r.name} ${pLabel}${viddhaTag}</div>
@@ -11983,8 +11983,8 @@ function _renderAnnualEkList(results, year, listEl, statusEl) {
       "✅ " +
       results.length ;
       // [REMOVED]: " Ekadashis for " +
-      year +
-      (App.S.lastLat ? " (GPS location)" : " (default location)");
+      // [ORPHAN] year +
+      // [ORPHAN] (App.S.lastLat ? " (GPS location)" : " (default location)");
 }
 
 /* ════════════════════════════════════════════════════════════

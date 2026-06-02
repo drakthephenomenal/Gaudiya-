@@ -6876,7 +6876,7 @@ function _resolveEkFasting(ek, lat, lng, name) {
 
   const ekStartH = ekStart.getHours() + ekStart.getMinutes() / 60;
   const ekEndH   = ekEnd.getHours()   + ekEnd.getMinutes()   / 60;
-  const parampara = App.S.ekParampara || "smarta";
+  const parampara = (App.S.gaudiyaMode || App.S.ekParampara === "vaishnava") ? "vaishnava" : "smarta";
   let fastingDate = startDate,
     isViddha = false;
   if (parampara === "vaishnava") {
@@ -7447,6 +7447,7 @@ async function fetchPanchangEkadashis() {
               // Build ek object for _computeParanaWindow
               const ekObj = {
                 paksha,
+                ekStart: ekStartFromPrev || ekStartDate,
                 ekEnd: ekEnd || new Date(scanDate.getTime() + 23 * 3600000),
               };
               const parana = _computeParanaWindow(ekObj, lat, lng, fastingDate);
@@ -8519,7 +8520,8 @@ function renderEkadashiList() {
           const _srD = calcSunTimes(_eLat, _eLng, _ekD);
           const _sunriseH = _srD ? _srD.sunriseH : 6.0;
           const _arunodayaH = _sunriseH - 96 / 60;
-          if (parampara === "vaishnava") {
+          const _isVaishnavaRender = App.S && (App.S.gaudiyaMode || App.S.ekParampara === "vaishnava");
+          if (_isVaishnavaRender) {
             if (ekStartH >= _arunodayaH) { fastingDate = ed; isViddha = true; }
           } else {
             if (ekStartH >= _sunriseH) fastingDate = ed;
@@ -13284,7 +13286,7 @@ function _computeParanaWindow(ek, lat, lng, fastingDate) {
     const srData = calcSunTimes(lat, lng, paranaDay);
     if (!srData) return null;
 
-    const isGaudiya   = !!(typeof App !== "undefined" && App.S && App.S.gaudiyaMode);
+    const isVaishnava = !!(typeof App !== "undefined" && App.S && (App.S.gaudiyaMode || App.S.ekParampara === "vaishnava"));
     const isCelestial = !!(typeof App !== "undefined" && App.S && App.S.horizonMode === "celestial");
 
     // Find Dvadashi end (search from Dvadashi start so bracket is always valid)
@@ -13301,7 +13303,7 @@ function _computeParanaWindow(ek, lat, lng, fastingDate) {
     let windowStart = sunriseH;
     let hariVasaraEndH = null;
 
-    if (isGaudiya && ek.ekEnd instanceof Date && dvadashiEndDt) {
+    if (isVaishnava && ek.ekEnd instanceof Date && dvadashiEndDt) {
       // Hari Vāsara end = Dvadashi start + (Dvadashi duration) / 4
       // Dvadashi start = ek.ekEnd
       const dvStartMs = ek.ekEnd.getTime();
@@ -13324,7 +13326,7 @@ function _computeParanaWindow(ek, lat, lng, fastingDate) {
     //   Smarta            : sunrise + 1/5 × mode-aware daytime
     const apparentDayLen = srData.apparentSunsetH - srData.apparentSunriseH;
     const modeDayLen     = srData.sunsetH - srData.sunriseH;
-    const recommendedEndRaw = isGaudiya
+    const recommendedEndRaw = isVaishnava
       ? sunriseH + apparentDayLen * (1/3)
       : sunriseH + modeDayLen * (1/5);
 

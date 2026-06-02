@@ -2348,6 +2348,55 @@ body.hk-bn #hkLangBtnHi{opacity:0.55;}
   padding-top:8px;border-top:1px solid rgba(255,215,0,0.14);
 }
 
+/* ══════════════════════════════════════════════════════════════
+   HORIZON MODE PILL BUTTONS — active state
+   #horizonPillApparent / #horizonPillCelestial use .active class
+   toggled by _applyHorizonToggleUI() in app.js
+   ══════════════════════════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════════════════
+   PREMIUM GLOSSY BUTTONS — Horizon · Parampara · Engine
+   All 6 buttons share the same premium base; active state glows.
+   ═══════════════════════════════════════════════════════════════ */
+#horizonPillApparent,
+#horizonPillCelestial,
+#ekEngineApp,
+#ekEnginePanchang,
+#ekParSmarta,
+#ekParVaishnav {
+  -webkit-appearance: none;
+  appearance: none;
+  padding: 14px 8px;
+  border-radius: 14px;
+  border: 1.5px solid rgba(255,255,255,0.1);
+  background: linear-gradient(145deg,rgba(255,255,255,0.05),rgba(255,255,255,0.02));
+  color: rgba(255,255,255,0.5);
+  font-family: 'Inter', sans-serif;
+  cursor: pointer;
+  text-align: center;
+  width: 100%;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  transition: background 0.25s, border-color 0.25s, color 0.25s, box-shadow 0.25s, transform 0.15s;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.06);
+}
+
+/* Hover lift (non-active) */
+#horizonPillApparent:not(.active):hover,
+#horizonPillCelestial:not(.active):hover,
+#ekEngineApp:not(.active):hover,
+#ekEnginePanchang:not(.active):hover,
+#ekParSmarta:not(.active):hover,
+#ekParVaishnav:not(.active):hover {
+  background: rgba(255,255,255,0.07);
+  border-color: rgba(255,255,255,0.2);
+  color: rgba(255,255,255,0.75);
+  transform: translateY(-1px);
+}
+
 /* ── ACTIVE GLOW STATES ── */
 #horizonPillApparent.active {
   background: linear-gradient(145deg,rgba(255,215,0,0.22),rgba(255,165,0,0.12));
@@ -2360,6 +2409,18 @@ body.hk-bn #hkLangBtnHi{opacity:0.55;}
   border-color: rgba(109,184,255,0.9);
   color: #6DB8FF;
   box-shadow: 0 0 22px rgba(109,184,255,0.45), 0 0 8px rgba(109,184,255,0.3), inset 0 1px 0 rgba(255,255,255,0.15);
+}
+#ekParSmarta.active {
+  background: linear-gradient(145deg,rgba(241,196,15,0.25),rgba(255,160,0,0.12));
+  border-color: rgba(241,196,15,0.9);
+  color: #F1C40F;
+  box-shadow: 0 0 22px rgba(241,196,15,0.45), 0 0 8px rgba(241,196,15,0.3), inset 0 1px 0 rgba(255,255,255,0.15);
+}
+#ekParVaishnav.active {
+  background: linear-gradient(145deg,rgba(189,147,249,0.25),rgba(155,89,182,0.12));
+  border-color: rgba(189,147,249,0.9);
+  color: #BD93F9;
+  box-shadow: 0 0 22px rgba(189,147,249,0.45), 0 0 8px rgba(155,89,182,0.35), inset 0 1px 0 rgba(255,255,255,0.15);
 }
 #ekEngineApp.active {
   background: linear-gradient(145deg,rgba(100,210,255,0.22),rgba(0,180,255,0.12));
@@ -2416,6 +2477,15 @@ body.hk-bn #hkLangBtnHi{opacity:0.55;}
   height: 100%;
   background: linear-gradient(90deg, transparent, #FFD700, transparent);
   animation: ek-progress 1.6s ease-in-out infinite;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   PREMIUM GOLDEN EKADASHI CARDS
+   ═══════════════════════════════════════════════════════════════ */
+
+@keyframes ek-glow-pulse {
+  0%, 100% { box-shadow: 0 0 18px 3px rgba(255,215,0,0.22), 0 0 40px 8px rgba(255,180,0,0.10), inset 0 1px 0 rgba(255,255,220,0.10); }
+  50%       { box-shadow: 0 0 30px 8px rgba(255,215,0,0.38), 0 0 60px 18px rgba(255,180,0,0.18), inset 0 1px 0 rgba(255,255,220,0.18); }
 }
 
 @keyframes ek-upcoming-beacon {
@@ -2531,6 +2601,16 @@ body.hk-bn #hkLangBtnHi{opacity:0.55;}
   padding: 0 16px;
 }
 
+/* Gaurabda + Vaishnava month row */
+.ek-month-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
 .ek-month-badge {
   font-size: 10px;
   font-weight: 700;
@@ -2562,6 +2642,16 @@ body.hk-bn #hkLangBtnHi{opacity:0.55;}
   border: 1px solid rgba(206,147,216,0.5);
   background: rgba(206,147,216,0.14);
   color: #CE93D8;
+}
+
+/* Paksha + Parampara row */
+.ek-tags-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
 }
 
 /* Tithi section */
@@ -2620,6 +2710,21 @@ body.hk-bn #hkLangBtnHi{opacity:0.55;}
   font-weight: 700;
   color: #FFD700;
   flex: 1;
+}
+
+/* Parana section */
+.ek-parana-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-wrap: wrap;
+  background: rgba(255,215,0,0.04);
+  border: 1px solid rgba(255,215,0,0.16);
+  border-radius: 10px;
+  padding: 8px 12px;
+  margin-bottom: 10px;
+  font-size: 10px;
+  color: rgba(255,225,150,0.85);
 }
 
 /* Edit / Remove buttons row */
@@ -2804,9 +2909,14 @@ body.hk-bn #hkLangBtnHi{opacity:0.55;}
   animation: ek-fast-glow 2s ease-in-out infinite;
 }
 
+.ek-parana-row { font-size: 11px !important; padding: 10px 14px !important; flex-wrap: wrap; }
+
 .ek-month-badge   { font-size: 11px !important; padding: 4px 13px !important; }
 .ek-gaurabda-badge{ font-size: 10px !important; padding: 3px 10px !important; }
 .ek-adhik-badge   { font-size: 10px !important; padding: 3px 10px !important; }
+
+/* bigger paksha/parampara tags */
+.ek-tags-row span { font-size: 11px !important; padding: 4px 13px !important; }
 
 /* Hide Edit/Remove action buttons */
 .ek-actions-row { display: none !important; }

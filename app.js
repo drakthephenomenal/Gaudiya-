@@ -6786,6 +6786,77 @@ function _tithiAtMoment(date) {
   return Math.floor(_moonElongation(date) / 12) + 1;
 }
 
+// Tithi 1..30 at the (apparent) sunrise of a calendar day. Returns -1 on failure.
+// 11 = Shukla Ekadashi, 12 = Shukla Dvadashi, 13 = Shukla Trayodashi
+// 26 = Krishna Ekadashi, 27 = Krishna Dvadashi, 28 = Krishna Trayodashi
+function _tithiAtSunrise(day, lat, lng) {
+  try {
+    const sr = calcSunTimes(lat, lng, day);
+    if (!sr) return -1;
+    const h = sr.apparentSunriseH;
+    const m = new Date(day.getFullYear(), day.getMonth(), day.getDate(),
+                       Math.floor(h), Math.round((h % 1) * 60));
+    return _tithiAtMoment(m);
+  } catch (_e) { return -1; }
+}
+
+// Canonical Vaishnava Mahadvadashi detection (gaurabda-calendar TCalendar.MahadvadasiCalc).
+// Given the candidate Vaishnava fasting date (Ekadashi at sunrise after Arunodaya-viddha),
+// returns the FINAL fasting date and Mahadvadashi type. Currently detects:
+//   - VYANJULI : today=Ekadashi, tomorrow=Dvadashi at sunrise, day-after=Dvadashi at sunrise
+//                (Dvadashi vriddhi spans two sunrises). Fast shifts to tomorrow (Dvadashi day).
+//   - TRISPRSA : today=Ekadashi at sunrise, tomorrow=Trayodashi at sunrise (Dvadashi kshaya).
+//                Fast stays today; flagged so Parana uses 1/3 daylight (no Dvadashi-end clamp).
+//   - UNMILANI : today=Ekadashi, tomorrow=Ekadashi at sunrise (Ekadashi vriddhi).
+//                Fast stays today; flagged so Parana uses Ekadashi-end → 1/3 daylight.
+// Returns: { date: "YYYY-MM-DD", isViddha: bool, mhdType: "NORMAL"|"VYANJULI"|"TRISPRSA"|"UNMILANI"|"SUDDHA" }
+function _resolveMahadvadasiShift(fastingDateStr, paksha, lat, lng, currentMhdType) {
+  try {
+    if (!lat || !lng || !fastingDateStr) {
+      return { date: fastingDateStr, isViddha: !!currentMhdType, mhdType: currentMhdType || "NORMAL" };
+    }
+    const [y, m, d] = fastingDateStr.split("-").map(Number);
+    const today = new Date(y, m - 1, d);
+    const tomorrow = new Date(y, m - 1, d + 1);
+    const dayAfter = new Date(y, m - 1, d + 2);
+
+    const EK = paksha === "shukla" ? 11 : 26;
+    const DV = paksha === "shukla" ? 12 : 27;
+    const TR = paksha === "shukla" ? 13 : 28;
+
+    const tT = _tithiAtSunrise(today, lat, lng);
+    const tM = _tithiAtSunrise(tomorrow, lat, lng);
+    const tA = _tithiAtSunrise(dayAfter, lat, lng);
+
+    let mhdType = currentMhdType || "NORMAL";
+    let date = fastingDateStr;
+    let isViddha = !!currentMhdType;
+
+    if (tT === EK) {
+      // Vyanjuli: Dvadashi vriddhi → shift fast to Dvadashi day
+      if (tM === DV && tA === DV) {
+        const fd = new Date(y, m - 1, d + 1);
+        date = fd.getFullYear() + "-" +
+               String(fd.getMonth() + 1).padStart(2, "0") + "-" +
+               String(fd.getDate()).padStart(2, "0");
+        mhdType = "VYANJULI";
+        isViddha = true;
+      } else if (tM === TR) {
+        // Trisparsha: Dvadashi kshaya (Ekadashi→Trayodashi across sunrise)
+        mhdType = "TRISPRSA";
+        isViddha = true;
+      } else if (tM === EK) {
+        // Unmilani: Ekadashi vriddhi (Ekadashi at two sunrises)
+        mhdType = "UNMILANI";
+        isViddha = true;
+      }
+    }
+    return { date, isViddha, mhdType };
+  } catch (_e) {
+    return { date: fastingDateStr, isViddha: !!currentMhdType, mhdType: currentMhdType || "NORMAL" };
+  }
+}
+
 // Binary-search exact moment elongation crosses a degree boundary within [lo,hi]
 function _findElongCrossing(targetDeg, lo, hi) {
   let loT = lo.getTime(),
@@ -6914,6 +6985,14 @@ function _resolveEkFasting(ek, lat, lng, name) {
     // Smarta: fast on day where Ekadashi is present at (mode-aware) sunrise
     if (ekStartH >= sunriseH) fastingDate = endDate;
   }
+  // Mahadvadashi shift (Vaishnava-only): Vyanjuli / Trisparsha / Unmilani
+  let mhdType = isViddha ? "SUDDHA" : "NORMAL";
+  if (parampara === "vaishnava") {
+    const _shift = _resolveMahadvadasiShift(fastingDate, paksha, lat, lng, mhdType);
+    fastingDate = _shift.date;
+    isViddha = _shift.isViddha || isViddha;
+    mhdType = _shift.mhdType;
+  }
   const pakshaLabel = paksha === "shukla" ? " ☀️ Shukla" : " 🌙 Krishna";
   const label =
     (name || "Ekadashi") + pakshaLabel + (isViddha ? " (Mahadvadashi)" : "");
@@ -6926,6 +7005,7 @@ function _resolveEkFasting(ek, lat, lng, name) {
     endDate,
     endTime,
     fastingDate,
+    mhdType,
     label,
   };
 }
@@ -7417,10 +7497,17 @@ async function fetchPanchangEkadashis() {
               }
             }
 
+            // Mahadvadashi shift (Vaishnava-only): Vyanjuli / Trisparsha / Unmilani
+            let mhdType = isViddha ? "SUDDHA" : "NORMAL";
+            if (parampara === "vaishnava") {
+              const _shift = _resolveMahadvadasiShift(fastingDate, paksha, lat, lng, mhdType);
+              fastingDate = _shift.date;
+              isViddha = _shift.isViddha || isViddha;
+              mhdType = _shift.mhdType;
+            }
+
             const pakshaLabel = paksha === "shukla" ? " ☀️ Shukla" : " 🌙 Krishna";
-            // Use pd.monthIdx — already Purnimanta/Gaudiya-correct from panchangData.
-            // isAdhikMaas is also from pd, so Purushottama Maas Ekadashis are handled correctly.
-            const mi   = pd.monthIdx; // 0=Chaitra … 11=Phalguna (Purnimanta)
+            const mi   = pd.monthIdx;
             let name;
             if (pd.isAdhikMaas) {
               name = paksha === "shukla" ? "Padmini" : "Parama";
@@ -7431,8 +7518,6 @@ async function fetchPanchangEkadashis() {
             }
             const label = name + pakshaLabel + (isViddha ? " (Mahadvadashi)" : "");
 
-            // Ekadashi start = when Dashami ended (prevTithi.endDate from panchangData)
-            // prevTithi holds the PREVIOUS day's tithi at this point in the loop
             const ekStartFromPrev = (prevTithi && prevTithi.endDate instanceof Date)
               ? prevTithi.endDate
               : null;
@@ -7444,11 +7529,11 @@ async function fetchPanchangEkadashis() {
               (e) => e.source === _entrySource && (e.startDate === startDateStr || e.startDate === ekActualStartDate)
             );
             if (!exists) {
-              // Build ek object for _computeParanaWindow
               const ekObj = {
                 paksha,
                 ekStart: ekStartFromPrev || ekStartDate,
                 ekEnd: ekEnd || new Date(scanDate.getTime() + 23 * 3600000),
+                mhdType,
               };
               const parana = _computeParanaWindow(ekObj, lat, lng, fastingDate);
               App.S.customEkadashi.push({
@@ -7460,6 +7545,7 @@ async function fetchPanchangEkadashis() {
                 endTime:     ekEnd ? _d2hhmm(ekEnd) : "00:00",
                 fastingDate: fastingDate,
                 isViddha:    isViddha,
+                mhdType:     mhdType,
                 parana:      parana || null,
                 autoFetched: true,
                 source:      _entrySource,
@@ -8117,7 +8203,7 @@ function _updateCfgTimesPreview() {
       try {
         const ekStartDt = new Date((ek.startDate || fd) + "T" + (ek.startTime || "06:00") + ":00");
         const ekEndDt   = new Date((ek.endDate   || fd) + "T" + (ek.endTime   || "06:00") + ":00");
-        const par = _computeParanaWindow({ ekStart: ekStartDt, ekEnd: ekEndDt, paksha: ek.paksha }, _pLat, _pLng, fd);
+        const par = _computeParanaWindow({ ekStart: ekStartDt, ekEnd: ekEndDt, paksha: ek.paksha, mhdType: ek.mhdType || (ek.isViddha ? "SUDDHA" : "NORMAL") }, _pLat, _pLng, fd);
         if (par) {
           const _pd = new Date(par.date + "T00:00:00");
           const _pdt = _pd.getDate();
@@ -8508,6 +8594,7 @@ function renderEkadashiList() {
       // ── Fasting date (same logic preserved) ────────────────────
       let fastingDate = (typeof e === "object" && e.fastingDate) ? e.fastingDate : sd;
       let isViddha    = (typeof e === "object" && e.isViddha)    ? !!e.isViddha  : false;
+      let mhdType     = (typeof e === "object" && e.mhdType)     ? e.mhdType     : (isViddha ? "SUDDHA" : "NORMAL");
       if (!e.fastingDate && startTime) {
         const [hh, mm] = startTime.split(":").map(Number);
         const ekStartH = hh + mm / 60;
@@ -8522,7 +8609,11 @@ function renderEkadashiList() {
           const _arunodayaH = _sunriseH - 96 / 60;
           const _isVaishnavaRender = App.S && (App.S.gaudiyaMode || App.S.ekParampara === "vaishnava");
           if (_isVaishnavaRender) {
-            if (ekStartH >= _arunodayaH) { fastingDate = ed; isViddha = true; }
+            if (ekStartH >= _arunodayaH) { fastingDate = ed; isViddha = true; mhdType = "SUDDHA"; }
+            const _shift = _resolveMahadvadasiShift(fastingDate, paksha, _eLat, _eLng, mhdType);
+            fastingDate = _shift.date;
+            isViddha = _shift.isViddha || isViddha;
+            mhdType = _shift.mhdType;
           } else {
             if (ekStartH >= _sunriseH) fastingDate = ed;
           }
@@ -8534,7 +8625,7 @@ function renderEkadashiList() {
       const fastHtml = isViddha
         ? `<div class="ek-fast-row">
             <div class="ek-fast-date">🌅 ${fmtD(fastingDate)}</div>
-            <div style="text-align:center;margin-top:4px;"><span style="font-size:10px;background:rgba(255,152,0,0.18);color:#FF9800;border-radius:20px;padding:3px 12px;border:1px solid rgba(255,152,0,0.35);font-weight:700;">⚡ Mahadvadashi</span></div>
+            <div style="text-align:center;margin-top:4px;"><span style="font-size:10px;background:rgba(255,152,0,0.18);color:#FF9800;border-radius:20px;padding:3px 12px;border:1px solid rgba(255,152,0,0.35);font-weight:700;">⚡ Mahadvadashi${mhdType && mhdType !== "SUDDHA" ? " · " + mhdType : ""}</span></div>
            </div>`
         : `<div class="ek-fast-row">
             <div class="ek-fast-date">🌅 ${fmtD(fastingDate)}</div>
@@ -8545,7 +8636,7 @@ function renderEkadashiList() {
       try {
         const _ekStartDt = new Date(sd + "T" + (startTime || "06:00") + ":00");
         const _ekEndDt   = new Date(ed + "T" + (endTime   || "06:00") + ":00");
-        const _ekObjP    = { ekStart: _ekStartDt, ekEnd: _ekEndDt, paksha: paksha };
+        const _ekObjP    = { ekStart: _ekStartDt, ekEnd: _ekEndDt, paksha: paksha, mhdType: mhdType };
         const _pLat = App.S && App.S.lastLat;
         const _pLng = App.S && App.S.lastLng;
         if (!_pLat || !_pLng) {
@@ -13302,6 +13393,21 @@ function _computeParanaWindow(ek, lat, lng, fastingDate) {
     const sunriseH = srData.sunriseH;
     let windowStart = sunriseH;
     let hariVasaraEndH = null;
+    const mhdType = ek.mhdType || "NORMAL";
+
+    // UNMILANI Mahadvadashi (Ekadashi vriddhi): parana day's sunrise is still
+    // Ekadashi. windowStart must be pushed to the Ekadashi tithi END (= Dvadashi
+    // START = ek.ekEnd) on the parana day. Per gaurabda Case 3.
+    if (mhdType === "UNMILANI" && ek.ekEnd instanceof Date) {
+      const onParanaDay =
+        ek.ekEnd.getFullYear() === paranaDay.getFullYear() &&
+        ek.ekEnd.getMonth()    === paranaDay.getMonth()    &&
+        ek.ekEnd.getDate()     === paranaDay.getDate();
+      if (onParanaDay) {
+        const ekEndH = ek.ekEnd.getHours() + ek.ekEnd.getMinutes() / 60 + ek.ekEnd.getSeconds() / 3600;
+        if (ekEndH > windowStart) windowStart = ekEndH;
+      }
+    }
 
     if (isVaishnava && ek.ekEnd instanceof Date && dvadashiEndDt) {
       // Hari Vāsara end = Dvadashi start + (Dvadashi duration) / 4
@@ -13331,9 +13437,11 @@ function _computeParanaWindow(ek, lat, lng, fastingDate) {
       : sunriseH + modeDayLen * (1/5);
 
     // HARD DEADLINE = Dvadashi tithi end on Paran day
+    // For TRISPRSA the Dvadashi is kshaya (ends before parana sunrise),
+    // so no Dvadashi clamp is meaningful — parana runs sunrise → 1/3 daylight.
     let hardDeadline  = null;
     let hardDeadlineH = null;
-    if (dvadashiEndDt) {
+    if (dvadashiEndDt && mhdType !== "TRISPRSA") {
       const isSameDay =
         dvadashiEndDt.getFullYear() === paranaDay.getFullYear() &&
         dvadashiEndDt.getMonth()    === paranaDay.getMonth()    &&

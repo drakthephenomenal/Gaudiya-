@@ -8116,7 +8116,7 @@ function _updateCfgTimesPreview() {
       try {
         const ekStartDt = new Date((ek.startDate || fd) + "T" + (ek.startTime || "06:00") + ":00");
         const ekEndDt   = new Date((ek.endDate   || fd) + "T" + (ek.endTime   || "06:00") + ":00");
-        const par = _computeParanaWindow({ ekStart: ekStartDt, ekEnd: ekEndDt }, _pLat, _pLng, fd);
+        const par = _computeParanaWindow({ ekStart: ekStartDt, ekEnd: ekEndDt, paksha: ek.paksha }, _pLat, _pLng, fd);
         if (par) {
           const _pd = new Date(par.date + "T00:00:00");
           const _pdt = _pd.getDate();
@@ -8543,7 +8543,7 @@ function renderEkadashiList() {
       try {
         const _ekStartDt = new Date(sd + "T" + (startTime || "06:00") + ":00");
         const _ekEndDt   = new Date(ed + "T" + (endTime   || "06:00") + ":00");
-        const _ekObjP    = { ekStart: _ekStartDt, ekEnd: _ekEndDt };
+        const _ekObjP    = { ekStart: _ekStartDt, ekEnd: _ekEndDt, paksha: paksha };
         const _pLat = App.S && App.S.lastLat;
         const _pLng = App.S && App.S.lastLng;
         if (!_pLat || !_pLng) {
@@ -13254,8 +13254,10 @@ function _computeParanaWindow(ek, lat, lng, fastingDate) {
     // the devotee must observe Dvadashi that day too — parana advances to day+2.
     if (ek.ekEnd instanceof Date) {
       const dvEndDeg   = ek.paksha === "shukla" ? 144 : 324;
-      const searchLo   = new Date(paranaDay); searchLo.setHours(0, 0, 0, 0);
-      const searchHi   = new Date(searchLo.getTime() + 36 * 3600000);
+      // Use Dvadashi START (= ek.ekEnd) as lower bound so binary search is
+      // always properly bracketed even if elongation engine has small offset.
+      const searchLo   = new Date(ek.ekEnd.getTime() + 60000); // 1 min after dvadashi start
+      const searchHi   = new Date(ek.ekEnd.getTime() + 30 * 3600000); // up to 30h later
       const dvEndTest  = _findElongCrossing(dvEndDeg, searchLo, searchHi);
       if (dvEndTest) {
         const parSrData  = calcSunTimes(lat, lng, paranaDay);
@@ -13269,7 +13271,10 @@ function _computeParanaWindow(ek, lat, lng, fastingDate) {
           dvEndTest.getFullYear() === paranaDay.getFullYear() &&
           dvEndTest.getMonth()    === paranaDay.getMonth()    &&
           dvEndTest.getDate()     === paranaDay.getDate();
-        if (dvEndSameDay && dvEndTest.getTime() > parSunsetMs) {
+        // Shift paran to next day if Dvadashi extends past sunset on paranaDay,
+        // OR if Dvadashi ends AFTER paranaDay (spans the entire day).
+        const dvEndAfterParanaDay = dvEndTest.getTime() > paranaDay.getTime() + 24*3600000;
+        if ((dvEndSameDay && dvEndTest.getTime() > parSunsetMs) || dvEndAfterParanaDay) {
           paranaDay = new Date(fy, fm - 1, fd + 2);
         }
       }
@@ -13282,12 +13287,12 @@ function _computeParanaWindow(ek, lat, lng, fastingDate) {
     const isGaudiya   = !!(typeof App !== "undefined" && App.S && App.S.gaudiyaMode);
     const isCelestial = !!(typeof App !== "undefined" && App.S && App.S.horizonMode === "celestial");
 
-    // Find Dvadashi end on Parana day (binary search)
+    // Find Dvadashi end (search from Dvadashi start so bracket is always valid)
     let dvadashiEndDt = null;
-    {
+    if (ek.ekEnd instanceof Date) {
       const dvEndDeg  = ek.paksha === "shukla" ? 144 : 324;
-      const searchLo  = new Date(paranaDay); searchLo.setHours(0, 0, 0, 0);
-      const searchHi  = new Date(searchLo.getTime() + 30 * 3600000);
+      const searchLo  = new Date(ek.ekEnd.getTime() + 60000);
+      const searchHi  = new Date(ek.ekEnd.getTime() + 30 * 3600000);
       dvadashiEndDt   = _findElongCrossing(dvEndDeg, searchLo, searchHi);
     }
 

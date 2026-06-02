@@ -6764,6 +6764,44 @@ function _tithiAtSunrise(day, lat, lng) {
   } catch (_e) { return -1; }
 }
 
+// ─── Moon elongation crossing helpers ────────────────────────────────────────
+// Required by the app-engine fetch loop AND by gaudiya-engine.js (loaded before
+// this file).  Both files reference _didCross/_findElongCrossing as window globals.
+
+/**
+ * _didCross(prev, cur, targetDeg) → bool
+ * Returns true if the moon–sun elongation crossed targetDeg going from prev→cur.
+ * Handles the 359°→0° wrap-around for New Moon (0°) crossings.
+ */
+function _didCross(prev, cur, targetDeg) {
+  if (targetDeg === 0) {
+    return prev > 300 && cur < 60; // wrap-around crossing
+  }
+  return prev < targetDeg && cur >= targetDeg;
+}
+window._didCross = _didCross;
+
+/**
+ * _findElongCrossing(targetDeg, lo, hi) → Date
+ * Binary-search between Date lo and Date hi for the exact moment moon elongation
+ * equals targetDeg.  Converges to ~1-second precision in ≤52 iterations.
+ */
+function _findElongCrossing(targetDeg, lo, hi) {
+  let a = lo.getTime(), b = hi.getTime();
+  for (let i = 0; i < 52; i++) {
+    const mid = (a + b) / 2;
+    const e = _moonElongation(new Date(mid));
+    if (targetDeg === 0) {
+      if (e > 180) a = mid; else b = mid;
+    } else {
+      if (e < targetDeg) a = mid; else b = mid;
+    }
+    if (b - a < 1000) break;
+  }
+  return new Date((a + b) / 2);
+}
+window._findElongCrossing = _findElongCrossing;
+
 // ───────────────────────────────────────────────────────────────────
 // All Ekadashi / Mahadvadashi / Parana logic moved to gaudiya-engine.js
 // (loaded BEFORE this file). The following names are provided there
@@ -7365,6 +7403,11 @@ async function fetchPanchangEkadashis() {
                (e.fastingDate === resolved.fastingDate || _ekDate(e) === resolved.startDate),
       );
       if (!exists) {
+        // Compute Parana window using Gaudiya engine (requires mhdType + ekStart/ekEnd)
+        const _gpsPar = _computeParanaWindow(
+          { ekStart: ek.ekStart, ekEnd: ek.ekEnd, paksha: resolved.paksha, mhdType: resolved.mhdType },
+          lat, lng, resolved.fastingDate
+        );
         App.S.customEkadashi.push({
           name: resolved.name,
           paksha: resolved.paksha,
@@ -7374,10 +7417,15 @@ async function fetchPanchangEkadashis() {
           endTime: resolved.endTime,
           fastingDate: resolved.fastingDate,
           isViddha: resolved.isViddha,
+          mhdType: resolved.mhdType,
+          parana: _gpsPar || null,
           autoFetched: true,
           source: "gps",
         });
         App.S.occasions[resolved.fastingDate] = resolved.label;
+        if (_gpsPar) {
+          App.S.occasions[_gpsPar.date] = App.S.occasions[_gpsPar.date] || "";
+        }
         added++;
         // Stop once we have collected the next 24 upcoming Ekadashis
         if (added >= 24) break;
@@ -7497,11 +7545,6 @@ const EK_NOTES = {
 };
 
 function saveEkTithiEngine(val) {
-  // Only in standard (non-Gaudiya) mode
-  if (App.S && App.S.gaudiyaMode) {
-    toast("🌸 Gaudiya Mode uses Vaishnava Panchang rules");
-    return;
-  }
   App.S.ekTithiEngine = val;
 
   // Remove auto-fetched entries from the OTHER engine so the list stays clean.
@@ -7531,7 +7574,7 @@ function saveEkTithiEngine(val) {
 }
 
 function renderEkTithiEngine() {
-  const e = App.S.ekTithiEngine;  // null = never chosen; no default
+  const e = App.S.ekTithiEngine;
   const appBtn = document.getElementById("ekEngineApp");
   const panBtn = document.getElementById("ekEnginePanchang");
   if (appBtn) appBtn.classList.toggle("active", e === "app");

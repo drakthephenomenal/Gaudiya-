@@ -475,12 +475,43 @@
   <div class="sc" style="background:rgba(18,8,40,0.6);border-color:rgba(155,89,182,0.35);">
     <h3 style="color:#BD93F9;">📅 Ekadashi Manager</h3>
 
+    <!-- TITHI ENGINE SELECTOR — above Auto-Fetch -->
+    <div style="background:rgba(0,0,0,0.3);border:1px solid rgba(109,184,255,0.2);border-radius:12px;padding:12px 13px;margin-bottom:12px;">
+      <div style="font-size:9px;color:rgba(109,184,255,0.7);letter-spacing:2px;text-transform:uppercase;font-weight:700;margin-bottom:9px;">⚙️ Tithi Extraction Engine</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:7px;">
+        <button id="ekEngineApp" onclick="saveEkTithiEngine('app')">
+          <div style="font-size:20px;line-height:1;">🔭</div>
+          <div style="font-weight:700;font-size:12px;margin-top:5px;">Swiss Ephemeris</div>
+          <div style="font-size:9px;opacity:0.6;margin-top:3px;">Inbuilt tithi data</div>
+        </button>
+        <button id="ekEnginePanchang" onclick="saveEkTithiEngine('panchang')">
+          <div style="font-size:20px;line-height:1;">🗓️</div>
+          <div style="font-weight:700;font-size:12px;margin-top:5px;">PanchangData</div>
+          <div style="font-size:9px;opacity:0.6;margin-top:3px;">From panchangData source</div>
+        </button>
+      </div>
+      <div style="font-size:10px;color:rgba(255,255,255,0.3);line-height:1.4;">Both engines apply Gaudiya Arunodaya Viddha rules. Tithi boundary source differs.</div>
+    </div>
+
     <!-- AUTO-FETCH (Primary) -->
     <div style="background:rgba(0,0,0,0.35);border:1px solid rgba(46,204,113,0.25);border-radius:12px;padding:14px;margin-bottom:14px;">
       <div style="font-size:10px;color:rgba(46,204,113,0.8);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px;font-weight:700;">✨ Auto-Fetch from GPS</div>
       <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:12px;line-height:1.5;">Calculates the next 24 upcoming Ekadashis astronomically for your exact location. Auto-runs when GPS Location is turned on.</div>
-      <button id="panchangFetchBtn" onclick="fetchPanchangEkadashis()" style="display:block;width:100%;padding:13px;border-radius:10px;border:none;background:linear-gradient(135deg,rgba(46,204,113,0.75),rgba(22,160,133,0.7));color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;box-shadow:0 3px 14px rgba(46,204,113,0.2);margin-bottom:8px;">🌙 Fetch Ekadashis</button>
+      <button id="panchangFetchBtn" onclick="fetchPanchangEkadashis()" style="display:block;width:100%;padding:13px;border-radius:10px;border:none;background:linear-gradient(135deg,rgba(46,204,113,0.75),rgba(22,160,133,0.7));color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;box-shadow:0 3px 14px rgba(46,204,113,0.2);margin-bottom:8px;">🌙 Auto-Fetch from GPS</button>
       <div id="panchangStatus" style="font-size:11px;color:rgba(255,255,255,0.45);text-align:center;min-height:16px;"></div>
+      <!-- Calculation progress banner -->
+      <div id="engineCalcBanner" style="display:none;background:rgba(46,204,113,0.07);border:1.5px solid rgba(46,204,113,0.35);border-radius:12px;padding:11px 14px;margin-top:10px;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span class="ek-pulse-icon" style="font-size:22px;">⏳</span>
+          <div style="flex:1;">
+            <div style="font-size:12px;font-weight:700;color:#2ecc71;margin-bottom:2px;" id="engineCalcTitle">Calculating Ekadashis…</div>
+            <div style="font-size:10px;color:rgba(255,255,255,0.45);line-height:1.4;" id="engineCalcSub">This may take a few seconds. Results appear below as they're found.</div>
+          </div>
+        </div>
+        <div style="margin-top:9px;height:3px;border-radius:2px;background:rgba(46,204,113,0.12);overflow:hidden;">
+          <div class="ek-progress-bar" style="background:linear-gradient(90deg,transparent,#2ecc71,transparent);"></div>
+        </div>
+      </div>
     </div>
 
 
@@ -1325,40 +1356,7 @@
       </div>
     </div>
 
-    <div style="height:1px;background:rgba(255,255,255,0.07);margin:12px 0;"></div>
-
-    <!-- Tithi Engine selector — always visible, two independent extraction modes -->
-    <div>
-      <div style="font-size:9px;color:rgba(255,255,255,0.32);letter-spacing:2px;text-transform:uppercase;font-weight:700;margin-bottom:8px;">⚙️ Tithi Extraction Engine</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
-        <button id="ekEngineApp" onclick="saveEkTithiEngine('app')">
-          <div style="font-size:20px;line-height:1;">🔭</div>
-          <div style="font-weight:700;font-size:12px;margin-top:5px;">Swiss Ephemeris</div>
-          <div style="font-size:9px;opacity:0.6;margin-top:3px;">Inbuilt tithi data</div>
-        </button>
-        <button id="ekEnginePanchang" onclick="saveEkTithiEngine('panchang')">
-          <div style="font-size:20px;line-height:1;">🗓️</div>
-          <div style="font-weight:700;font-size:12px;margin-top:5px;">PanchangData</div>
-          <div style="font-size:9px;opacity:0.6;margin-top:3px;">From panchangData source</div>
-        </button>
-      </div>
-      <div style="font-size:10px;color:rgba(255,255,255,0.35);line-height:1.5;margin-bottom:8px;">
-        Both engines apply the same Vaishnava (Arunodaya Viddha) rules and respect your Horizon Mode. Only the tithi boundary source differs.
-      </div>
-      <!-- Calculation progress banner — shown whenever any engine fetch is running -->
-      <div id="engineCalcBanner" style="display:none;background:rgba(46,204,113,0.07);border:1.5px solid rgba(46,204,113,0.35);border-radius:12px;padding:11px 14px;">
-        <div style="display:flex;align-items:center;gap:10px;">
-          <span class="ek-pulse-icon" style="font-size:22px;">⏳</span>
-          <div style="flex:1;">
-            <div style="font-size:12px;font-weight:700;color:#2ecc71;margin-bottom:2px;" id="engineCalcTitle">Calculating Ekadashis…</div>
-            <div style="font-size:10px;color:rgba(255,255,255,0.45);line-height:1.4;" id="engineCalcSub">This may take a few seconds. Results appear in B&amp;C as they're found.</div>
-          </div>
-        </div>
-        <div style="margin-top:9px;height:3px;border-radius:2px;background:rgba(46,204,113,0.12);overflow:hidden;">
-          <div class="ek-progress-bar" style="background:linear-gradient(90deg,transparent,#2ecc71,transparent);"></div>
-        </div>
-      </div>
-    </div>
+    <!-- Tithi Engine selector moved to B&C tab (above Auto-Fetch) -->
 
 
     <!-- Next Ekadashi + Parana preview — directly below Parampara -->

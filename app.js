@@ -1965,72 +1965,10 @@ function tgs(k) {
     if (typeof renderCal === "function") renderCal();
     toast(App.S.gaudiyaMode ? "🪷 Gaudiya Mode ON" : "🪷 Gaudiya Mode OFF");
 
-    // ── AUTO-FETCH: trigger panchang computation when Gaudiya mode is turned ON ──
-    if (App.S.gaudiyaMode) {
-      const tgGps = document.getElementById("tgGpsLocation");
-      const gpsOn = !!(tgGps && tgGps.classList.contains("on"));
-      const lat = App.S && App.S.lastLat;
-      const lng = App.S && App.S.lastLng;
-
-      // Helper: show/hide the in-card banner (visible on current Settings page)
-      function _showGaudiyaBanner(statusText) {
-        const banner = document.getElementById("gaudiyaFetchBanner");
-        const statusEl = document.getElementById("gaudiyaFetchStatus");
-        if (banner) banner.style.display = "";
-        if (statusEl && statusText) statusEl.textContent = statusText;
-      }
-      function _hideGaudiyaBanner(finalText) {
-        const banner = document.getElementById("gaudiyaFetchBanner");
-        const statusEl = document.getElementById("gaudiyaFetchStatus");
-        if (statusEl && finalText) statusEl.textContent = finalText;
-        // Keep banner visible briefly so user sees the ✅, then fade out
-        setTimeout(() => {
-          if (banner) banner.style.display = "none";
-        }, 3000);
-      }
-
-      if (gpsOn && lat && lng) {
-        // Show animated banner immediately — user is on Settings page and can see it
-        _showGaudiyaBanner("Fetching ISKCON panchang for your location…");
-
-        // Also update panchangStatus on the B&C page (visible if they switch tabs)
-        const status = document.getElementById("panchangStatus");
-        if (status) {
-          status.textContent = "🔢 Computing ISKCON Ekadashis…";
-          status.style.color = "#F1C40F";
-          status.style.fontWeight = "700";
-        }
-
-        // Delay 80ms so the banner renders before the heavy computation starts
-        setTimeout(() => {
-          if (typeof fetchPanchangEkadashis === "function") {
-            fetchPanchangEkadashis().then(() => {
-              _hideGaudiyaBanner("✅ Ekadashis computed and saved 🙏");
-              const status2 = document.getElementById("panchangStatus");
-              if (status2) {
-                status2.textContent = "✅ ISKCON Ekadashis computed";
-                status2.style.color = "";
-                status2.style.fontWeight = "";
-              }
-            }).catch(() => {
-              _hideGaudiyaBanner("⚠️ Could not fetch — try Auto-Fetch manually");
-            });
-          }
-        }, 80);
-      } else {
-        // GPS not available — show nudge inside the banner
-        _showGaudiyaBanner("⚠️ Enable GPS Location first to auto-fetch Ekadashis");
-        setTimeout(() => {
-          const banner = document.getElementById("gaudiyaFetchBanner");
-          if (banner) banner.style.display = "none";
-        }, 4000);
-        toast("⚠️ Enable GPS Location to auto-fetch ISKCON Ekadashis 🙏");
-      }
-    } else {
-      // Gaudiya turned OFF — ensure banner is hidden
-      const banner = document.getElementById("gaudiyaFetchBanner");
-      if (banner) banner.style.display = "none";
-    }
+    // Gaudiya toggle no longer triggers auto-fetch — that now happens when GPS Location is turned ON.
+    // Ensure any leftover banner from a previous flow is hidden.
+    const _gBanner = document.getElementById("gaudiyaFetchBanner");
+    if (_gBanner) _gBanner.style.display = "none";
     return;
   }
 
@@ -2062,6 +2000,32 @@ function tgs(k) {
           if (typeof renderCal === "function") renderCal();
           // Refresh reminder sun times using the now-saved coords
           loadSunTimes(true);
+
+          // ── AUTO-FETCH: trigger Vaishnava Panchang computation now that GPS is ON ──
+          // Uses the currently selected Tithi Engine (Swiss Ephemeris or PanchangData).
+          // If user hasn't picked an engine yet, default to PanchangData.
+          if (App.S && !App.S.ekTithiEngine) App.S.ekTithiEngine = "panchang";
+          const _banner = document.getElementById("gaudiyaFetchBanner");
+          const _bStatus = document.getElementById("gaudiyaFetchStatus");
+          if (_banner) _banner.style.display = "";
+          if (_bStatus) _bStatus.textContent = "Fetching Vaishnava Panchang for your location…";
+          const _pStatus = document.getElementById("panchangStatus");
+          if (_pStatus) {
+            _pStatus.textContent = "🔢 Computing upcoming 24 Ekadashis…";
+            _pStatus.style.color = "#F1C40F";
+            _pStatus.style.fontWeight = "700";
+          }
+          setTimeout(() => {
+            if (typeof fetchPanchangEkadashis === "function") {
+              fetchPanchangEkadashis().then(() => {
+                if (_bStatus) _bStatus.textContent = "✅ Ekadashis computed and saved 🙏";
+                setTimeout(() => { if (_banner) _banner.style.display = "none"; }, 3000);
+              }).catch(() => {
+                if (_bStatus) _bStatus.textContent = "⚠️ Could not fetch — try Auto-Fetch manually";
+                setTimeout(() => { if (_banner) _banner.style.display = "none"; }, 4000);
+              });
+            }
+          }, 80);
         },
         () => {
           if (statusEl) statusEl.textContent = "⚠️ Location access denied. Please allow GPS in browser settings.";
@@ -6888,7 +6852,7 @@ async function fetchPanchangEkadashis() {
   const _isGaudiyaFetch0 = !!(App.S && App.S.gaudiyaMode);
   if (_ecBanner) _ecBanner.style.display = "";
   if (_ecTitle)  _ecTitle.textContent = _isGaudiyaFetch0
-    ? "Computing ISKCON Panchang…"
+    ? "Computing Vaishnava Panchang…"
     : "Calculating Ekadashis…";
   if (_ecSub) _ecSub.textContent = "This may take a few seconds. Results appear in B\u0026C as they\u2019re found.";
 
@@ -6929,13 +6893,15 @@ async function fetchPanchangEkadashis() {
     // This guarantees we always search for the RIGHT paksha per half-month,
     // so both Shukla AND Krishna Ekadashis are found alternately.
     // cur advances by exactly one precise synodic half-month — zero drift.
-    // ── GAUDIYA / ISKCON MODE — use panchangData.js API for tithi boundaries ──
-    // When gaudiyaMode is ON, getPanchangData() (Prokerala API → Meeus fallback)
-    // provides ISKCON-accurate tithi start/end times directly.
-    // No horizon mode or parampara override — the API data IS the ISKCON standard.
+    // ── ENGINE SELECTION ──────────────────────────────────────────────────────
+    // Two independent tithi extraction modes — user chooses via buttons:
+    //   "panchang" → tithi boundaries from panchangData.js
+    //   "app"      → tithi boundaries from inbuilt Swiss Ephemeris
+    // Same Vaishnava (Arunodaya Viddha) rules apply to both.
+    // gaudiyaMode no longer forces the engine choice.
     const isGaudiyaFetch = !!(App.S && App.S.gaudiyaMode);
-    const isPanchangEngine = !isGaudiyaFetch && (App.S && App.S.ekTithiEngine === "panchang");
-    const usePanchangScan  = isGaudiyaFetch || isPanchangEngine;
+    const isPanchangEngine = (App.S && App.S.ekTithiEngine === "panchang");
+    const usePanchangScan  = isPanchangEngine;
 
     if (usePanchangScan && typeof getPanchangData === "function") {
       // Purge stale auto-fetched entries for this engine before re-scanning.
@@ -6946,7 +6912,7 @@ async function fetchPanchangEkadashis() {
       );
       // Scan next 12 months day by day using panchangData engine
       if (status) status.textContent = isGaudiyaFetch
-        ? "🌸 Gaudiya Mode — fetching ISKCON panchang…"
+        ? "🌸 Vaishnava Mode — fetching Panchang…"
         : "🗓️ PanchangData Engine — fetching tithi boundaries…";
       // Immediately refresh Upcoming Ekadashis section — hides old GPS entries right away
       if (typeof _updateCfgTimesPreview === "function") _updateCfgTimesPreview();
@@ -7070,7 +7036,7 @@ async function fetchPanchangEkadashis() {
                 App.S.customEkadashi.sort((a, b) => (_ekDate(a) < _ekDate(b) ? -1 : 1));
                 renderEkadashiList();
                 if (status) status.textContent = isGaudiyaFetch
-                ? `🌸 Gaudiya Mode — found ${added} so far…`
+                ? `🌸 Vaishnava — found ${added} so far…`
                 : `🗓️ Panchang Engine — found ${added} so far…`;
                 const _gfStatus = document.getElementById("gaudiyaFetchStatus");
                 if (_gfStatus) _gfStatus.textContent = isGaudiyaFetch
@@ -7268,7 +7234,7 @@ async function fetchPanchangEkadashis() {
               renderEkadashiList();
               _updateCfgTimesPreview();
               if (status) status.textContent = isGaudiyaFetch
-                ? `🌸 Gaudiya Mode — found ${added} so far…`
+                ? `🌸 Vaishnava — found ${added} so far…`
                 : `🗓️ Panchang Engine — found ${added} so far…`;
               const _gfStatus2 = document.getElementById("gaudiyaFetchStatus");
               if (_gfStatus2) _gfStatus2.textContent = isGaudiyaFetch
@@ -7287,6 +7253,8 @@ async function fetchPanchangEkadashis() {
           console.warn("[Gaudiya fetch] day error:", dayErr.message);
         }
         scanDate.setDate(scanDate.getDate() + 1);
+        // Stop once we have collected the next 24 upcoming Ekadashis
+        if (added >= 24) break;
       }
 
       App.S.customEkadashi.sort((a, b) => (_ekDate(a) < _ekDate(b) ? -1 : 1));
@@ -7301,8 +7269,8 @@ async function fetchPanchangEkadashis() {
       if (typeof renderCal === "function") renderCal();
       const total = App.S.customEkadashi.length;
       if (isGaudiyaFetch) {
-        if (status) status.textContent = `✅ ${added} new · ${total} total · 🌸 Gaudiya/ISKCON Panchang`;
-        toast(`📅 ${added} Ekadashis added · 🌸 Gaudiya/ISKCON Panchang 🙏`);
+        if (status) status.textContent = `✅ ${added} new · ${total} total · 🌸 Vaishnava Panchang`;
+        toast(`📅 ${added} Ekadashis added · 🌸 Vaishnava Panchang 🙏`);
       } else {
         const horizonLabel2   = App.S.horizonMode === "celestial" ? "Celestial" : "Earthy Sky";
         const paramparaLabel2 = App.S.ekParampara === "vaishnava" ? "Vaishnava" : "Smarta";
@@ -7328,8 +7296,9 @@ async function fetchPanchangEkadashis() {
     // Immediately refresh Upcoming section — hides old Gaudiya entries right away
     if (typeof _updateCfgTimesPreview === "function") _updateCfgTimesPreview();
 
-    const scanFrom = new Date(today.getTime() - 62 * DAY); // 2 months back
-    const scanTo   = new Date(today.getTime() + 185 * DAY); // ~6 months ahead
+    // Scan only the upcoming window — enough for the next 24 Ekadashis (~13 months)
+    const scanFrom = new Date(today.getTime());
+    const scanTo   = new Date(today.getTime() + 400 * DAY);
 
     // Collect all New Moon (0°) and Full Moon (180°) crossing times in range
     const phaseCrossings = []; // { time: Date, phase: "NM"|"FM" }
@@ -7410,6 +7379,8 @@ async function fetchPanchangEkadashis() {
         });
         App.S.occasions[resolved.fastingDate] = resolved.label;
         added++;
+        // Stop once we have collected the next 24 upcoming Ekadashis
+        if (added >= 24) break;
       }
     }
 
@@ -7528,7 +7499,7 @@ const EK_NOTES = {
 function saveEkTithiEngine(val) {
   // Only in standard (non-Gaudiya) mode
   if (App.S && App.S.gaudiyaMode) {
-    toast("🌸 Gaudiya Mode always uses PanchangData/ISKCON engine");
+    toast("🌸 Gaudiya Mode uses Vaishnava Panchang rules");
     return;
   }
   App.S.ekTithiEngine = val;
@@ -7570,7 +7541,7 @@ function renderEkTithiEngine() {
 function saveEkParampara(val) {
   // Gaudiya/ISKCON mode: parampara is fixed (Vaishnava/Arunodaya Viddha) — no user override
   if (App.S && App.S.gaudiyaMode) {
-    toast("🌸 Gaudiya Mode uses Vaishnava/ISKCON rules automatically");
+    toast("🌸 Gaudiya Mode uses Vaishnava rules automatically");
     return;
   }
   App.S.ekParampara = val;

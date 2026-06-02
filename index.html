@@ -478,7 +478,7 @@
     <!-- AUTO-FETCH (Primary) -->
     <div style="background:rgba(0,0,0,0.35);border:1px solid rgba(46,204,113,0.25);border-radius:12px;padding:14px;margin-bottom:14px;">
       <div style="font-size:10px;color:rgba(46,204,113,0.8);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px;font-weight:700;">✨ Auto-Fetch from GPS</div>
-      <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:12px;line-height:1.5;">Calculates Ekadashi tithi times astronomically for your exact location — 2 months back &amp; 6 months ahead.</div>
+      <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:12px;line-height:1.5;">Calculates the next 24 upcoming Ekadashis astronomically for your exact location. Auto-runs when GPS Location is turned on.</div>
       <button id="panchangFetchBtn" onclick="fetchPanchangEkadashis()" style="display:block;width:100%;padding:13px;border-radius:10px;border:none;background:linear-gradient(135deg,rgba(46,204,113,0.75),rgba(22,160,133,0.7));color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;box-shadow:0 3px 14px rgba(46,204,113,0.2);margin-bottom:8px;">🌙 Fetch Ekadashis</button>
       <div id="panchangStatus" style="font-size:11px;color:rgba(255,255,255,0.45);text-align:center;min-height:16px;"></div>
     </div>
@@ -1127,11 +1127,11 @@
         </div>
       </div>
     </div>
-    <!-- Auto-fetch progress banner — shown when Gaudiya mode triggers panchang computation -->
+    <!-- Auto-fetch progress banner — shown when GPS toggle triggers Vaishnava Panchang computation -->
     <div id="gaudiyaFetchBanner" style="display:none;margin-top:12px;background:rgba(241,196,15,0.08);border:1.5px solid rgba(241,196,15,0.4);border-radius:12px;padding:12px 14px;text-align:center;">
       <div style="font-size:20px;margin-bottom:5px;" class="ek-pulse-icon">⏳</div>
-      <div style="font-size:13px;font-weight:700;color:#FFD700;margin-bottom:3px;">Computing ISKCON Ekadashis…</div>
-      <div id="gaudiyaFetchStatus" style="font-size:11px;color:rgba(255,255,255,0.5);line-height:1.5;">Fetching panchang data for your location</div>
+      <div style="font-size:13px;font-weight:700;color:#FFD700;margin-bottom:3px;">Computing upcoming 24 Ekadashis…</div>
+      <div id="gaudiyaFetchStatus" style="font-size:11px;color:rgba(255,255,255,0.5);line-height:1.5;">Fetching Vaishnava Panchang for your location</div>
       <div style="margin-top:8px;height:3px;border-radius:2px;background:rgba(255,215,0,0.15);overflow:hidden;">
         <div class="ek-progress-bar"></div>
       </div>
@@ -1327,22 +1327,23 @@
 
     <div style="height:1px;background:rgba(255,255,255,0.07);margin:12px 0;"></div>
 
-    <!-- Tithi Engine selector — standard mode only -->
-    <div class="non-gaudiya-setting">
-      <div style="font-size:9px;color:rgba(255,255,255,0.32);letter-spacing:2px;text-transform:uppercase;font-weight:700;margin-bottom:8px;">⚙️ Tithi Calculation Engine</div>
+    <!-- Tithi Engine selector — always visible, two independent extraction modes -->
+    <div>
+      <div style="font-size:9px;color:rgba(255,255,255,0.32);letter-spacing:2px;text-transform:uppercase;font-weight:700;margin-bottom:8px;">⚙️ Tithi Extraction Engine</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
         <button id="ekEngineApp" onclick="saveEkTithiEngine('app')">
           <div style="font-size:20px;line-height:1;">🔭</div>
-          <div style="font-weight:700;font-size:12px;margin-top:5px;">App Engine</div>
-          <div style="font-size:9px;opacity:0.6;margin-top:3px;">Swiss Ephemeris</div>
+          <div style="font-weight:700;font-size:12px;margin-top:5px;">Swiss Ephemeris</div>
+          <div style="font-size:9px;opacity:0.6;margin-top:3px;">Inbuilt tithi data</div>
         </button>
         <button id="ekEnginePanchang" onclick="saveEkTithiEngine('panchang')">
           <div style="font-size:20px;line-height:1;">🗓️</div>
-          <div style="font-weight:700;font-size:12px;margin-top:5px;">Panchang</div>
+          <div style="font-weight:700;font-size:12px;margin-top:5px;">PanchangData</div>
+          <div style="font-size:9px;opacity:0.6;margin-top:3px;">From panchangData source</div>
         </button>
       </div>
       <div style="font-size:10px;color:rgba(255,255,255,0.35);line-height:1.5;margin-bottom:8px;">
-        Both engines respect your Horizon Mode. Only the tithi boundary source differs.
+        Both engines apply the same Vaishnava (Arunodaya Viddha) rules and respect your Horizon Mode. Only the tithi boundary source differs.
       </div>
       <!-- Calculation progress banner — shown whenever any engine fetch is running -->
       <div id="engineCalcBanner" style="display:none;background:rgba(46,204,113,0.07);border:1.5px solid rgba(46,204,113,0.35);border-radius:12px;padding:11px 14px;">

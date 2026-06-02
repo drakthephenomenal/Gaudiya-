@@ -71,8 +71,6 @@ const App = {
     syncBaselineTimerRV: {},
     activityLog: [],
     sadhanaStart: "",
-    customEkadashi: [],
-    ekParampara: null,   // null = never chosen; "smarta" / "vaishnava" once user picks
     historyHK: {},
     timerHistoryHK: {},
     dtHK: 0,
@@ -82,8 +80,6 @@ const App = {
     nameJapDeductHK: 0,
     gaudiyaMode: true,  // single mode for all — Gaudiya/ISKCON Arunodaya Viddha
     hkLang: "hi",
-    horizonMode: null,     // null = never chosen; "apparent" / "celestial" once user picks
-    ekTithiEngine: null,   // null = never chosen; "app" / "panchang" once user picks
   },
   lmcRV: 0,
   lmcHK: 0,
@@ -222,9 +218,6 @@ const App = {
       brahmacharya_start_date: this.S.brahmacharya_start_date,
       activityLog: this.S.activityLog || [],
       sadhanaStart: this.S.sadhanaStart || "",
-      customEkadashi: this.S.customEkadashi || [],
-      ekParampara: this.S.ekParampara ?? null,
-      ekTithiEngine: this.S.ekTithiEngine ?? null,
       historyHK: this.S.historyHK || {},
       timerHistoryHK: this.S.timerHistoryHK || {},
       dtHK: this.S.dtHK || 0,
@@ -234,7 +227,6 @@ const App = {
       nameJapDeductHK: this.S.nameJapDeductHK || 0,
       gaudiyaMode: this.S.gaudiyaMode || false,
       hkLang: this.S.hkLang || "hi",
-      horizonMode: this.S.horizonMode ?? null,
       lastLat: this.S.lastLat ?? null,
       lastLng: this.S.lastLng ?? null,
     });
@@ -354,7 +346,6 @@ const App = {
     if (!this.S.activityLog) this.S.activityLog = [];
     if (!this.S.sadhanaStart)
       this.S.sadhanaStart = localStorage.getItem("rjap_sadhana_start") || "";
-    if (!this.S.customEkadashi) this.S.customEkadashi = [];
     if (!this.S.historyHK) this.S.historyHK = {};
     if (!this.S.timerHistoryHK) this.S.timerHistoryHK = {};
     if (this.S.dtHK === undefined) this.S.dtHK = 0;
@@ -1394,7 +1385,7 @@ function shareApp() {
   const shareText =
     "Radha Vallabh Sri Harivangsa \uD83D\uDE4F\n\n" +
     "Boost your Naam Jap experience with this little app —\n" +
-    "track Brahmacharya, Ekadashi, daily Jap & lots of statistics \u2728 \uD83E\uDEB7\n\n" +
+    "track Brahmacharya daily Jap & lots of statistics \u2728 \uD83E\uDEB7\n\n" +
     "\uD83D\uDC49 " +
     url;
   if (navigator.share) {
@@ -1554,7 +1545,6 @@ function initJapModeUI() {
     App.S.gaudiyaMode ? tgG.classList.add("on") : tgG.classList.remove("on");
   if (App.S.gaudiyaMode) document.body.classList.add("gaudiya-mode");
   // Init Horizon Mode toggle state
-  _applyHorizonToggleUI();
   // Init HK language toggle state
   const tgH = document.getElementById("tgHkLang");
   if (tgH)
@@ -1737,7 +1727,6 @@ function sv(id, btn) {
   if (id === "vb") {
     initBrahmaStartInput();
     renderCal();
-    renderEkadashiList();
     requestAnimationFrame(function () {
       setTimeout(renderBcGraph, 50);
     });
@@ -1806,9 +1795,6 @@ function sv(id, btn) {
     if (tgG)
       App.S.gaudiyaMode ? tgG.classList.add("on") : tgG.classList.remove("on");
     initReminderUI();
-    renderEkadashiList();
-    renderEkParampara();
-    if (typeof _updateHorizonButtonTimes === "function") _updateHorizonButtonTimes();
     // Populate the app link display
     const appUrl = _getAppUrl();
     const linkEl = document.getElementById("appLinkDisplay");
@@ -1877,38 +1863,6 @@ function svm() {
   fbDebouncedPush();
   toast("Mala size saved! 📿");
 }
-// ── Horizon Mode UI helper — syncs toggle + label + pill selectors to App.S.horizonMode ──
-function _applyHorizonToggleUI() {
-  const mode = App.S && App.S.horizonMode;  // null = never chosen
-  const isCelestial = mode === "celestial";
-  const isApparent  = mode === "apparent";
-  const tg = document.getElementById("tgHorizonMode");
-  if (tg) isCelestial ? tg.classList.add("on") : tg.classList.remove("on");
-  const lbl = document.getElementById("horizonModeLabel");
-  if (lbl) lbl.textContent = isCelestial ? "Celestial" : (isApparent ? "Earth's Sky" : "");
-  const desc = document.getElementById("horizonModeDesc");
-  if (desc) desc.textContent = "";
-  const pillApparent = document.getElementById("horizonPillApparent");
-  const pillCelestial = document.getElementById("horizonPillCelestial");
-  // Only mark active when user has explicitly chosen; null = no selection
-  if (pillApparent)  pillApparent.classList.toggle("active", isApparent);
-  if (pillCelestial) pillCelestial.classList.toggle("active", isCelestial);
-  // Horizon Mode section is ONLY active when GPS Location toggle is ON.
-  // When GPS is OFF: section is hidden/disabled and pills are non-interactive.
-  const sec = document.getElementById("horizonModeSection");
-  const tgGps = document.getElementById("tgGpsLocation");
-  const gpsOn = !!(tgGps && tgGps.classList.contains("on"));
-  if (sec) {
-    sec.classList.toggle("gps-on", gpsOn);
-    sec.classList.toggle("gps-off", !gpsOn);
-  }
-  // Disable pill buttons when GPS is OFF so clicking does nothing
-  if (pillApparent) pillApparent.disabled = !gpsOn;
-  if (pillCelestial) pillCelestial.disabled = !gpsOn;
-  const tgHorizon = document.getElementById("tgHorizonMode");
-  if (tgHorizon) tgHorizon.style.pointerEvents = gpsOn ? "" : "none";
-}
-
 function tgs(k) {
   if (k === "hkLang") {
     App.S.hkLang = App.S.hkLang === "bn" ? "hi" : "bn";
@@ -1960,14 +1914,10 @@ function tgs(k) {
     fbDebouncedPush();
     uStats();
     renderHistory && typeof renderHistory === "function" && renderHistory();
-    if (typeof renderEkadashiList === "function") renderEkadashiList();
-    if (typeof _updateCfgTimesPreview === "function") _updateCfgTimesPreview();
     if (typeof renderCal === "function") renderCal();
     toast(App.S.gaudiyaMode ? "🪷 Gaudiya Mode ON" : "🪷 Gaudiya Mode OFF");
 
-    // Gaudiya toggle no longer triggers auto-fetch — that now happens when GPS Location is turned ON.
     // Ensure any leftover banner from a previous flow is hidden.
-    const _gBanner = document.getElementById("gaudiyaFetchBanner");
     if (_gBanner) _gBanner.style.display = "none";
     return;
   }
@@ -1988,44 +1938,15 @@ function tgs(k) {
         (pos) => {
           const lat = pos.coords.latitude, lng = pos.coords.longitude;
           if (App.S) { App.S.lastLat = lat; App.S.lastLng = lng; App.save(); }
-          // GPS coords are now saved — feed Horizon Mode and Ekadashi Parampara
           updateSunInfo(lat, lng);
           if (tgGps) tgGps.classList.add("on");
-          _applyHorizonToggleUI(); // unlocks Horizon Mode pills
           if (statusEl) statusEl.textContent = "✅ Location detected · " + lat.toFixed(3) + ", " + lng.toFixed(3);
           toast("📍 GPS location saved! Brahma Muhurta times updated 🙏");
-          // Resync Ekadashi fasting dates with fresh GPS coords + current horizonMode
-          _resyncEkOccasions();
-          if (typeof renderEkadashiList === "function") renderEkadashiList();
           if (typeof renderCal === "function") renderCal();
           // Refresh reminder sun times using the now-saved coords
           loadSunTimes(true);
 
-          // ── AUTO-FETCH: trigger Vaishnava Panchang computation now that GPS is ON ──
-          // Uses the currently selected Tithi Engine (Swiss Ephemeris or PanchangData).
-          // If user hasn't picked an engine yet, default to PanchangData.
-          if (App.S && !App.S.ekTithiEngine) App.S.ekTithiEngine = "panchang";
-          const _banner = document.getElementById("gaudiyaFetchBanner");
-          const _bStatus = document.getElementById("gaudiyaFetchStatus");
-          if (_banner) _banner.style.display = "";
-          if (_bStatus) _bStatus.textContent = "Fetching Vaishnava Panchang for your location…";
-          const _pStatus = document.getElementById("panchangStatus");
-          if (_pStatus) {
-            _pStatus.textContent = "🔢 Computing upcoming 24 Ekadashis…";
-            _pStatus.style.color = "#F1C40F";
-            _pStatus.style.fontWeight = "700";
           }
-          setTimeout(() => {
-            if (typeof fetchPanchangEkadashis === "function") {
-              fetchPanchangEkadashis().then(() => {
-                if (_bStatus) _bStatus.textContent = "✅ Ekadashis computed and saved 🙏";
-                setTimeout(() => { if (_banner) _banner.style.display = "none"; }, 3000);
-              }).catch(() => {
-                if (_bStatus) _bStatus.textContent = "⚠️ Could not fetch — try Auto-Fetch manually";
-                setTimeout(() => { if (_banner) _banner.style.display = "none"; }, 4000);
-              });
-            }
-          }, 80);
         },
         () => {
           if (statusEl) statusEl.textContent = "⚠️ Location access denied. Please allow GPS in browser settings.";
@@ -2037,7 +1958,6 @@ function tgs(k) {
       // Turning OFF — clear saved location and reset everything that depended on GPS
       if (App.S) { delete App.S.lastLat; delete App.S.lastLng; App.save(); }
       if (tgGps) tgGps.classList.remove("on");
-      _applyHorizonToggleUI(); // will disable Horizon Mode pills
       const statusEl = document.getElementById("gpsLocationStatus");
       if (statusEl) statusEl.textContent = "— Tap toggle to detect your location 📍";
       // GPS is OFF — clear all time displays rather than show fake-coord times
@@ -2045,45 +1965,9 @@ function tgs(k) {
         const el = document.getElementById(id);
         if (el) el.textContent = "—";
       });
-      // Resync Ekadashi with default coords (GPS is gone)
-      _resyncEkOccasions();
-      if (typeof renderEkadashiList === "function") renderEkadashiList();
       if (typeof renderCal === "function") renderCal();
       toast("📍 GPS location disabled — times reset to default");
     }
-    return;
-  }
-
-  if (k === "horizonMode") {
-    // GUARD: Horizon Mode requires GPS to be ON — it has no independent location source.
-    // All coordinate data must come from the GPS Location toggle.
-    const _tgGps = document.getElementById("tgGpsLocation");
-    const _gpsActive = !!(_tgGps && _tgGps.classList.contains("on"));
-    const _hasCoords = App.S && App.S.lastLat && App.S.lastLng;
-    if (!_gpsActive || !_hasCoords) {
-      toast("⚠️ Turn on GPS Location first — Horizon Mode needs your coordinates");
-      return;
-    }
-    // Toggle between apparent (earthy sky, 90.833°) and celestial (true/ISKCON, 90.0°)
-    App.S.horizonMode = (App.S.horizonMode === "celestial") ? "apparent" : "celestial";
-    _applyHorizonToggleUI();
-    // Use ONLY the saved GPS coords from the GPS Location toggle
-    const _hLat = App.S.lastLat;
-    const _hLng = App.S.lastLng;
-    // Resync Ekadashi fasting dates + occasions with new horizon (sunrise shifts ~4 min)
-    // _resyncEkOccasions reads App.S.lastLat/lastLng and App.S.horizonMode internally
-    _resyncEkOccasions();
-    App.save();
-    fbDebouncedPush();
-    // Refresh all time displays with GPS coords from toggle
-    updateSunInfo(_hLat, _hLng);
-    if (typeof renderEkadashiList === "function") renderEkadashiList();
-    if (typeof renderCal === "function") renderCal();
-    if (typeof loadSunTimes === "function") loadSunTimes(true);
-    const _hName = App.S.horizonMode === "celestial"
-      ? "🔭 Celestial horizon (ISKCON / True)"
-      : "🌅 Apparent horizon (Earthy Sky)";
-    toast(_hName + " — all timings updated");
     return;
   }
 
@@ -3815,15 +3699,12 @@ function exportAllData() {
     ltRV: App.S.ltRV || 0,
     nameJapDeductRV: App.S.nameJapDeductRV || 0,
     malaLogRV: App.S.malaLogRV || [],
-    customEkadashi: App.S.customEkadashi || [],
-    ekParampara: App.S.ekParampara ?? null,
     historyHK: App.S.historyHK || {},
     timerHistoryHK: App.S.timerHistoryHK || {},
     dtHK: App.S.dtHK || 0,
     nameJapDeductHK: App.S.nameJapDeductHK || 0,
     malaLogHK: App.S.malaLogHK || [],
     gaudiyaMode: App.S.gaudiyaMode || false,
-    horizonMode: App.S.horizonMode ?? null,
   };
   const url = URL.createObjectURL(blob);
   a.href = url;
@@ -4834,68 +4715,6 @@ function fbSignOut() {
   App._uid = null;
   fbAuth.signOut().then(() => toast("Signed out 🙏"));
 }
-
-// ── Firestore Full-State Sync ──
-// ── Remove legacy duplicate Ekadashi occasions ──
-// Old code wrote BOTH startDate and endDate into occasions{}.
-// New code writes only ONE date (the actual fasting date per parampara).
-// This migrates existing data: for each saved Ekadashi, keep only the fasting date
-// and delete the other one if it was set by the old code.
-function _cleanLegacyEkadashiOccasions() {
-  const eks = App.S.customEkadashi || [];
-  const occ = App.S.occasions || {};
-  const parampara = App.S.ekParampara || "smarta";
-  eks.forEach((ek) => {
-    const sd = _ekDate(ek);
-    const ed = typeof ek === "object" && ek.endDate ? ek.endDate : sd;
-    if (!sd || sd === ed) return;
-    // Determine correct fasting date per current parampara
-    let fastingDate = sd;
-    if (parampara === "vaishnava" && ek.startTime) {
-      const [h, m] = ek.startTime.split(":").map(Number);
-      const _ekH = h + m / 60;
-      const _pLat2 = App.S && App.S.lastLat;
-      const _pLng2 = App.S && App.S.lastLng;
-      if (!_pLat2 || !_pLng2) return; // GPS toggle OFF — skip, cannot calculate accurately
-      const _ekD2 = new Date(_ekDate(ek) + "T00:00:00");
-      const _srD2 = calcSunTimes(_pLat2, _pLng2, _ekD2);
-      const _sunH2 = _srD2 ? _srD2.sunriseH : 6.0;
-      const _arunH2 = _sunH2 - 96 / 60;
-      if (_ekH >= _arunH2) fastingDate = ed;
-    }
-    const wrongDate = fastingDate === sd ? ed : sd;
-    // Only delete the wrongDate entry if it looks like it was written by Ekadashi code
-    if (wrongDate && occ[wrongDate]) {
-      const label = occ[wrongDate];
-      const ekName = typeof ek === "object" && ek.name ? ek.name : "";
-      if (
-        label.includes("Ekadashi") ||
-        label.includes("Mahadvadashi") ||
-        (ekName && label.includes(ekName))
-      ) {
-        delete occ[wrongDate];
-      }
-    }
-    // Rewrite the correct fasting date with the proper label (updates legacy format too)
-    const name = typeof ek === "object" && ek.name ? ek.name : "Ekadashi";
-    const paksha = typeof ek === "object" && ek.paksha ? ek.paksha : "shukla";
-    const label = name + (paksha === "shukla" ? " ☀️ Shukla" : " 🌙 Krishna");
-    const sf =
-      typeof ek === "object" && ek.startTime ? _fmtTime12(ek.startTime) : "";
-    const ef =
-      typeof ek === "object" && ek.endTime ? _fmtTime12(ek.endTime) : "";
-    const timeNote = sf
-      ? parampara === "vaishnava" && fastingDate === ed
-        ? " (Mahadvadashi · Arunodaya Viddha)"
-        : " " + sf + (ef ? "–" + ef : "")
-      : parampara === "vaishnava" && fastingDate === ed
-        ? " (Mahadvadashi)"
-        : "";
-    occ[fastingDate] = label + timeNote;
-  });
-  App.S.occasions = occ;
-}
-
 async function fbPushDelta() {
   return fbPushFull();
 }
@@ -4930,8 +4749,6 @@ async function fbPushFull() {
     malaLogRV: App.S.malaLogRV || [],
     brahmacharya_start_date: App.S.brahmacharya_start_date || "",
     activityLog: App.S.activityLog || [],
-    customEkadashi: App.S.customEkadashi || [],
-    ekParampara: App.S.ekParampara ?? null,
     sadhanaStart: App.S.sadhanaStart || "",
     historyHK: App.S.historyHK || {},
     timerHistoryHK: App.S.timerHistoryHK || {},
@@ -4939,7 +4756,6 @@ async function fbPushFull() {
     nameJapDeductHK: App.S.nameJapDeductHK || 0,
     malaLogHK: App.S.malaLogHK || [],
     gaudiyaMode: App.S.gaudiyaMode || false,
-    horizonMode: App.S.horizonMode ?? null,
     lastSync: firebase.firestore.FieldValue.serverTimestamp(),
     deviceId: fbDeviceId,
   };
@@ -5059,10 +4875,6 @@ function fbApplyRemote(d) {
       ? document.body.classList.add("gaudiya-mode")
       : document.body.classList.remove("gaudiya-mode");
   }
-  if (d.horizonMode !== undefined) {
-    App.S.horizonMode = d.horizonMode ?? null;
-    _applyHorizonToggleUI();
-  }
   if ("malaLogHK" in d) {
     const remoteMalaLogHK = d.malaLogHK || [];
     const remoteMalaDate2 = d.malaLogDate || null;
@@ -5073,11 +4885,6 @@ function fbApplyRemote(d) {
       App.S.malaLogHK = [];
     }
   }
-  // ── Ekadashi data — critical for multi-device sync ──
-  if ("customEkadashi" in d)
-    App.S.customEkadashi = JSON.parse(JSON.stringify(d.customEkadashi || []));
-  if ("ekParampara" in d) App.S.ekParampara = d.ekParampara ?? null;
-  if ("ekTithiEngine" in d) App.S.ekTithiEngine = d.ekTithiEngine ?? null;
   if (d.sadhanaStart) {
     App.S.sadhanaStart = d.sadhanaStart;
     localStorage.setItem("rjap_sadhana_start", d.sadhanaStart);
@@ -5085,10 +4892,7 @@ function fbApplyRemote(d) {
     if (inp) inp.value = d.sadhanaStart;
   }
 
-  // ── Clean up legacy two-date Ekadashi occasions ──
   // Old saves wrote both startDate AND endDate to occasions. Remove the endDate entry
-  // when the same Ekadashi name already appears on startDate.
-  _cleanLegacyEkadashiOccasions();
 
   if (!App.S.historyRV) App.S.historyRV = {};
   if (!App.S.timerHistoryRV) App.S.timerHistoryRV = {};
@@ -5124,9 +4928,6 @@ function fbApplyRemote(d) {
   uStats();
   renderSankalpas();
   renderMalaLog();
-  if (typeof renderEkadashiList === "function") renderEkadashiList();
-  if (typeof renderEkParampara === "function") renderEkParampara();
-  if (typeof renderEkTithiEngine === "function") renderEkTithiEngine();
   setSyncPill("", "🔄 Synced from cloud");
 }
 
@@ -6609,876 +6410,16 @@ function delSt(id) {
   renderSt();
   toast("Removed");
 }
-
-// ═══════════════════════════════════════════════════════════════
-// PANCHANG ENGINE — GPS-based astronomical tithi, no API key
-// Moon elongation from sun.
-// PRIMARY: Swiss Ephemeris WASM via SEBridge (accuracy ~1 arcsec = <2 min tithi error)
-// FALLBACK: Meeus Table 47.A full 60-term formula (~0.05° = <6 min tithi error)
-// Automatically uses Swiss Ephemeris once WASM is initialised.
-// ═══════════════════════════════════════════════════════════════
-
-function _moonElongation(date) {
-  // Use Swiss Ephemeris WASM if already initialised (zero overhead after startup)
-  if (typeof SEBridge !== "undefined" && SEBridge.isReady()) {
-    try {
-      return SEBridge.moonElongation(date);
-    } catch (e) {
-      // fall through to Meeus
-      console.warn("[_moonElongation] SE error, using Meeus fallback:", e.message);
-    }
-  }
-  // ── Meeus Table 47.A fallback (60 terms) ──────────────────────────────────
-  const JD = date.getTime() / 86400000 + 2440587.5;
-  const T = (JD - 2451545.0) / 36525.0;
-  const r = Math.PI / 180;
-
-  // ── Sun (needed for elongation) ──
-  const L0s = (((280.46646 + 36000.76983 * T + 0.0003032 * T * T) % 360) + 360) % 360;
-  const Ms  = (((357.52911 + 35999.05029 * T - 0.0001537 * T * T) % 360) + 360) % 360;
-  const Msr = Ms * r;
-  const Cs  = (1.914602 - 0.004817 * T - 0.000014 * T * T) * Math.sin(Msr)
-            + (0.019993 - 0.000101 * T)                     * Math.sin(2 * Msr)
-            +  0.000289                                      * Math.sin(3 * Msr);
-  const sunLon = (((L0s + Cs) % 360) + 360) % 360;
-
-  // ── Moon fundamental arguments (Meeus Ch.47) ──
-  const Lm = (((218.3164477 + 481267.88123421 * T - 0.0015786  * T * T + T * T * T / 538841.0 - T * T * T * T / 65194000.0) % 360) + 360) % 360;
-  const D  = (((297.8501921 + 445267.1114034  * T - 0.0018819  * T * T + T * T * T / 545868.0 - T * T * T * T / 113065000.0) % 360) + 360) % 360;
-  const Ms2= (((357.5291092 + 35999.0502909   * T - 0.0001536  * T * T + T * T * T / 24490000.0) % 360) + 360) % 360;
-  const Mm = (((134.9633964 + 477198.8675055  * T + 0.0087414  * T * T + T * T * T / 69699.0   - T * T * T * T / 14712000.0) % 360) + 360) % 360;
-  const F  = (((93.2720950  + 483202.0175233  * T - 0.0036539  * T * T - T * T * T / 3526000.0 + T * T * T * T / 863310000.0) % 360) + 360) % 360;
-
-  const Dr   = D   * r;
-  const Ms2r = Ms2 * r;
-  const Mmr  = Mm  * r;
-  const Fr   = F   * r;
-
-  // E factor for Sun's eccentricity correction
-  const E  = 1.0 - 0.002516 * T - 0.0000074 * T * T;
-  const E2 = E * E;
-
-  // Meeus Table 47.A — 60 longitude terms (coefficient in 0.000001°)
-  // Format: [D_coeff, Ms_coeff, Mm_coeff, F_coeff, sinCoeff×10^6]
-  const terms = [
-    [ 0, 0, 1, 0,  6288774],
-    [ 2, 0,-1, 0, -1274027],
-    [ 2, 0, 0, 0,  658314],
-    [ 0, 0, 2, 0, -185116],
-    [ 0, 1, 0, 0, -114332],
-    [ 0, 0, 0, 2,  58793],
-    [ 2, 0,-2, 0,  57066],   // Ms coeff 0 (no E correction needed)
-    [ 2,-1,-1, 0,  53322],
-    [ 2, 0, 1, 0,  45758],
-    [ 0, 1,-1, 0, -40923],
-    [ 1, 0, 0, 0, -34720],
-    [ 0, 1, 1, 0, -30383],
-    [ 2, 0, 0,-2,  15327],
-    [ 0, 0, 1, 2, -12528],
-    [ 0, 0, 1,-2,  10980],
-    [ 4, 0,-1, 0,  10675],
-    [ 0, 0, 3, 0,  10034],
-    [ 4, 0,-2, 0,  8548],
-    [ 2, 1,-1, 0, -7888],
-    [ 2, 1, 0, 0, -6766],
-    [ 1, 0,-1, 0, -5163],
-    [ 1, 1, 0, 0,  4987],
-    [ 2,-1, 1, 0,  4036],
-    [ 2, 0, 2, 0,  3994],
-    [ 4, 0, 0, 0,  3861],
-    [ 2, 0,-3, 0,  3665],
-    [ 0, 1,-2, 0, -2689],
-    [ 2, 0,-1, 2, -2602],
-    [ 2,-1,-2, 0,  2390],
-    [ 1, 0, 1, 0, -2348],
-    [ 2,-2, 0, 0,  2236],
-    [ 0, 1, 2, 0, -2120],
-    [ 0, 2, 0, 0, -2069],
-    [ 2,-2,-1, 0,  2048],
-    [ 2, 0, 1,-2, -1773],
-    [ 2, 0, 0, 2, -1595],
-    [ 4, 1,-1, 0,  1215],
-    [ 0, 0, 2, 2, -1110],
-    [ 3, 0,-1, 0,  -892],
-    [ 2, 1, 1, 0,  -810],
-    [ 4,-1,-2, 0,   759],
-    [ 0, 2,-1, 0,  -713],
-    [ 2, 2,-1, 0,  -700],
-    [ 2, 1,-2, 0,   691],
-    [ 2,-1, 0,-2,   596],
-    [ 4, 0, 1, 0,   549],
-    [ 0, 0, 4, 0,   537],
-    [ 4,-1, 0, 0,   520],
-    [ 1, 0,-2, 0,  -487],
-    [ 2, 1, 0,-2,  -399],
-    [ 0, 0, 2,-2,  -381],
-    [ 1, 1, 1, 0,   351],
-    [ 3, 0,-2, 0,  -340],
-    [ 4, 0,-3, 0,   330],
-    [ 2,-1, 2, 0,   327],
-    [ 0, 2, 1, 0,  -323],
-    [ 1, 1,-1, 0,   299],
-    [ 2, 0, 3, 0,   294],
-    [ 2, 0,-1,-2,     0],   // negligible, kept for index alignment
-    [ 0, 0, 0, 0,     0],   // padding — term count = 60 total via loop
-  ];
-
-  // Compute sumL from all 60 terms with E correction
-  let sumL = 0;
-  for (const [dc, sc, mc, fc, coef] of terms) {
-    if (coef === 0) continue;
-    const arg = dc * Dr + sc * Ms2r + mc * Mmr + fc * Fr;
-    const absS = Math.abs(sc);
-    const eFactor = absS === 1 ? E : absS === 2 ? E2 : 1.0;
-    sumL += coef * eFactor * Math.sin(arg);
-  }
-
-  // Additional corrections (Meeus p.338)
-  const A1 = (119.75 + 131.849   * T) * r;
-  const A2 = ( 53.09 + 479264.29 * T) * r;
-  const A3 = (313.45 + 481266.484* T) * r;
-  sumL += 3958 * Math.sin(A1) + 1962 * Math.sin(Lm * r - Fr) + 318 * Math.sin(A2);
-
-  // moonLon in degrees
-  const moonLon = (((Lm + sumL / 1000000.0) % 360) + 360) % 360;
-
-  return (((moonLon - sunLon) % 360) + 360) % 360;
-}
-
-// tithi 1-30 at a given moment
-function _tithiAtMoment(date) {
-  return Math.floor(_moonElongation(date) / 12) + 1;
-}
-
-// Tithi 1..30 at the (apparent) sunrise of a calendar day. Returns -1 on failure.
-// 11 = Shukla Ekadashi, 12 = Shukla Dvadashi, 13 = Shukla Trayodashi
-// 26 = Krishna Ekadashi, 27 = Krishna Dvadashi, 28 = Krishna Trayodashi
-function _tithiAtSunrise(day, lat, lng) {
-  try {
-    const sr = calcSunTimes(lat, lng, day);
-    if (!sr) return -1;
-    const h = sr.apparentSunriseH;
-    const m = new Date(day.getFullYear(), day.getMonth(), day.getDate(),
-                       Math.floor(h), Math.round((h % 1) * 60));
-    return _tithiAtMoment(m);
-  } catch (_e) { return -1; }
-}
-
-// ─── Moon elongation crossing helpers ────────────────────────────────────────
-// Required by the app-engine fetch loop AND by gaudiya-engine.js (loaded before
-// this file).  Both files reference _didCross/_findElongCrossing as window globals.
-
-/**
- * _didCross(prev, cur, targetDeg) → bool
- * Returns true if the moon–sun elongation crossed targetDeg going from prev→cur.
- * Handles the 359°→0° wrap-around for New Moon (0°) crossings.
- */
-function _didCross(prev, cur, targetDeg) {
-  if (targetDeg === 0) {
-    return prev > 300 && cur < 60; // wrap-around crossing
-  }
-  return prev < targetDeg && cur >= targetDeg;
-}
-window._didCross = _didCross;
-
-/**
- * _findElongCrossing(targetDeg, lo, hi) → Date
- * Binary-search between Date lo and Date hi for the exact moment moon elongation
- * equals targetDeg.  Converges to ~1-second precision in ≤52 iterations.
- */
-function _findElongCrossing(targetDeg, lo, hi) {
-  let a = lo.getTime(), b = hi.getTime();
-  for (let i = 0; i < 52; i++) {
-    const mid = (a + b) / 2;
-    const e = _moonElongation(new Date(mid));
-    if (targetDeg === 0) {
-      if (e > 180) a = mid; else b = mid;
-    } else {
-      if (e < targetDeg) a = mid; else b = mid;
-    }
-    if (b - a < 1000) break;
-  }
-  return new Date((a + b) / 2);
-}
-window._findElongCrossing = _findElongCrossing;
-
 // ───────────────────────────────────────────────────────────────────
-// All Ekadashi / Mahadvadashi / Parana logic moved to gaudiya-engine.js
 // (loaded BEFORE this file). The following names are provided there
 // as window globals so legacy call sites in app.js keep working:
 //   _resolveMahadvadasiShift, _findEkInWindow, _d2hhmm, _d2ymd,
 //   _resolveEkFasting, _findNextPurnima, _getAdjustedMonthIndex,
 //   _EK_NAMES_SHUKLA, _EK_NAMES_KRISHNA, _computeParanaWindow.
-// To tweak any Ekadashi rule, edit gaudiya-engine.js — not this file.
 // ───────────────────────────────────────────────────────────────────
 
 // _ADHIK_MAAS_WINDOWS, _getAdhikMaasWindow, isAdhikMaasDate
 // defined in panchangData.js (loaded before app.js)
-
-let _panchangFetching = false;
-let _fetchGeneration = 0; // incremented on every new fetch; stale runs check this and abort early
-
-// ── Recalculate every saved Ekadashi — GPS toggle coords → horizonMode → parampara ──
-async function recalculateAllEkadashis() {
-  const btn = document.getElementById("ekRefreshBtn");
-  const status = document.getElementById("panchangStatus");
-  if (btn) { btn.disabled = true; btn.textContent = "⏳ Recalculating…"; }
-
-  try {
-    // LAYER 1 — GPS: coords must come from the GPS Location toggle only.
-    // This button never calls navigator.geolocation independently.
-    const tgGps = document.getElementById("tgGpsLocation");
-    const gpsOn = !!(tgGps && tgGps.classList.contains("on"));
-    const lat = App.S && App.S.lastLat;
-    const lng = App.S && App.S.lastLng;
-
-    if (!gpsOn || !lat || !lng) {
-      const msg = "Turn on GPS Location toggle first — Horizon Mode and Ekadashi need your coordinates";
-      if (status) status.textContent = "⚠️ " + msg;
-      toast("⚠️ " + msg);
-      return;
-    }
-
-    const entries = App.S.customEkadashi || [];
-    if (entries.length === 0) {
-      toast("No saved Ekadashis to recalculate. Tap Auto-Fetch first.");
-      return;
-    }
-
-    if (status) status.textContent = "🔢 Recomputing each Ekadashi's exact sunrise…";
-
-    // LAYER 2 — Horizon Mode: _resyncEkOccasions reads App.S.horizonMode internally.
-    // LAYER 3 — Parampara: _resyncEkOccasions reads App.S.ekParampara internally.
-    // All three layers flow through this single call.
-    _resyncEkOccasions();
-    const changed = entries.filter(e => e && e.startDate && e.startTime).length;
-
-    App.S.customEkadashi.sort((a, b) => (_ekDate(a) < _ekDate(b) ? -1 : 1));
-    await App.save();
-    fbDebouncedPush();
-    renderEkadashiList();
-    renderCal();
-    _updateCfgTimesPreview();
-
-    const horizonLabel = App.S.horizonMode === "celestial" ? "Celestial" : "Earthy Sky";
-    const paramparaLabel = App.S.ekParampara === "vaishnava" ? "Vaishnava" : "Smarta";
-    if (status) status.textContent = "✅ " + changed + " Ekadashis recalculated · " + lat.toFixed(4) + ", " + lng.toFixed(4) + " · " + horizonLabel + " · " + paramparaLabel;
-    toast("✅ " + changed + " Ekadashis recalculated · GPS → Horizon → Parampara 🙏");
-
-  } catch (err) {
-    const msg = err.message || "Unknown error";
-    if (status) status.textContent = "⚠️ " + msg;
-    toast("❌ " + msg);
-  } finally {
-    if (btn) { btn.disabled = false; btn.textContent = "🔄 Recalculate All with Live GPS"; }
-  }
-}
-
-async function fetchPanchangEkadashis() {
-  // Increment generation — any currently-running fetch will detect it is stale
-  // and bail out of its loop, so we never block a new engine-switch fetch.
-  const myGen = ++_fetchGeneration;
-  _panchangFetching = true;
-  const btn = document.getElementById("panchangFetchBtn");
-  const status = document.getElementById("panchangStatus");
-  if (btn) { btn.disabled = true; btn.textContent = "⏳ Computing…"; }
-
-  // ── Show the calculation banner in Settings (visible on current page) ──
-  const _ecBanner = document.getElementById("engineCalcBanner");
-  const _ecTitle  = document.getElementById("engineCalcTitle");
-  const _ecSub    = document.getElementById("engineCalcSub");
-  const _isGaudiyaFetch0 = !!(App.S && App.S.gaudiyaMode);
-  if (_ecBanner) _ecBanner.style.display = "";
-  if (_ecTitle)  _ecTitle.textContent = _isGaudiyaFetch0
-    ? "Computing Vaishnava Panchang…"
-    : "Calculating Ekadashis…";
-  if (_ecSub) _ecSub.textContent = "This may take a few seconds. Results appear in B\u0026C as they\u2019re found.";
-
-  try {
-    // ── LAYER 1: GPS — coords come ONLY from the GPS Location toggle ──────────
-    // This function never calls navigator.geolocation independently.
-    // The GPS toggle is the single source of coordinates for all downstream layers.
-    const tgGps = document.getElementById("tgGpsLocation");
-    const gpsOn = !!(tgGps && tgGps.classList.contains("on"));
-    const lat = App.S && App.S.lastLat;
-    const lng = App.S && App.S.lastLng;
-
-    if (!gpsOn || !lat || !lng) {
-      const msg = "Turn on GPS Location toggle first — Ekadashi calculation needs your coordinates";
-      if (status) status.textContent = "⚠️ " + msg;
-      toast("⚠️ " + msg);
-      return;
-    }
-
-    if (status) status.textContent = "🔢 Computing tithis for your location…";
-
-    // ── Step 2: Scan for Ekadashis ────────────────────────────────────────────
-    if (!App.S.customEkadashi) App.S.customEkadashi = [];
-    if (!App.S.occasions) App.S.occasions = {};
-
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const SYNODIC_HALF = 14.7653; // precise half synodic month in days
-    const DAY = 86400000;
-    let added = 0;
-
-    // ── Scan strategy ────────────────────────────────────────────────────────
-    // Walk 24 half-months (~12 full months = ~24 Ekadashis, both pakshas).
-    // For each step we determine the correct paksha by reading the moon elongation
-    // at the start of the window:
-    //   elongation  0–179° → Shukla paksha  (waxing, new→full moon)
-    //   elongation 180–359° → Krishna paksha (waning, full→new moon)
-    // This guarantees we always search for the RIGHT paksha per half-month,
-    // so both Shukla AND Krishna Ekadashis are found alternately.
-    // cur advances by exactly one precise synodic half-month — zero drift.
-    // ── ENGINE SELECTION ──────────────────────────────────────────────────────
-    // Two independent tithi extraction modes — user chooses via buttons:
-    //   "panchang" → tithi boundaries from panchangData.js
-    //   "app"      → tithi boundaries from inbuilt Swiss Ephemeris
-    // Same Vaishnava (Arunodaya Viddha) rules apply to both.
-    // gaudiyaMode no longer forces the engine choice.
-    const isGaudiyaFetch = !!(App.S && App.S.gaudiyaMode);
-    const isPanchangEngine = (App.S && App.S.ekTithiEngine === "panchang");
-    const usePanchangScan  = isPanchangEngine;
-
-    if (usePanchangScan && typeof getPanchangData === "function") {
-      // Purge stale auto-fetched entries for this engine before re-scanning.
-      // Without this the exists-check skips re-adding entries with wrong fasting dates.
-      const _purgeSource = isGaudiyaFetch ? "gaudiya" : "panchang";
-      App.S.customEkadashi = (App.S.customEkadashi || []).filter(
-        e => !(e.autoFetched && e.source === _purgeSource)
-      );
-      // Scan next 12 months day by day using panchangData engine
-      if (status) status.textContent = isGaudiyaFetch
-        ? "🌸 Vaishnava Mode — fetching Panchang…"
-        : "🗓️ PanchangData Engine — fetching tithi boundaries…";
-      // Immediately refresh Upcoming Ekadashis section — hides old GPS entries right away
-      if (typeof _updateCfgTimesPreview === "function") _updateCfgTimesPreview();
-      const scanDays = 366;
-      let scanDate = new Date(today);
-      let prevTithi = null;
-      let prevSunsetH = null; // apparent sunset of previous scan day (for Pradosha Viddha check)
-
-      for (let d = 0; d < scanDays; d++) {
-        // If the user switched engines while we were scanning, abort immediately.
-        if (_fetchGeneration !== myGen) { _panchangFetching = false; return; }
-        try {
-          const pd = await getPanchangData(lat, lng, scanDate);
-          if (!pd) { scanDate.setDate(scanDate.getDate() + 1); continue; }
-
-          const tNum = pd.tithiNum; // 11 = Ekadashi Shukla, 26 = Ekadashi Krishna
-          const isEkadashi = (tNum === 11 || tNum === 26);
-
-          // ── Skipped-Ekadashi detection ───────────────────────────────────────────
-          // When Ekadashi starts AFTER today's sunrise, it's never the udaya tithi.
-          // The scanner sees Dashami at sunrise (yesterday) → Dwadashi at sunrise (today),
-          // completely missing the Ekadashi that lived between the two sunrises.
-          // Detect: today is Dwadashi (12/27) AND prevTithi was Dashami (10/25).
-          // Reconstruct: Ekadashi start = prevTithi.endDate, fetch yesterday for end time.
-          const isDwadashi = (tNum === 12 || tNum === 27);
-          const prevWasDashami = prevTithi && (prevTithi.num === 10 || prevTithi.num === 25);
-          if (isDwadashi && prevWasDashami && prevTithi.endDate instanceof Date) {
-            // The Ekadashi tithi ran from prevTithi.endDate until sometime yesterday.
-            // Fetch yesterday's panchang to get when yesterday's Ekadashi ended.
-            try {
-              const yesterday = new Date(scanDate);
-              yesterday.setDate(yesterday.getDate() - 1);
-              const pdYest = await getPanchangData(lat, lng, yesterday);
-              // pdYest.tithi.endDate is Ekadashi's end (it was the tithi that ended yesterday)
-              // but pdYest.tithiNum is Dashami (udaya). We need the tithi that ended during yesterday.
-              // The Ekadashi end = when tithiIdx changes from 11/26 → 12/27, which is pdYest next tithi end.
-              // Since pdYest.tithiNum = Dashami, pdYest.tithi.endDate = when Dashami ended = Ekadashi START.
-              // For Ekadashi END: it's today's prev tithi (pd.tithi endDate of the previous tithi).
-              // Actually: today's tNum is Dwadashi, meaning Ekadashi ended before today's sunrise.
-              // Ekadashi started = prevTithi.endDate (Dashami end), ended = some time after that but before today's sunrise.
-              // Best estimate for ekEnd: fetch today midnight and find when tithiIdx was 11/26.
-              const ekStart = prevTithi.endDate; // exact Dashami→Ekadashi boundary
-              const ekPaksha = (prevTithi.num === 10) ? "shukla" : "krishna"; // Dashami 10=Shukla, 25=Krishna
-              // ekEnd: scan from ekStart forward until tithiIdx changes away from 11/26
-              const ekTithiNum = ekPaksha === "shukla" ? 11 : 26;
-              let ekEndDate = null;
-              if (typeof _nextChange === "function" && typeof _tithiIdx === "function") {
-                ekEndDate = _nextChange(d => _tithiIdx(d), ekTithiNum, ekStart, 3600000, 30);
-              }
-              if (!ekEndDate) ekEndDate = new Date(ekStart.getTime() + 22 * 3600000); // fallback ~22h
-
-              const skStartStr = _d2ymd(ekStart);
-              const skEndStr   = _d2ymd(ekEndDate);
-              const skStartTime = _d2hhmm(ekStart);
-              const skEndTime   = _d2hhmm(ekEndDate);
-
-              // Fasting date: Ekadashi starts after sunrise yesterday → fast on YESTERDAY (startDate)
-              // But since Ekadashi started AFTER yesterday's sunrise, check Viddha rules.
-              // appSrY = apparent sunrise (for Arunodaya — always physical, not mode-shifted).
-              // modeSrY = mode-aware sunrise (respects horizonMode for Smarta fasting-day check).
-              const srYest = calcSunTimes(lat, lng, yesterday);
-              const appSrY  = srYest ? srYest.apparentSunriseH : 6.0;
-              const modeSrY = srYest ? srYest.sunriseH : 6.0;
-              let skFastingDate = skStartStr;
-              let skIsViddha    = false;
-              const skParampara = isGaudiyaFetch ? "vaishnava" : (App.S.ekParampara || "smarta");
-
-              function _skDayMs(d, h) {
-                return d.getTime() - d.getHours()*3600000 - d.getMinutes()*60000 - d.getSeconds()*1000 + h*3600000;
-              }
-
-              if (skParampara === "vaishnava") {
-                // CONDITION 1: Pradosha Viddha
-                // Dashami day = yesterday. prevSunsetH = apparent sunset of yesterday.
-                const skPrevSunset = srYest ? srYest.apparentSunsetH : null;
-                if (!skIsViddha && skPrevSunset !== null) {
-                  const pradoshaH  = skPrevSunset - 96/60;
-                  const pradoshaMs = _skDayMs(yesterday, pradoshaH);
-                  if (ekStart.getTime() > pradoshaMs) { skFastingDate = skEndStr; skIsViddha = true; }
-                }
-                // CONDITION 2: Vridhi Dvadashi — Ekadashi ends before endDate sunrise
-                if (!skIsViddha && ekEndDate instanceof Date) {
-                  const srEnd2   = calcSunTimes(lat, lng, ekEndDate);
-                  const endAppSr = srEnd2 ? srEnd2.apparentSunriseH : 6.0;
-                  const endSrMs  = _skDayMs(ekEndDate, endAppSr);
-                  if (ekEndDate.getTime() < endSrMs) { skFastingDate = skEndStr; skIsViddha = true; }
-                }
-              } else {
-                const sunriseYestMs = new Date(yesterday).setHours(0,0,0,0) + modeSrY * 3600000;
-                if (ekStart.getTime() >= sunriseYestMs) skFastingDate = skEndStr;
-              }
-
-              const skMi = pdYest ? pdYest.monthIdx : pd.monthIdx;
-              const skIsAdhik = pdYest ? pdYest.isAdhikMaas : false;
-              let skName;
-              if (skIsAdhik) {
-                skName = ekPaksha === "shukla" ? "Padmini" : "Parama";
-              } else {
-                skName = ekPaksha === "shukla"
-                  ? (_EK_NAMES_SHUKLA[skMi] || "Ekadashi")
-                  : (_EK_NAMES_KRISHNA[skMi] || "Ekadashi");
-              }
-              const skLabel = skName + (ekPaksha === "shukla" ? " ☀️ Shukla" : " 🌙 Krishna") + (skIsViddha ? " (Mahadvadashi)" : "");
-
-              const _skSource = isGaudiyaFetch ? "gaudiya" : "panchang";
-              const skExists = App.S.customEkadashi.some(
-                (e) => e.source === _skSource && (e.startDate === skStartStr || e.startDate === skEndStr)
-              );
-              if (!skExists) {
-                const skObj = { paksha: ekPaksha, ekEnd: ekEndDate };
-                const skParana = _computeParanaWindow(skObj, lat, lng, skFastingDate);
-                App.S.customEkadashi.push({
-                  name: skName, paksha: ekPaksha,
-                  startDate: skStartStr, startTime: skStartTime,
-                  endDate: skEndStr, endTime: skEndTime,
-                  autoFetched: true, source: isGaudiyaFetch ? "gaudiya" : "panchang",
-                  fastingDate: skFastingDate, isViddha: skIsViddha,
-                });
-                App.S.occasions[skFastingDate] = skLabel;
-                added++;
-                App.S.customEkadashi.sort((a, b) => (_ekDate(a) < _ekDate(b) ? -1 : 1));
-                renderEkadashiList();
-                if (status) status.textContent = isGaudiyaFetch
-                ? `🌸 Vaishnava — found ${added} so far…`
-                : `🗓️ Panchang Engine — found ${added} so far…`;
-                const _gfStatus = document.getElementById("gaudiyaFetchStatus");
-                if (_gfStatus) _gfStatus.textContent = isGaudiyaFetch
-                  ? `Found ${added} Ekadashi${added > 1 ? "s" : ""} — still computing…`
-                  : `Found ${added} so far — scanning…`;
-                const _ecSub1 = document.getElementById("engineCalcSub");
-                if (_ecSub1) _ecSub1.textContent = `Found ${added} Ekadashi${added > 1 ? "s" : ""} so far — still scanning…`;
-              }
-            } catch (skipErr) {
-              console.warn("[Gaudiya fetch] skipped-Ekadashi recovery error:", skipErr.message);
-            }
-          }
-
-          if (isEkadashi) {
-            const paksha  = tNum === 11 ? "shukla" : "krishna";
-            const dateStr = pd.tithi.endDate
-              ? _d2ymd(pd.tithi.endDate)
-              : _d2ymd(scanDate);
-
-            // ekStart = beginning of this calendar day (we don't have precise start
-            // from panchangData for start, but endDate + endTime are exact)
-            // Use previous day end as ekStart approximation for display only
-            const ekStartDate = new Date(scanDate);
-            ekStartDate.setHours(0, 0, 0, 0);
-
-            // ekEnd = exact tithi end from panchangData (matches ISKCON to ~1 min)
-            const ekEnd = pd.tithi.endDate instanceof Date
-              ? pd.tithi.endDate
-              : null;
-
-            // Arunodaya Viddha: Arunodaya reference is always APPARENT sunrise
-            // (pre-dawn window is a physical event, not shifted by horizonMode).
-            // Civil sunrise (modeSr) IS mode-aware — Celestial vs Earthy Sky shifts
-            // it by ~4 min and therefore affects the Smarta fasting-day assignment.
-            const srData     = calcSunTimes(lat, lng, scanDate);
-            const appSr      = srData ? srData.apparentSunriseH : 6.0;
-            const modeSr     = srData ? srData.sunriseH         : 6.0; // mode-aware
-            const arunodayaH = appSr - 96 / 60;
-
-            // Ekadashi tithi end time on this day (hours)
-            let ekEndH = null;
-            if (ekEnd) {
-              ekEndH = ekEnd.getHours() + ekEnd.getMinutes() / 60;
-            }
-
-            // Viddha check: if tithi ends before Arunodaya → pure day → fast today
-            // If tithi ends after Arunodaya → Dashami touched Arunodaya → fast tomorrow
-            const startDateStr = _d2ymd(scanDate);
-            const endDate      = new Date(scanDate);
-            endDate.setDate(endDate.getDate() + 1);
-            const endDateStr   = _d2ymd(endDate);
-
-            // Gaudiya/ISKCON mode always uses Vaishnava/Arunodaya-Viddha rules.
-            // ekParampara may be null in Gaudiya mode (user never sets it there),
-            // so we must not fall back to "smarta" — force "vaishnava" when isGaudiyaFetch.
-            const parampara   = isGaudiyaFetch ? "vaishnava" : (App.S.ekParampara || "smarta");
-            let fastingDate   = startDateStr;
-            let isViddha      = false;
-
-            if (parampara === "vaishnava") {
-              // ── ISKCON/VAISHNAVA FASTING DATE RULE ──────────────────────────────
-              // Two conditions. Either triggers → fast on endDate (Mahadvadashi).
-              //
-              // CONDITION 1 — PRADOSHA VIDDHA:
-              //   If Dashami was still running when Pradosha began on its own day
-              //   (Pradosha = apparent sunset − 96 min of the Dashami day = prevScanDay),
-              //   the Ekadashi is contaminated → fast on Dvadashi.
-              //   Verified: NIRJALA 24 Jun — Dashami ends 18:44, Pradosha starts 17:14 ✅
-              //             PARAMA  11 Jun — Dashami ends 01:30, well before Pradosha ✅
-              //
-              // CONDITION 2 — VRIDHI DVADASHI (Ekadashi Kshaya):
-              //   If Ekadashi tithi ends BEFORE sunrise of endDate,
-              //   Dvadashi is the udaya tithi on endDate and gets an extra day → fast endDate.
-              //   Verified: SHRAVANA PUTRADA — Ek ends 24 Aug 04:51 < sunrise 05:41 ✅
-              //
-              // Both conditions verified against 6 Ekadashis 2026, Kashiani UTC+6.
-
-              // Helper: build a UTC-ms timestamp for a given hour on a given Date
-              function _dayMs(d, h) {
-                return d.getTime()
-                  - d.getHours()   * 3600000
-                  - d.getMinutes() * 60000
-                  - d.getSeconds() * 1000
-                  + h * 3600000;
-              }
-
-              // CONDITION 1: Pradosha Viddha
-              if (!isViddha && prevTithi && prevTithi.endDate instanceof Date && prevSunsetH !== null) {
-                const pradoshaH   = prevSunsetH - 96 / 60; // Pradosha start on Dashami day
-                const pradoshaMs  = _dayMs(prevTithi.endDate, pradoshaH);
-                // Dashami ends AFTER Pradosha started → Dashami was present during Pradosha
-                if (prevTithi.endDate.getTime() > pradoshaMs) {
-                  fastingDate = endDateStr;
-                  isViddha    = true;
-                }
-              }
-
-              // CONDITION 2: Vridhi Dvadashi (Ekadashi Kshaya) —
-              //   Ekadashi tithi ends BEFORE sunrise of scanDate (its own udaya day).
-              //   This means Ekadashi never touched sunrise on scanDate, so Dvadashi
-              //   is the udaya tithi → fast on endDate (Mahadvadashi).
-              //
-              //   FIX: compare ekEnd against sunrise of scanDate (startDate), NOT endDate.
-              //   The previous code compared against endDate sunrise which is always later
-              //   in absolute time, causing false positives (e.g. Yogini: Ekadashi ends
-              //   11 Jul 05:54 was wrongly treated as < 12 Jul 05:23 → shifted to 12 Jul).
-              //
-              //   Verified: SHRAVANA PUTRADA — Ek ends 23 Aug 04:51 < sunrise 23 Aug 05:40 ✅
-              //             YOGINI           — Ek ends 11 Jul 05:54 > sunrise 11 Jul 05:23
-              //                                → does NOT trigger ✅ fast stays 11 Jul ✅
-              if (!isViddha && ekEnd instanceof Date) {
-                const startSrMs = _dayMs(scanDate, appSr);
-                if (ekEnd.getTime() < startSrMs) {
-                  fastingDate = endDateStr;
-                  isViddha    = true;
-                }
-              }
-
-            } else {
-              // Smarta: fast on day Ekadashi present at (mode-aware) sunrise.
-              // If Dashami was still running at sunrise of scanDate → fast tomorrow.
-              if (prevTithi && prevTithi.endDate instanceof Date) {
-                const sunriseMs = scanDate.getTime()
-                  - scanDate.getHours() * 3600000
-                  - scanDate.getMinutes() * 60000
-                  - scanDate.getSeconds() * 1000
-                  + modeSr * 3600000;
-                if (prevTithi.endDate.getTime() >= sunriseMs) {
-                  fastingDate = endDateStr;
-                }
-              }
-            }
-
-            // Mahadvadashi shift (Vaishnava-only): Vyanjuli / Trisparsha / Unmilani
-            let mhdType = isViddha ? "SUDDHA" : "NORMAL";
-            if (parampara === "vaishnava") {
-              const _shift = _resolveMahadvadasiShift(fastingDate, paksha, lat, lng, mhdType);
-              fastingDate = _shift.date;
-              isViddha = _shift.isViddha || isViddha;
-              mhdType = _shift.mhdType;
-            }
-
-            const pakshaLabel = paksha === "shukla" ? " ☀️ Shukla" : " 🌙 Krishna";
-            const mi   = pd.monthIdx;
-            let name;
-            if (pd.isAdhikMaas) {
-              name = paksha === "shukla" ? "Padmini" : "Parama";
-            } else {
-              name = paksha === "shukla"
-                ? (_EK_NAMES_SHUKLA[mi] || "Ekadashi")
-                : (_EK_NAMES_KRISHNA[mi] || "Ekadashi");
-            }
-            const label = name + pakshaLabel + (isViddha ? " (Mahadvadashi)" : "");
-
-            const ekStartFromPrev = (prevTithi && prevTithi.endDate instanceof Date)
-              ? prevTithi.endDate
-              : null;
-            const ekActualStartDate = ekStartFromPrev ? _d2ymd(ekStartFromPrev) : startDateStr;
-            const ekActualStartTime = ekStartFromPrev ? _d2hhmm(ekStartFromPrev) : "00:00";
-
-            const _entrySource = isGaudiyaFetch ? "gaudiya" : "panchang";
-            const exists = App.S.customEkadashi.some(
-              (e) => e.source === _entrySource && (e.startDate === startDateStr || e.startDate === ekActualStartDate)
-            );
-            if (!exists) {
-              const ekObj = {
-                paksha,
-                ekStart: ekStartFromPrev || ekStartDate,
-                ekEnd: ekEnd || new Date(scanDate.getTime() + 23 * 3600000),
-                mhdType,
-              };
-              const parana = _computeParanaWindow(ekObj, lat, lng, fastingDate);
-              App.S.customEkadashi.push({
-                name,
-                paksha,
-                startDate:   ekActualStartDate,
-                startTime:   ekActualStartTime,
-                endDate:     ekEnd ? _d2ymd(ekEnd) : endDateStr,
-                endTime:     ekEnd ? _d2hhmm(ekEnd) : "00:00",
-                fastingDate: fastingDate,
-                isViddha:    isViddha,
-                mhdType:     mhdType,
-                parana:      parana || null,
-                autoFetched: true,
-                source:      _entrySource,
-              });
-              App.S.occasions[fastingDate] = label;
-              if (parana) {
-                // Store parana in occasions display
-                App.S.occasions[parana.date] = App.S.occasions[parana.date] || "";
-              }
-              added++;
-              // ── Incremental render: show this Ekadashi immediately, don't wait for full scan ──
-              App.S.customEkadashi.sort((a, b) => (_ekDate(a) < _ekDate(b) ? -1 : 1));
-              renderEkadashiList();
-              _updateCfgTimesPreview();
-              if (status) status.textContent = isGaudiyaFetch
-                ? `🌸 Vaishnava — found ${added} so far…`
-                : `🗓️ Panchang Engine — found ${added} so far…`;
-              const _gfStatus2 = document.getElementById("gaudiyaFetchStatus");
-              if (_gfStatus2) _gfStatus2.textContent = isGaudiyaFetch
-                ? `Found ${added} Ekadashi${added > 1 ? "s" : ""} — still computing…`
-                : `Found ${added} so far — scanning…`;
-              const _ecSub2 = document.getElementById("engineCalcSub");
-              if (_ecSub2) _ecSub2.textContent = `Found ${added} Ekadashi${added > 1 ? "s" : ""} so far — still scanning…`;
-            }
-          }
-
-          // Remember this tithi and sunset for next day's Viddha check
-          prevTithi   = pd.tithi;
-          prevSunsetH = srData ? srData.apparentSunsetH : null;
-
-        } catch (dayErr) {
-          console.warn("[Gaudiya fetch] day error:", dayErr.message);
-        }
-        scanDate.setDate(scanDate.getDate() + 1);
-        // Stop once we have collected the next 24 upcoming Ekadashis
-        if (added >= 24) break;
-      }
-
-      App.S.customEkadashi.sort((a, b) => (_ekDate(a) < _ekDate(b) ? -1 : 1));
-
-      // If the user switched engines while we were scanning, discard these results.
-      if (_fetchGeneration !== myGen) { _panchangFetching = false; return; }
-
-      _updateCfgTimesPreview();
-      App.save();
-      fbDebouncedPush();
-      renderEkadashiList();
-      if (typeof renderCal === "function") renderCal();
-      const total = App.S.customEkadashi.length;
-      if (isGaudiyaFetch) {
-        if (status) status.textContent = `✅ ${added} new · ${total} total · 🌸 Vaishnava Panchang`;
-        toast(`📅 ${added} Ekadashis added · 🌸 Vaishnava Panchang 🙏`);
-      } else {
-        const horizonLabel2   = App.S.horizonMode === "celestial" ? "Celestial" : "Earthy Sky";
-        const paramparaLabel2 = App.S.ekParampara === "vaishnava" ? "Vaishnava" : "Smarta";
-        if (status) status.textContent = `✅ ${added} new · ${total} total · 🗓️ PanchangData · ${horizonLabel2} · ${paramparaLabel2}`;
-        toast(`📅 ${added} Ekadashis added · PanchangData Engine · ${horizonLabel2} · ${paramparaLabel2} 🙏`);
-        _resyncEkOccasions();
-        _updateCfgTimesPreview();
-        App.save();
-        fbDebouncedPush();
-        renderEkadashiList();
-        if (typeof renderCal === "function") renderCal();
-      }
-
-    } else {
-    // ── STANDARD ASTRONOMICAL ENGINE ─────────────────────────────────────────
-    // Robust scan: cover 2 months back + 6 months ahead for ALL Ekadashis.
-    // Strategy: anchor at each New Moon and Full Moon in the range (elongation
-    // crossings of 0° and 180°), then search a 15-day window starting 2 days
-    // BEFORE each anchor for both Shukla (after NM) and Krishna (after FM).
-    // This guarantees every Ekadashi in both pakshas is found, including during
-    // Adhik Maas / Purushottama month.
-
-    // Immediately refresh Upcoming section — hides old Gaudiya entries right away
-    if (typeof _updateCfgTimesPreview === "function") _updateCfgTimesPreview();
-
-    // Scan only the upcoming window — enough for the next 24 Ekadashis (~13 months)
-    const scanFrom = new Date(today.getTime());
-    const scanTo   = new Date(today.getTime() + 400 * DAY);
-
-    // Collect all New Moon (0°) and Full Moon (180°) crossing times in range
-    const phaseCrossings = []; // { time: Date, phase: "NM"|"FM" }
-    {
-      const STEP_H = 12 * 3600000; // 12-hour step for coarse scan
-      let t = new Date(scanFrom.getTime() - 20 * DAY); // extra buffer at start
-      const tEnd = new Date(scanTo.getTime() + 5 * DAY);
-      let prevE = _moonElongation(t);
-      while (t < tEnd) {
-        t = new Date(t.getTime() + STEP_H);
-        const e = _moonElongation(t);
-        // New Moon crossing: elongation wraps through 0° — _didCross handles wrap
-        if (_didCross(prevE, e, 0)) {
-          const nmTime = _findElongCrossing(0, new Date(t.getTime() - STEP_H), t);
-          if (nmTime) phaseCrossings.push({ time: nmTime, phase: "NM" });
-        }
-        // Full Moon crossing: elongation crosses 180°
-        if (_didCross(prevE, e, 180)) {
-          const fmTime = _findElongCrossing(180, new Date(t.getTime() - STEP_H), t);
-          if (fmTime) phaseCrossings.push({ time: fmTime, phase: "FM" });
-        }
-        prevE = e;
-      }
-    }
-
-    // For each phase crossing, search the subsequent ~15 days for the matching Ekadashi
-    const seenEkStartDates = new Set();
-    for (const crossing of phaseCrossings) {
-      // Shukla Ekadashi starts ~10-11 days after New Moon
-      // Krishna Ekadashi starts ~10-11 days after Full Moon
-      const paksha = crossing.phase === "NM" ? "shukla" : "krishna";
-      // Window: start 8 days after crossing, end 17 days after crossing
-      const wStart = new Date(crossing.time.getTime() + 8 * DAY);
-      const wEnd   = new Date(crossing.time.getTime() + 17 * DAY);
-
-      // Skip windows entirely outside scan range
-      if (wEnd < scanFrom || wStart > scanTo) continue;
-
-      const ek = _findEkInWindow(wStart, wEnd, paksha);
-      if (!ek) continue;
-
-      // Use local date string (not UTC toISOString which can shift by timezone)
-      const ekLocalDate = _d2ymd(ek.ekStart);
-      if (seenEkStartDates.has(ekLocalDate)) continue;
-      seenEkStartDates.add(ekLocalDate);
-
-      // Adhik Maas / Purushottama: use local date for lookup (UTC can differ by 1 day)
-      const adhikWin = _getAdhikMaasWindow ? _getAdhikMaasWindow(ekLocalDate) : null;
-      let name;
-      if (adhikWin) {
-        name = paksha === "shukla" ? "Padmini" : "Parama";
-      } else {
-        const mi = _getAdjustedMonthIndex(ek.ekStart, paksha);
-        name = paksha === "shukla"
-          ? (_EK_NAMES_SHUKLA[mi] || "Ekadashi")
-          : (_EK_NAMES_KRISHNA[mi] || "Ekadashi");
-      }
-
-      const resolved = _resolveEkFasting(ek, lat, lng, name);
-
-      // Deduplicate against already-stored entries by fastingDate
-      const exists = App.S.customEkadashi.some(
-        (e) => e.source === "gps" && e.autoFetched &&
-               (e.fastingDate === resolved.fastingDate || _ekDate(e) === resolved.startDate),
-      );
-      if (!exists) {
-        // Compute Parana window using Gaudiya engine (requires mhdType + ekStart/ekEnd)
-        const _gpsPar = _computeParanaWindow(
-          { ekStart: ek.ekStart, ekEnd: ek.ekEnd, paksha: resolved.paksha, mhdType: resolved.mhdType },
-          lat, lng, resolved.fastingDate
-        );
-        App.S.customEkadashi.push({
-          name: resolved.name,
-          paksha: resolved.paksha,
-          startDate: resolved.startDate,
-          startTime: resolved.startTime,
-          endDate: resolved.endDate,
-          endTime: resolved.endTime,
-          fastingDate: resolved.fastingDate,
-          isViddha: resolved.isViddha,
-          mhdType: resolved.mhdType,
-          parana: _gpsPar || null,
-          autoFetched: true,
-          source: "gps",
-        });
-        App.S.occasions[resolved.fastingDate] = resolved.label;
-        if (_gpsPar) {
-          App.S.occasions[_gpsPar.date] = App.S.occasions[_gpsPar.date] || "";
-        }
-        added++;
-        // Stop once we have collected the next 24 upcoming Ekadashis
-        if (added >= 24) break;
-      }
-    }
-
-    App.S.customEkadashi.sort((a, b) => (_ekDate(a) < _ekDate(b) ? -1 : 1));
-
-    // If the user switched engines while we were computing, discard these results.
-    if (_fetchGeneration !== myGen) { _panchangFetching = false; return; }
-
-    // ── LAYER 2 + 3: Horizon Mode + Parampara ──────────────────────────────────
-    // _resyncEkOccasions reads App.S.horizonMode (Earthy Sky / Celestial) and
-    // App.S.ekParampara (Smarta / Vaishnava) — both applied to every fasting date.
-    _resyncEkOccasions();
-    _updateCfgTimesPreview();
-    App.save();
-    fbDebouncedPush();
-    renderEkadashiList();
-    if (typeof renderCal === "function") renderCal();
-    const total = App.S.customEkadashi.length;
-    const horizonLabel = App.S.horizonMode === "celestial" ? "Celestial" : "Earthy Sky";
-    const paramparaLabel = App.S.ekParampara === "vaishnava" ? "Vaishnava" : "Smarta";
-    if (status) status.textContent = `✅ ${added} new · ${total} total · ${horizonLabel} · ${paramparaLabel}`;
-    toast(`📅 ${added} Ekadashis added · GPS → ${horizonLabel} → ${paramparaLabel} 🙏`);
-
-    } // end standard engine
-
-  } catch (e) {
-    if (status) status.textContent = "⚠️ " + (e.message || "Unexpected error");
-    toast("Error: " + (e.message || "unknown"));
-    console.error("fetchPanchangEkadashis:", e);
-    // Still render whatever is already saved
-    renderEkadashiList();
-    // Show error in banner
-    const _ecTitleErr = document.getElementById("engineCalcTitle");
-    const _ecSubErr   = document.getElementById("engineCalcSub");
-    if (_ecTitleErr) _ecTitleErr.textContent = "⚠️ Calculation error";
-    if (_ecSubErr)   _ecSubErr.textContent = e.message || "Unknown error — try again";
-  } finally {
-    _panchangFetching = false;
-    if (btn) { btn.disabled = false; btn.textContent = "🌙 Auto-Fetch from GPS"; }
-    // Show ✅ done state in banner, then hide after 3s
-    const _ecBannerF = document.getElementById("engineCalcBanner");
-    const _ecTitleF  = document.getElementById("engineCalcTitle");
-    const _ecSubF    = document.getElementById("engineCalcSub");
-    if (_ecBannerF && _ecBannerF.style.display !== "none") {
-      if (_ecTitleF) _ecTitleF.textContent = "✅ Ekadashis ready";
-      if (_ecSubF)   _ecSubF.textContent   = "Check B\u0026C tab to see all upcoming fasting dates";
-      setTimeout(() => { if (_ecBannerF) _ecBannerF.style.display = "none"; }, 3500);
-    }
-  }
-}
 
 // ── Brahmacharya Progress Graph ──
 // Anchor: May 16, 2026 = Amavasya (new moon, tithi 30/0 of Krishna paksha)
@@ -7487,8 +6428,10 @@ const BC_AMAVASYA_ANCHOR = new Date("2026-05-16T00:00:00");
 const SYNODIC_MONTH = 29.530589;
 
 function getLunarTithi(date) {
-  // Primary: precise moon elongation (VSOP87 simplified)
-  return _tithiAtMoment(date);
+  // Approximate tithi from synodic month anchor (BC_AMAVASYA_ANCHOR)
+  const days = (date.getTime() - BC_AMAVASYA_ANCHOR.getTime()) / 86400000;
+  const phase = ((days % SYNODIC_MONTH) + SYNODIC_MONTH) % SYNODIC_MONTH;
+  return Math.min(Math.max(Math.floor((phase / SYNODIC_MONTH) * 30) + 1, 1), 30);
 }
 
 function isRiskDay(date) {
@@ -7496,281 +6439,8 @@ function isRiskDay(date) {
   // Risk window: Navami to Trayodashi in both paksha
   // Shukla: 9-13, Krishna: 24-28 (15+9 to 15+13)
   if ((t >= 9 && t <= 13) || (t >= 24 && t <= 28)) return true;
-  // Check custom Ekadashi periods (2-day risk window around startDate AND endDate)
-  const customDates = App.S.customEkadashi || [];
-  if (customDates.length > 0) {
-    const dateMs = date.getTime();
-    const DAY = 86400000;
-    for (const ek of customDates) {
-      const sd = _ekDate(ek);
-      const ed = _ekEndDate(ek);
-      if (sd) {
-        const sdMs = new Date(sd + "T00:00:00").getTime();
-        const edMs = ed ? new Date(ed + "T00:00:00").getTime() : sdMs;
-        // Inside the period OR within 2 days of either edge
-        if (dateMs >= sdMs - 2 * DAY && dateMs <= edMs + 2 * DAY) return true;
-      }
-    }
-  }
   return false;
 }
-
-// Helper: extract start date string from a customEkadashi entry (supports legacy string/object formats)
-function _ekDate(e) {
-  if (typeof e === "string") return e;
-  if (!e) return "";
-  return e.startDate || e.date || "";
-}
-// Helper: extract end date string from a customEkadashi entry
-function _ekEndDate(e) {
-  if (typeof e === "string") return e;
-  if (!e) return "";
-  return e.endDate || e.startDate || e.date || "";
-}
-
-// Returns true if date falls within any custom Ekadashi period (startDate→endDate)
-function isCustomEkadashiDay(date) {
-  const customDates = App.S.customEkadashi || [];
-  if (!customDates.length) return false;
-  const key = _ldk(date);
-  return customDates.some((e) => key >= _ekDate(e) && key <= _ekEndDate(e));
-}
-
-// ── Ekadashi: Parampara ──
-const EK_NOTES = {
-  smarta:
-    "☀️ <b>Smarta rule:</b> Fast on the day when Ekadashi tithi is prevailing at local sunrise — even if Dashami was present just before it.",
-  vaishnava:
-    '🌸 <b>Vaishnava/Gaudiya rule (Arunodaya Viddha):</b> If Dashami tithi overlaps even one second into the 96-min Arunodaya window before sunrise, that day is "Viddha" (contaminated). Fast is moved to the next day (Mahadvadashi), even though Dvadashi tithi is running.',
-};
-
-function saveEkTithiEngine(val) {
-  App.S.ekTithiEngine = val;
-
-  // Remove auto-fetched entries from the OTHER engine so the list stays clean.
-  // Manual entries (autoFetched=false) are always kept regardless of engine.
-  const removeSource = val === "app" ? "panchang" : "gps";
-  if (App.S.customEkadashi) {
-    App.S.customEkadashi = App.S.customEkadashi.filter(e =>
-      !(e.autoFetched && e.source === removeSource)
-    );
-  }
-
-  App.save();
-  fbDebouncedPush();
-  renderEkTithiEngine();
-  renderEkadashiList();
-  _updateCfgTimesPreview();
-  if (typeof renderCal === "function") renderCal();
-  toast(val === "app"
-    ? "🔭 App Engine set — fetching…"
-    : "🗓️ Panchang Engine set — fetching…");
-  // Auto-trigger fetch so the list updates immediately.
-  // The generation counter inside fetchPanchangEkadashis cancels any in-flight
-  // fetch from the previous engine, so no setTimeout delay is needed.
-  if (App.S.lastLat && App.S.lastLng) {
-    if (typeof fetchPanchangEkadashis === "function") fetchPanchangEkadashis();
-  }
-}
-
-function renderEkTithiEngine() {
-  const e = App.S.ekTithiEngine;
-  const appBtn = document.getElementById("ekEngineApp");
-  const panBtn = document.getElementById("ekEnginePanchang");
-  if (appBtn) appBtn.classList.toggle("active", e === "app");
-  if (panBtn) panBtn.classList.toggle("active", e === "panchang");
-}
-
-function saveEkParampara(val) {
-  // Gaudiya/ISKCON mode: parampara is fixed (Vaishnava/Arunodaya Viddha) — no user override
-  if (App.S && App.S.gaudiyaMode) {
-    toast("🌸 Gaudiya Mode uses Vaishnava rules automatically");
-    return;
-  }
-  App.S.ekParampara = val;
-  _resyncEkOccasions();   // recalculate fasting dates for new parampara + current horizonMode
-  App.save();
-  fbDebouncedPush();
-  renderEkParampara();
-  renderEkadashiList();
-  if (typeof renderCal === "function") renderCal();
-  _updateCfgTimesPreview(); // refresh Next 2 Ekadashis preview with new parampara
-  toast(
-    val === "smarta" ? "☀️ Smarta Parampara set — fetching…" : "🌸 Vaishnava Parampara set — fetching…",
-  );
-  // Auto-trigger GPS fetch so the list updates immediately
-  if (App.S.lastLat && App.S.lastLng) {
-    setTimeout(() => {
-      if (typeof fetchPanchangEkadashis === "function") fetchPanchangEkadashis();
-    }, 300);
-  }
-}
-
-// ── Resync all stored Ekadashi fasting occasions (horizonMode + parampara aware) ──
-// Called when horizonMode or ekParampara changes so App.S.occasions stays accurate.
-function _resyncEkOccasions() {
-  const entries = App.S.customEkadashi || [];
-  if (!entries.length) return;
-  const parampara = App.S.ekParampara || "smarta";
-  // GPS is the required source — no coords means no calculation
-  const lat = App.S && App.S.lastLat;
-  const lng = App.S && App.S.lastLng;
-  if (!lat || !lng) return; // GPS toggle is OFF — refuse to calculate with fake coords
-
-  entries.forEach((ek) => {
-    if (!ek || !ek.startDate || !ek.startTime || !ek.endDate) return;
-    const paksha = ek.paksha || "shukla";
-
-    // calcSunTimes reads App.S.horizonMode live — correct value used here.
-    // Gaudiya entries are NO LONGER skipped: horizonMode (Celestial / Earthy Sky)
-    // shifts civil sunrise and therefore the Paran window open time, so we must
-    // resync all entries — including Gaudiya — whenever horizonMode changes.
-    const ekDate = new Date(ek.startDate + "T00:00:00");
-    const srData = calcSunTimes(lat, lng, ekDate);
-    const sunriseH         = srData ? srData.sunriseH         : 6.0;
-    // Arunodaya always uses APPARENT sunrise (physical sky event — horizonMode
-    // shifts civil sunrise but Arunodaya is a pre-dawn window, always apparent).
-    const apparentSunriseH = srData ? srData.apparentSunriseH : 6.0;
-    const apparentSunsetH  = srData ? srData.apparentSunsetH  : 18.0;
-
-    const [hh, mm] = ek.startTime.split(":").map(Number);
-    const ekStartH = hh + mm / 60;
-
-    let newFastingDate = ek.startDate;
-    let isViddha = false;
-
-    const effectiveParampara = (ek.source === "gaudiya") ? "vaishnava" : parampara;
-
-    function _rsMs(d, h) {
-      return d.getTime() - d.getHours()*3600000 - d.getMinutes()*60000 - d.getSeconds()*1000 + h*3600000;
-    }
-
-    if (effectiveParampara === "vaishnava") {
-      // CONDITION 1: Pradosha Viddha
-      // Was Dashami still present when Pradosha began on the startDate day?
-      // (Pradosha = apparent sunset of startDate − 96 min)
-      const pradoshaH  = apparentSunsetH - 96/60;
-      const startDateObj = new Date(ek.startDate + "T00:00:00");
-      const pradoshaMs = _rsMs(startDateObj, pradoshaH);
-      const ekStartMs  = startDateObj.getTime() + ekStartH * 3600000;
-      if (ekStartMs > pradoshaMs) {
-        newFastingDate = ek.endDate;
-        isViddha = true;
-      }
-      // CONDITION 2: Vridhi Dvadashi (Ekadashi Kshaya) —
-      //   Ekadashi ends BEFORE sunrise of startDate (its own udaya day).
-      //   FIX: compare ekEnd against startDate sunrise, NOT endDate sunrise.
-      //   Comparing against endDate sunrise (always later in abs time) caused
-      //   false positives for every early-morning Ekadashi end (e.g. Yogini).
-      if (!isViddha && ek.endTime) {
-        const startDateObj2 = new Date(ek.startDate + "T00:00:00");
-        const srStart2      = calcSunTimes(lat, lng, startDateObj2);
-        const startAppSr2   = srStart2 ? srStart2.apparentSunriseH : 6.0;
-        const startSrMs2    = _rsMs(startDateObj2, startAppSr2);
-        const [ehh, emm]    = ek.endTime.split(":").map(Number);
-        const ekEndDateObj2 = new Date((ek.endDate || ek.startDate) + "T00:00:00");
-        const ekEndMs2      = ekEndDateObj2.getTime() + (ehh + emm/60) * 3600000;
-        if (ekEndMs2 < startSrMs2) {
-          newFastingDate = ek.endDate;
-          isViddha = true;
-        }
-      }
-    } else {
-      if (ekStartH >= sunriseH) newFastingDate = ek.endDate;
-    }
-
-    const pakshaLabel = paksha === "shukla" ? " ☀️ Shukla" : " 🌙 Krishna";
-    const label = (ek.name || "Ekadashi") + pakshaLabel + (isViddha ? " (Mahadvadashi · Arunodaya Viddha)" : "");
-
-    // KEY FIX: write recalculated fastingDate + isViddha back onto the stored ek entry.
-    // Without this, _computeParanaWindow reads stale ek.fastingDate from the original fetch,
-    // so Paran date/time stays wrong after horizonMode or parampara changes.
-    ek.fastingDate = newFastingDate;
-    ek.isViddha    = isViddha;
-    ek.label       = label;
-
-    // Clear stale entries for BOTH possible fasting dates for this Ekadashi
-    if (App.S.occasions) {
-      [ek.startDate, ek.endDate].forEach((d) => {
-        if (d && App.S.occasions[d]) {
-          const lbl = App.S.occasions[d];
-          if (lbl.includes(ek.name || "Ekadashi") || lbl.includes("Ekadashi") || lbl.includes("Mahadvadashi")) {
-            delete App.S.occasions[d];
-          }
-        }
-      });
-      App.S.occasions[newFastingDate] = label;
-    }
-  });
-}
-
-// ── _updateHorizonButtonTimes — fills Current Times inside each Horizon Mode pill button ──
-// Called whenever GPS coords or horizon mode changes.
-function _updateHorizonButtonTimes() {
-  const lat = App.S && App.S.lastLat;
-  const lng = App.S && App.S.lastLng;
-  function _fmt(h) {
-    h = ((h % 24) + 24) % 24;
-    let hh = Math.floor(h), mm = Math.round((h - hh) * 60);
-    if (mm >= 60) { hh++; mm = 0; }
-    const ap = hh % 24 >= 12 ? "PM" : "AM";
-    return (hh % 12 || 12) + ":" + String(mm).padStart(2, "0") + " " + ap;
-  }
-  const _set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
-  if (!lat || !lng) {
-    ["hm-app-sunrise","hm-app-sunset","hm-app-bm","hm-app-sk",
-     "hm-cel-sunrise","hm-cel-sunset","hm-cel-bm","hm-cel-sk"].forEach(id => _set(id, "—"));
-    return;
-  }
-  // Compute apparent (Earthy Sky) times directly from the NOAA formula
-  // without touching App.S.horizonMode — avoids any state mutation side effects.
-  const now = new Date();
-  const rad = Math.PI / 180;
-  const JD = Math.floor(now.getTime() / 86400000) + 2440587.5 + 0.5;
-  const T = (JD - 2451545.0) / 36525.0;
-  const L0 = (((280.46646 + 36000.76983*T + 0.0003032*T*T) % 360) + 360) % 360;
-  const M  = (((357.52911 + 35999.05029*T - 0.0001537*T*T) % 360) + 360) % 360;
-  const Mr = M * rad;
-  const C  = (1.914602 - 0.004817*T - 0.000014*T*T)*Math.sin(Mr)
-           + (0.019993 - 0.000101*T)*Math.sin(2*Mr)
-           + 0.000289*Math.sin(3*Mr);
-  const sunTrueLon = L0 + C;
-  const omega  = 125.04 - 1934.136*T;
-  const lambda = sunTrueLon - 0.00569 - 0.00478*Math.sin(omega*rad);
-  const eps0   = 23 + 26/60 + 21.448/3600 - (46.815/3600)*T - (0.00059/3600)*T*T + (0.001813/3600)*T*T*T;
-  const eps    = (eps0 + 0.00256*Math.cos(omega*rad)) * rad;
-  const dec    = Math.asin(Math.sin(eps)*Math.sin(lambda*rad));
-  const y      = Math.tan(eps/2)**2;
-  const L0r    = L0*rad;
-  const eqT    = (4/rad)*(y*Math.sin(2*L0r) - 2*0.016708634*Math.sin(Mr)
-               + 4*0.016708634*y*Math.sin(Mr)*Math.cos(2*L0r)
-               - 0.5*y*y*Math.sin(4*L0r) - 1.25*0.016708634**2*Math.sin(2*Mr));
-  const cosHA  = (Math.cos(90.833*rad) - Math.sin(lat*rad)*Math.sin(dec))
-               / (Math.cos(lat*rad)*Math.cos(dec));
-  if (cosHA > 1 || cosHA < -1) return; // polar edge case
-  const HA     = Math.acos(cosHA) / rad;
-  const tzOff  = -now.getTimezoneOffset();
-  const solarNoonUTC = 720 - 4*lng - eqT;
-  const sunriseUTC   = solarNoonUTC - HA*4;
-  const sunsetUTC    = solarNoonUTC + HA*4;
-  function toLocalH(utcMin) { return ((((utcMin + tzOff) / 60) % 24) + 24) % 24; }
-  const appSunriseH  = toLocalH(sunriseUTC);
-  const appSunsetH   = toLocalH(sunsetUTC);
-  const solarNoonH   = toLocalH(solarNoonUTC);
-  const celSunriseH  = solarNoonH - 6;
-  const celSunsetH   = solarNoonH + 6;
-  // Apparent (Earthy Sky) times
-  _set("hm-app-sunrise", _fmt(appSunriseH));
-  _set("hm-app-sunset",  _fmt(appSunsetH));
-  _set("hm-app-bm",      _fmt(appSunriseH - 96/60));
-  _set("hm-app-sk",      _fmt(appSunsetH  - 24/60));
-  // Celestial (ISKCON noon±6h) times
-  _set("hm-cel-sunrise", _fmt(celSunriseH));
-  _set("hm-cel-sunset",  _fmt(celSunsetH));
-  _set("hm-cel-bm",      _fmt(celSunriseH - 96/60));
-  _set("hm-cel-sk",      _fmt(celSunsetH  - 24/60));
-}
-
 // ── setHKLangDirect — directly set HK language to 'hi' or 'bn', used by Mahamantra Language buttons ──
 function setHKLangDirect(lang) {
   if (!App || !App.S) return;
@@ -7787,373 +6457,8 @@ function setHKLangDirect(lang) {
   if (App.S.japMode === "hk") switchJapMode("hk");
   App.save();
   fbDebouncedPush();
-  toast(lang === "bn" ? "মহামন্ত্র · Bangla" : "महामंत्र · Hindi");
-}
-
-// ── setHorizonMode — called directly by index.html pill buttons ──
-// index.html uses onclick="setHorizonMode('apparent')" and onclick="setHorizonMode('celestial')"
-function setHorizonMode(mode) {
-  if (!App.S) return;
-  // GUARD: Horizon Mode is fed exclusively by GPS Location toggle coords.
-  // Pill buttons do nothing if GPS is OFF or coords are not yet saved.
-  const _tgGps = document.getElementById("tgGpsLocation");
-  const _gpsActive = !!(_tgGps && _tgGps.classList.contains("on"));
-  const _hasCoords = App.S && App.S.lastLat && App.S.lastLng;
-  if (!_gpsActive || !_hasCoords) {
-    toast("⚠️ Turn on GPS Location first — Horizon Mode needs your coordinates");
-    return;
-  }
-  if (App.S.horizonMode === mode) return; // no change
-  App.S.horizonMode = mode;
-  _applyHorizonToggleUI();
-  // Resync Ekadashi with new horizon — reads App.S.lastLat/lastLng internally
-  _resyncEkOccasions();
-  App.save();
-  fbDebouncedPush();
-  // Use ONLY the GPS coords saved by the GPS Location toggle
-  const _hLat = App.S.lastLat;
-  const _hLng = App.S.lastLng;
-  updateSunInfo(_hLat, _hLng);
-  _updateCfgTimesPreview();
-  if (typeof renderEkadashiList === "function") renderEkadashiList();
-  if (typeof renderCal === "function") renderCal();
-  if (typeof loadSunTimes === "function") loadSunTimes(true);
-  const _hName = mode === "celestial"
-    ? "🔭 Celestial · Solar Noon ±6h (ISKCON)"
-    : "🌅 Earthy Sky · 90.833° apparent horizon";
-  toast(_hName + " — all timings updated");
-}
-
-// ── _updateCfgTimesPreview — populates the live Sacred Times preview in Settings ──
-function _updateCfgTimesPreview() {
-  // Also refresh the times shown inside each Horizon Mode pill button
-  if (typeof _updateHorizonButtonTimes === "function") _updateHorizonButtonTimes();
-  const lat = App.S && App.S.lastLat;
-  const lng = App.S && App.S.lastLng;
-  if (!lat || !lng) {
-    // GPS toggle is OFF — clear the preview rather than show fake-coord times
-    const cfgEk = document.getElementById("cfg-next-ekadashi");
-    if (cfgEk) cfgEk.innerHTML = '<span style="color:rgba(255,255,255,0.35);font-size:11px;">Turn on GPS Location to see times</span>';
-    return;
-  }
-  const now = new Date();
-  const times = calcSunTimes(lat, lng, now);
-  if (!times) return;
-  const bmStart = times.sunriseH - 96 / 60;
-  const bmEnd   = times.sunriseH - 48 / 60;
-  const skStart = times.sunsetH - 24 / 60;
-  const skEnd   = times.sunsetH + 24 / 60;
-  function _fmt(h) {
-    h = ((h % 24) + 24) % 24;
-    let hh = Math.floor(h), mm = Math.round((h - hh) * 60);
-    if (mm >= 60) { hh++; mm = 0; }
-    const ap = hh % 24 >= 12 ? "PM" : "AM";
-    return (hh % 12 || 12) + ":" + String(mm).padStart(2, "0") + " " + ap;
-  }
-  const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
-  set("cfg-bm-start",  _fmt(bmStart));
-  set("cfg-bm-end",    _fmt(bmEnd));
-  set("cfg-sunrise",   times.sunrise);
-  set("cfg-sk-start",  _fmt(skStart));
-  set("cfg-sunset",    times.sunset);
-  set("cfg-sk-end",    _fmt(skEnd > 24 ? skEnd - 24 : skEnd));
-  // Next 2 Ekadashis + Paran preview — mode-aware + parampara-aware
-  const cfgEk = document.getElementById("cfg-next-ekadashi");
-  if (cfgEk) {
-    const today = _ldk(now);
-    const isGaudiyaMode = !!(App.S && App.S.gaudiyaMode);
-
-    // ── First-run guard: don't show Ekadashis until user has chosen engine + parampara ──
-    if (!isGaudiyaMode) {
-      const engineChosen = App.S.ekTithiEngine === "app" || App.S.ekTithiEngine === "panchang";
-      const paramparaChosen = App.S.ekParampara === "smarta" || App.S.ekParampara === "vaishnava";
-      if (!engineChosen || !paramparaChosen) {
-        cfgEk.innerHTML = !engineChosen
-          ? '<span style="color:rgba(255,255,255,0.3);font-size:11px;">Select a Tithi Calculation Engine above to see upcoming Ekadashis</span>'
-          : '<span style="color:rgba(255,255,255,0.3);font-size:11px;">Select a Parampara above to see upcoming Ekadashis</span>';
-        return;
-      }
-    }
-
-    const upcoming = (App.S.customEkadashi || [])
-      .filter(ek => {
-        if (!ek || typeof ek !== "object") return false;
-        const isManual = !ek.autoFetched;
-        if (isGaudiyaMode) return (ek.source === "gaudiya" || isManual);
-        // Standard mode: filter by selected engine (engine is guaranteed non-null here due to guard above)
-        const engine = App.S.ekTithiEngine;
-        const expectedSource = engine === "panchang" ? "panchang" : "gps";
-        return isManual || ek.source === expectedSource;
-      })
-      .filter(ek => (ek.fastingDate || ek.startDate || "") >= today)
-      .slice(0, 2);
-
-    if (!upcoming.length) { cfgEk.innerHTML = ""; return; }
-
-    const parampara = App.S.ekParampara || "smarta";
-    const _pLat = lat, _pLng = lng;
-
-    function _ekCard(ek, idx) {
-      const fd  = ek.fastingDate || ek.startDate || "";
-      const name = ek.name || "Ekadashi";
-      const paksha = ek.paksha || "shukla";
-      const pakshaTag = paksha === "shukla"
-        ? '<span style="font-size:9px;background:rgba(241,196,15,0.18);color:#F1C40F;border-radius:4px;padding:1px 5px;font-weight:700;margin-left:5px;">☀️ Shukla</span>'
-        : '<span style="font-size:9px;background:rgba(155,89,182,0.2);color:#BD93F9;border-radius:4px;padding:1px 5px;font-weight:700;margin-left:5px;">🌙 Krishna</span>';
-      const isGaudiyaEk = ek.source === "gaudiya";
-      const paramTag = isGaudiyaEk
-        ? '<span style="font-size:8px;background:rgba(255,105,180,0.18);color:#FF69B4;border-radius:4px;padding:1px 5px;margin-left:4px;">Vaishnava</span>'
-        : parampara === "vaishnava"
-          ? '<span style="font-size:8px;background:rgba(74,144,226,0.18);color:#6DB8FF;border-radius:4px;padding:1px 5px;margin-left:4px;">Vaishnava</span>'
-          : '<span style="font-size:8px;background:rgba(46,204,113,0.15);color:#2ecc71;border-radius:4px;padding:1px 5px;margin-left:4px;">Smarta</span>';
-      const isViddha = !!ek.isViddha;
-      const viddhaTag = isViddha
-        ? '<span style="font-size:8px;background:rgba(255,152,0,0.18);color:#FF9800;border-radius:4px;padding:1px 5px;margin-left:4px;">Mahadvadashi</span>'
-        : '';
-
-      // Format fasting date nicely
-      const _fd = new Date(fd + "T00:00:00");
-      const _days   = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
-      const _months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-      const _dt = _fd.getDate();
-      const _sfx = _dt===1||_dt===21||_dt===31?"st":_dt===2||_dt===22?"nd":_dt===3||_dt===23?"rd":"th";
-      const fdFmt = _dt + _sfx + " " + _months[_fd.getMonth()] + " " + _fd.getFullYear() + " · " + _days[_fd.getDay()];
-
-      // Paran window
-      let paranHtml = "";
-      try {
-        const ekStartDt = new Date((ek.startDate || fd) + "T" + (ek.startTime || "06:00") + ":00");
-        const ekEndDt   = new Date((ek.endDate   || fd) + "T" + (ek.endTime   || "06:00") + ":00");
-        const par = _computeParanaWindow({ ekStart: ekStartDt, ekEnd: ekEndDt, paksha: ek.paksha, mhdType: ek.mhdType || (ek.isViddha ? "SUDDHA" : "NORMAL") }, _pLat, _pLng, fd);
-        if (par) {
-          const _pd = new Date(par.date + "T00:00:00");
-          const _pdt = _pd.getDate();
-          const _psfx = _pdt===1||_pdt===21||_pdt===31?"st":_pdt===2||_pdt===22?"nd":_pdt===3||_pdt===23?"rd":"th";
-          const pdFmt = _pdt + _psfx + " " + _months[_pd.getMonth()] + " " + _pd.getFullYear();
-          paranHtml =
-            '<div style="display:flex;align-items:center;gap:5px;margin-top:6px;padding:5px 8px;' +
-            'background:rgba(255,215,0,0.06);border:1px solid rgba(255,215,0,0.18);border-radius:7px;">' +
-            '<span style="font-size:10px;color:#FFD700;font-weight:700;">☀️ Paran</span>' +
-            '<span style="font-size:9px;color:rgba(255,215,0,0.45);">|</span>' +
-            '<span style="font-size:10px;color:#FFE566;">' + pdFmt + '</span>' +
-            '<span style="font-size:9px;color:rgba(255,215,0,0.45);">·</span>' +
-            '<span style="font-size:10px;color:#FFE566;font-weight:600;">' +
-            _fmtTime12(par.windowStart) + '</span>' +
-            '<span style="font-size:9px;color:rgba(255,215,0,0.45);"> → </span>' +
-            '<span style="font-size:10px;color:#FFE566;font-weight:600;">🌟 ' + _fmtTime12(par.recommendedEnd) + '</span>' +
-            (par.hardDeadline
-              ? '<span style="font-size:9px;color:rgba(255,100,100,0.7);"> (⏰ latest ' + _fmtTime12(par.hardDeadline) + ')</span>'
-              : '') +
-            '</div>';
-        }
-      } catch(_) {}
-
-      const glowCol  = idx === 0 ? "255,215,0" : "189,147,249";
-      const nameCol  = idx === 0 ? "#FFD700"   : "#BD93F9";
-      const accentBg = idx === 0 ? "rgba(255,215,0,0.07)" : "rgba(155,89,182,0.07)";
-      const borderC  = idx === 0 ? "rgba(255,215,0,0.35)" : "rgba(189,147,249,0.3)";
-
-      return '<div style="' +
-        'background:linear-gradient(145deg,' + accentBg + ',rgba(255,255,255,0.02));' +
-        'border:1.5px solid ' + borderC + ';' +
-        'border-radius:16px;padding:14px 12px;' +
-        'box-shadow:0 4px 24px rgba(' + glowCol + ',0.18),inset 0 1px 0 rgba(255,255,255,0.07);' +
-        'backdrop-filter:blur(8px);' +
-        'display:flex;flex-direction:column;gap:8px;' +
-        '">' +
-        '<div style="font-size:15px;color:' + nameCol + ';font-weight:800;letter-spacing:0.3px;line-height:1.2;">' + name + '</div>' +
-        '<div style="display:flex;flex-wrap:wrap;gap:3px;">' + pakshaTag + paramTag + viddhaTag + '</div>' +
-        '<div style="font-size:10px;color:rgba(255,255,255,0.5);line-height:1.5;">' +
-        '🗓 <span style="color:#fff;font-weight:700;font-size:11px;">' + fdFmt + '</span>' +
-        '</div>' +
-        paranHtml +
-        '</div>';
-    }
-
-    cfgEk.innerHTML =
-      '<div style="font-size:9px;color:rgba(255,215,0,0.5);letter-spacing:2px;text-transform:uppercase;font-weight:700;margin-top:10px;margin-bottom:8px;">🌙 Upcoming Ekadashis</div>' +
-      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">' +
-      upcoming.map((ek, i) => _ekCard(ek, i)).join("") +
-      '</div>';
-  }
-}
-
-function renderEkParampara() {
-  const p = App.S.ekParampara;  // null = never chosen; no default
-  const smBtn = document.getElementById("ekParSmarta");
-  const vaBtn = document.getElementById("ekParVaishnav");
-  const note = document.getElementById("ekParamparaNote");
-  // Use CSS classes only — inline style.cssText wipes base CSS button styles
-  if (smBtn)  smBtn.classList.toggle("active", p === "smarta");
-  if (vaBtn)  vaBtn.classList.toggle("active", p === "vaishnava");
-  if (note)   note.innerHTML = (p && EK_NOTES[p]) ? EK_NOTES[p] : "";
-}
-
-// ── Custom Ekadashi Date Management ──
-function _fmtTime12(t24) {
-  if (!t24) return "";
-  const [hStr, mStr] = t24.split(":");
-  let h = parseInt(hStr),
-    m = parseInt(mStr);
-  const ap = h >= 12 ? "PM" : "AM";
-  h = h % 12 || 12;
   return h + ":" + String(m).padStart(2, "0") + " " + ap;
 }
-
-function addEkadashiDate() {
-  const startDate =
-    (document.getElementById("ekStartDateIn") || {}).value || "";
-  const startTime =
-    (document.getElementById("ekStartTimeIn") || {}).value || "";
-  const endDate = (document.getElementById("ekEndDateIn") || {}).value || "";
-  const endTime = (document.getElementById("ekEndTimeIn") || {}).value || "";
-  const nameEl = document.getElementById("ekNameIn");
-  const name = nameEl ? nameEl.value.trim() : "";
-  const pakshaEl = document.querySelector('input[name="ekPaksha"]:checked');
-  const paksha = pakshaEl ? pakshaEl.value : "shukla";
-
-  if (!startDate) {
-    toast("Please select a start date 📅");
-    return;
-  }
-  if (!App.S.customEkadashi) App.S.customEkadashi = [];
-  if (App.S.customEkadashi.some((e) => _ekDate(e) === startDate)) {
-    toast("An Ekadashi starting on this date already exists");
-    return;
-  }
-
-  const entry = {
-    name,
-    paksha,
-    startDate,
-    startTime,
-    endDate: endDate || startDate,
-    endTime,
-  };
-  App.S.customEkadashi.push(entry);
-  App.S.customEkadashi.sort((a, b) => (_ekDate(a) < _ekDate(b) ? -1 : 1));
-
-  // Clear inputs
-  ["ekStartDateIn", "ekStartTimeIn", "ekEndDateIn", "ekEndTimeIn"].forEach(
-    (id) => {
-      const el = document.getElementById(id);
-      if (el) el.value = "";
-    },
-  );
-  if (nameEl) nameEl.value = "";
-  const shuklaRadio = document.getElementById("ekPakshaShukla");
-  if (shuklaRadio) shuklaRadio.checked = true;
-
-  // ── Write single fasting-date occasion per Parampara ──
-  // Get real GPS-based sunrise for the Ekadashi start date, then compute fasting day
-  if (!App.S.occasions) App.S.occasions = {};
-  const label =
-    (name || "Ekadashi") + (paksha === "shukla" ? " ☀️ Shukla" : " 🌙 Krishna");
-  const startFmt = startTime ? _fmtTime12(startTime) : "";
-  const endFmt = endTime ? _fmtTime12(endTime) : "";
-
-  function _applyEkFasting(sunriseH) {
-    // Arunodaya (Brahmamuhurta start) = 96 min before actual sunrise
-    const arunodayaH = sunriseH - 96 / 60;
-    let fastingDate = startDate;
-    let isViddha = false;
-    const parampara = App.S.ekParampara || "smarta";
-    if (startTime && endDate && endDate !== startDate) {
-      const [sh, sm] = startTime.split(":").map(Number);
-      const ekStartH = sh + sm / 60;
-      if (parampara === "vaishnava") {
-        // CORRECT rule: fast on day whose Arunodaya falls WITHIN Ekadashi window
-        if (ekStartH >= arunodayaH) {
-          // Ekadashi starts after Arunodaya of startDate → check endDate
-          const ekEndDate = new Date(endDate + "T00:00:00");
-          const srEnd = calcSunTimes(_pLat, _pLng, ekEndDate);
-          const arunodayaEndH = (srEnd ? srEnd.apparentSunriseH : 6.0) - 96 / 60;
-          const [eh, em] = endTime.split(":").map(Number);
-          const ekEndH = eh + em / 60;
-          if (arunodayaEndH < ekEndH) {
-            fastingDate = endDate;
-            isViddha = true;
-          }
-        }
-      } else {
-        // Smarta: if Ekadashi tithi starts after actual sunrise, fast on endDate
-        if (ekStartH >= sunriseH) fastingDate = endDate;
-      }
-    }
-    const timeNote = isViddha
-      ? " (Mahadvadashi · Arunodaya Viddha · Sunrise " +
-        fmtHour(sunriseH) +
-        " / Arunodaya " +
-        fmtHour(arunodayaH) +
-        ")"
-      : startFmt
-        ? " " +
-          startFmt +
-          (endFmt ? "–" + endFmt : "") +
-          " (Sunrise " +
-          fmtHour(sunriseH) +
-          ")"
-        : "";
-    // KEY: write fastingDate + isViddha back onto the stored entry so
-    // renderEkadashiList, _computeParanaWindow and _resyncEkOccasions all
-    // read the mode-aware value instead of recalculating independently.
-    entry.fastingDate = fastingDate;
-    entry.isViddha    = isViddha;
-    App.S.occasions[fastingDate] = label + timeNote;
-    App.save();
-    fbDebouncedPush();
-    renderEkadashiList();
-    renderCal();
-    toast(
-      "Ekadashi added 📅 (Sunrise " +
-        fmtHour(sunriseH) +
-        ", Arunodaya " +
-        fmtHour(arunodayaH) +
-        ")",
-    );
-  }
-
-  // Use ONLY the coords saved by the GPS Location toggle.
-  // Never call navigator.geolocation independently.
-  const _addLat = App.S && App.S.lastLat;
-  const _addLng = App.S && App.S.lastLng;
-  if (_addLat && _addLng) {
-    const ekDate = new Date(startDate + "T00:00:00");
-    const srData = calcSunTimes(_addLat, _addLng, ekDate);
-    _applyEkFasting(srData ? srData.sunriseH : 6.0);
-  } else {
-    // GPS toggle is OFF — fall back to 6:00 AM, advise user to enable GPS
-    toast("⚠️ Turn on GPS Location toggle for accurate sunrise times");
-    _applyEkFasting(6.0);
-  }
-}
-
-function removeEkadashiDate(startDate) {
-  const entry = (App.S.customEkadashi || []).find(
-    (e) => _ekDate(e) === startDate,
-  );
-  App.S.customEkadashi = (App.S.customEkadashi || []).filter(
-    (e) => _ekDate(e) !== startDate,
-  );
-  if (App.S.occasions) {
-    // Remove both dates set by this Ekadashi
-    [startDate, entry && entry.endDate].filter(Boolean).forEach((d) => {
-      if (
-        App.S.occasions[d] &&
-        (App.S.occasions[d].includes("Ekadashi") ||
-          App.S.occasions[d].includes(entry && entry.name))
-      ) {
-        delete App.S.occasions[d];
-      }
-    });
-  }
-  App.save();
-  fbDebouncedPush();
-  renderEkadashiList();
-  renderCal();
-  toast("Ekadashi removed");
-}
-
 // ── Vaishnava / Purnimanta month names (index 0=Chaitra … 11=Phalguna) ──
 // Vaishnava month names — Gaurabda deity name + traditional Hindu name
 // Index 0=Chaitra … 11=Phalguna (Purnimanta order)
@@ -8182,380 +6487,11 @@ function _gaurabdaYear(dateStr) {
   // Gaura Purnima is around March; before March of a year, still in previous Gaurabda
   return m < 2 ? (y - 1486 - 1) : (y - 1486);
 }
-
-function renderEkadashiList() {
-  const list = document.getElementById("ekadashiList");
-  if (!list) return;
-  const allEntries = App.S.customEkadashi || [];
-  const isGaudiya = !!(App.S && App.S.gaudiyaMode);
-
-  // Filter by mode (same logic as before)
-  let entries = allEntries.filter(e => {
-    if (typeof e !== "object") return true;
-    const isManual = !e.autoFetched;
-    if (isGaudiya) return e.source === "gaudiya" || isManual;
-    const engine = App.S.ekTithiEngine;
-    if (!engine) return isManual;
-    const expectedSource = engine === "panchang" ? "panchang" : "gps";
-    return isManual || e.source === expectedSource;
-  });
-
-  // ── Range filter vs default 24 upcoming ──────────────────────────
-  const rangeFrom = (document.getElementById("ekRangeFrom") || {}).value || "";
-  const rangeTo   = (document.getElementById("ekRangeTo")   || {}).value || "";
-  const todayStr  = new Date().toISOString().slice(0, 10);
-  const countLbl  = document.getElementById("ekCountLabel");
-
-  let usingRange = false;
-  if (rangeFrom || rangeTo) {
-    usingRange = true;
-    entries = entries.filter(e => {
-      const sd = _ekDate(e);
-      if (rangeFrom && sd < rangeFrom) return false;
-      if (rangeTo   && sd > rangeTo)   return false;
-      return true;
-    });
-    if (countLbl) countLbl.textContent =
-      entries.length + " Ekadashi" + (entries.length !== 1 ? "s" : "") +
-      " in selected range";
-  } else {
-    // Default: 24 UPCOMING only (fasting date ≥ today) — no past entries
-    entries = entries.filter(e => {
-      const fd = (typeof e === "object" && e.fastingDate) ? e.fastingDate : _ekDate(e);
-      return fd >= todayStr;
-    });
-    const total = entries.length;
-    entries = entries.slice(0, 24);
-    const hidden = Math.max(0, total - 24);
-    if (countLbl) countLbl.textContent =
-      total + " upcoming · showing " + entries.length +
-      (hidden > 0 ? " (+" + hidden + " more — use Range to see all)" : "");
-  }
-
-  if (entries.length === 0) {
-    list.innerHTML =
-      '<div style="font-size:11px;color:rgba(255,215,0,0.35);text-align:center;padding:16px 0;letter-spacing:1px;">No Ekadashis found 🙏</div>';
-    return;
-  }
-
-  // Find the first upcoming (fast date ≥ today) to mark as "NEXT"
-  const firstUpcomingIdx = entries.findIndex(e => {
-    const fd = (typeof e === "object" && e.fastingDate) ? e.fastingDate : _ekDate(e);
-    return fd >= todayStr;
-  });
-
-  const parampara = App.S.ekParampara || "smarta";
-
-  const fmtD = (d) => {
-    const _d = new Date(d + "T00:00:00");
-    const _days   = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
-    const _months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-    const dt = _d.getDate();
-    const sfx = dt === 1||dt===21||dt===31 ? "st" : dt===2||dt===22 ? "nd" : dt===3||dt===23 ? "rd" : "th";
-    return dt + sfx + " " + _months[_d.getMonth()] + " " + _d.getFullYear() + " · " + _days[_d.getDay()];
-  };
-
-  list.innerHTML = entries
-    .map((e, idx) => {
-      const sd = _ekDate(e);
-      const ed = typeof e === "object" && e.endDate ? e.endDate : sd;
-      const name = typeof e === "object" && e.name ? e.name : "Ekadashi";
-      const paksha = typeof e === "object" && e.paksha ? e.paksha : "shukla";
-      const startTime = typeof e === "object" && e.startTime ? e.startTime : "";
-      const endTime = typeof e === "object" && e.endTime ? e.endTime : "";
-      const isAuto = typeof e === "object" && e.autoFetched ? true : false;
-      const isNext = (idx === firstUpcomingIdx);
-
-      // ── Gaurabda Year + Vaishnava Month ────────────────────────
-      const gaurabdaYr = _gaurabdaYear(sd);
-      // Get lunar month index (0–11) using the same function used at fetch time
-      let lunarMi = -1;
-      try {
-        lunarMi = _getAdjustedMonthIndex(new Date(sd + "T00:00:00"));
-      } catch (_) {}
-      // Check if Adhik Maas
-      let isAdhikMaas = false;
-      try {
-        const _adhW = _getAdhikMaasWindow ? _getAdhikMaasWindow(sd) : null;
-        isAdhikMaas = !!_adhW;
-      } catch (_) {}
-      const _monthObj = isAdhikMaas
-        ? { deity: "Purushottama", hindu: "Adhik Maas" }
-        : (lunarMi >= 0 ? (_VAISHNAVA_MONTH_NAMES[lunarMi] || null) : null);
-
-      const monthBadge = _monthObj
-        ? `<span class="ek-month-badge">${_monthObj.deity} <span style="opacity:0.6;font-weight:500;">· ${_monthObj.hindu}</span></span>`
-        : "";
-      const adhikBadge = isAdhikMaas
-        ? `<span class="ek-adhik-badge">✨ Purushottama Maas</span>`
-        : "";
-      const gaurabdaBadge = gaurabdaYr > 0
-        ? `<span class="ek-gaurabda-badge">${gaurabdaYr} Gaurabda</span>`
-        : "";
-
-      // ── Paksha tag ──────────────────────────────────────────────
-      const pLabel = paksha === "shukla"
-        ? `<span style="font-size:9px;background:rgba(241,196,15,0.18);color:#F1C40F;border-radius:20px;padding:2px 9px;font-weight:700;letter-spacing:.5px;border:1px solid rgba(241,196,15,0.3);">☀️ Shukla</span>`
-        : `<span style="font-size:9px;background:rgba(155,89,182,0.22);color:#BD93F9;border-radius:20px;padding:2px 9px;font-weight:700;letter-spacing:.5px;border:1px solid rgba(155,89,182,0.35);">🌙 Krishna</span>`;
-
-      // ── Parampara tag ───────────────────────────────────────────
-      const isGaudiyaEntry = typeof e === "object" && e.source === "gaudiya";
-      const paramparaTag = isGaudiyaEntry
-        ? `<span style="font-size:9px;background:rgba(255,105,180,0.15);color:#FF69B4;border-radius:20px;padding:2px 9px;font-weight:700;border:1px solid rgba(255,105,180,0.3);">Vaishnava</span>`
-        : parampara === "vaishnava"
-          ? `<span style="font-size:9px;background:rgba(74,144,226,0.17);color:#6DB8FF;border-radius:20px;padding:2px 9px;font-weight:700;border:1px solid rgba(74,144,226,0.3);">Vaishnava</span>`
-          : `<span style="font-size:9px;background:rgba(46,204,113,0.13);color:#2ecc71;border-radius:20px;padding:2px 9px;font-weight:700;border:1px solid rgba(46,204,113,0.28);">Smarta</span>`;
-
-      const autoTag = isAuto
-        ? `<span style="font-size:8px;color:rgba(46,204,113,0.65);border-radius:20px;padding:2px 7px;border:1px solid rgba(46,204,113,0.22);">AUTO</span>`
-        : "";
-
-      const eid = "ekEd_" + sd.replace(/-/g, "");
-
-      // ── Fasting date (same logic preserved) ────────────────────
-      let fastingDate = (typeof e === "object" && e.fastingDate) ? e.fastingDate : sd;
-      let isViddha    = (typeof e === "object" && e.isViddha)    ? !!e.isViddha  : false;
-      let mhdType     = (typeof e === "object" && e.mhdType)     ? e.mhdType     : (isViddha ? "SUDDHA" : "NORMAL");
-      if (!e.fastingDate && startTime) {
-        const [hh, mm] = startTime.split(":").map(Number);
-        const ekStartH = hh + mm / 60;
-        const _eLat = App.S && App.S.lastLat;
-        const _eLng = App.S && App.S.lastLng;
-        if (!_eLat || !_eLng) {
-          fastingDate = sd;
-        } else {
-          const _ekD = new Date(sd + "T00:00:00");
-          const _srD = calcSunTimes(_eLat, _eLng, _ekD);
-          const _sunriseH = _srD ? _srD.sunriseH : 6.0;
-          const _arunodayaH = _sunriseH - 96 / 60;
-          const _isVaishnavaRender = App.S && (App.S.gaudiyaMode || App.S.ekParampara === "vaishnava");
-          if (_isVaishnavaRender) {
-            if (ekStartH >= _arunodayaH) { fastingDate = ed; isViddha = true; mhdType = "SUDDHA"; }
-            const _shift = _resolveMahadvadasiShift(fastingDate, paksha, _eLat, _eLng, mhdType);
-            fastingDate = _shift.date;
-            isViddha = _shift.isViddha || isViddha;
-            mhdType = _shift.mhdType;
-          } else {
-            if (ekStartH >= _sunriseH) fastingDate = ed;
-          }
-        }
-      }
-      const isTomorrow = fastingDate === ed && sd !== ed;
-
-      // ── Fast row ────────────────────────────────────────────────
-      const fastHtml = isViddha
-        ? `<div class="ek-fast-row">
-            <div class="ek-fast-date">🌅 ${fmtD(fastingDate)}</div>
-            <div style="text-align:center;margin-top:4px;"><span style="font-size:10px;background:rgba(255,152,0,0.18);color:#FF9800;border-radius:20px;padding:3px 12px;border:1px solid rgba(255,152,0,0.35);font-weight:700;">⚡ Mahadvadashi${mhdType && mhdType !== "SUDDHA" ? " · " + mhdType : ""}</span></div>
-           </div>`
-        : `<div class="ek-fast-row">
-            <div class="ek-fast-date">🌅 ${fmtD(fastingDate)}</div>
-           </div>`;
-
-      // ── Parana (fast-breaking) ───────────────────────────────────
-      let paranaHtml = "";
-      try {
-        const _ekStartDt = new Date(sd + "T" + (startTime || "06:00") + ":00");
-        const _ekEndDt   = new Date(ed + "T" + (endTime   || "06:00") + ":00");
-        const _ekObjP    = { ekStart: _ekStartDt, ekEnd: _ekEndDt, paksha: paksha, mhdType: mhdType };
-        const _pLat = App.S && App.S.lastLat;
-        const _pLng = App.S && App.S.lastLng;
-        if (!_pLat || !_pLng) {
-          paranaHtml = `<div class="ek-parana-row"><span style="color:rgba(255,215,0,0.5)">☀️ Parana</span><span style="color:rgba(255,255,255,0.3);font-size:9px;">— turn on GPS for accurate time</span></div>`;
-        } else {
-          const _par = _computeParanaWindow(_ekObjP, _pLat, _pLng, fastingDate);
-          if (_par)
-            paranaHtml =
-              `<div class="ek-parana-row">` +
-              `<span style="color:#FFD700;font-weight:700;">☀️ Parana</span>` +
-              `<span style="color:rgba(255,215,0,0.45);">|</span>` +
-              `<span>${fmtD(_par.date)}</span>` +
-              `<span style="color:rgba(255,215,0,0.45);">·</span>` +
-              `<span style="font-weight:700;">${_fmtTime12(_par.windowStart)}</span>` +
-              `<span style="color:rgba(255,215,0,0.4);">→</span>` +
-              `<span style="font-weight:700;color:#FFD700;">🌟 ${_fmtTime12(_par.recommendedEnd)}</span>` +
-              (_par.hardDeadline ? `<span style="color:rgba(255,100,100,0.65);font-size:9px;">(⏰ ${_fmtTime12(_par.hardDeadline)})</span>` : '') +
-              `</div>`;
-        }
-      } catch (_pe) {}
-
-      const sfmt = startTime ? _fmtTime12(startTime) : "";
-      const efmt = endTime ? _fmtTime12(endTime) : "";
-
-      const nextBadge = isNext
-        ? `<div style="text-align:center;margin-top:5px;">
-            <span class="ek-next-badge">⟡ NEXT EKADASHI ⟡</span>
-           </div>`
-        : "";
-
-      return `<div class="ek-premium-card${isNext ? " ek-upcoming-next" : ""}">
-        <!-- Top shimmer line via ::before -->
-        <div class="ek-card-name-wrap">
-          <span class="ek-card-name">${name}</span>
-          ${nextBadge}
-        </div>
-        <div class="ek-card-divider"></div>
-        <div class="ek-card-body">
-
-          <!-- Gaurabda + Vaishnava Month row -->
-          <div class="ek-month-row">
-            ${monthBadge}${adhikBadge}${gaurabdaBadge}
-          </div>
-
-          <!-- Paksha + Parampara + Auto tags -->
-          <div class="ek-tags-row">
-            ${pLabel}${paramparaTag}${autoTag}
-          </div>
-
-          <!-- Tithi timing -->
-          <div class="ek-tithi-section">
-            <div class="ek-tithi-label">Tithi</div>
-            <div class="ek-tithi-start">${fmtD(sd)}${sfmt ? ` <span style="color:#FFE566;font-weight:700;">· ${sfmt}</span>` : ""}</div>
-            <div class="ek-tithi-end">→ ${fmtD(ed)}${efmt ? ` <span style="color:#FFE566;">· ${efmt}</span>` : ""}</div>
-          </div>
-
-          <!-- Fast date -->
-          ${fastHtml}
-
-          <!-- Parana -->
-          ${paranaHtml}
-
-
-        </div>
-      </div>`;
-    })
-    .join("");
-}
-
-function clearEkRange() {
-  const f = document.getElementById("ekRangeFrom");
-  const t = document.getElementById("ekRangeTo");
-  if (f) f.value = "";
-  if (t) t.value = "";
-  renderEkadashiList();
-}
-
 function toggleEkEdit(startDate) {
   const eid = "ekEd_" + startDate.replace(/-/g, "");
   const el = document.getElementById(eid);
   if (el) el.style.display = el.style.display === "none" ? "block" : "none";
 }
-
-function saveEkadashiEdit(oldSd) {
-  const eid = "ekEd_" + oldSd.replace(/-/g, "");
-  const newName = (document.getElementById(eid + "_n") || {}).value || "";
-  const newSd = (document.getElementById(eid + "_sd") || {}).value || "";
-  const newSt = (document.getElementById(eid + "_st") || {}).value || "";
-  const newEd = (document.getElementById(eid + "_ed") || {}).value || "";
-  const newEt = (document.getElementById(eid + "_et") || {}).value || "";
-  const pEl = document.querySelector(`input[name="${eid}_p"]:checked`);
-  const newPaksha = pEl ? pEl.value : "shukla";
-  if (!newSd) {
-    toast("Start date required 📅");
-    return;
-  }
-
-  // Remove old entry and its occasions
-  const oldEntry = (App.S.customEkadashi || []).find(
-    (e) => _ekDate(e) === oldSd,
-  );
-  App.S.customEkadashi = (App.S.customEkadashi || []).filter(
-    (e) => _ekDate(e) !== oldSd,
-  );
-  if (App.S.occasions && oldEntry) {
-    [oldSd, oldEntry.endDate].filter(Boolean).forEach((d) => {
-      if (
-        App.S.occasions[d] &&
-        (App.S.occasions[d].includes("Ekadashi") ||
-          App.S.occasions[d].includes("Mahadvadashi") ||
-          (oldEntry.name && App.S.occasions[d].includes(oldEntry.name)))
-      )
-        delete App.S.occasions[d];
-    });
-  }
-
-  // Push updated entry first so it's saved even before GPS resolves
-  App.S.customEkadashi.push({
-    name: newName.trim(),
-    paksha: newPaksha,
-    startDate: newSd,
-    startTime: newSt,
-    endDate: newEd || newSd,
-    endTime: newEt,
-  });
-  App.S.customEkadashi.sort((a, b) => (_ekDate(a) < _ekDate(b) ? -1 : 1));
-
-  const lbl =
-    (newName.trim() || "Ekadashi") +
-    (newPaksha === "shukla" ? " ☀️ Shukla" : " 🌙 Krishna");
-  const sf = newSt ? _fmtTime12(newSt) : "",
-    ef = newEt ? _fmtTime12(newEt) : "";
-  if (!App.S.occasions) App.S.occasions = {};
-
-  function _applyEditFasting(sunriseH) {
-    // Arunodaya (Brahmamuhurta start) = 96 min before actual sunrise
-    const arunodayaH = sunriseH - 96 / 60;
-    let fastingDate = newSd,
-      isViddha = false;
-    const parampara = App.S.ekParampara || "smarta";
-    if (newSt && newEd && newEd !== newSd) {
-      const [h, m] = newSt.split(":").map(Number),
-        ekH = h + m / 60;
-      if (parampara === "vaishnava" && ekH >= arunodayaH) {
-        fastingDate = newEd;
-        isViddha = true;
-      } else if (parampara === "smarta" && ekH >= sunriseH) fastingDate = newEd;
-    }
-    const tnote = isViddha
-      ? " (Mahadvadashi · Arunodaya Viddha · Sunrise " +
-        fmtHour(sunriseH) +
-        " / Arunodaya " +
-        fmtHour(arunodayaH) +
-        ")"
-      : sf
-        ? " " +
-          sf +
-          (ef ? "–" + ef : "") +
-          " (Sunrise " +
-          fmtHour(sunriseH) +
-          ")"
-        : "";
-    // KEY: write fastingDate + isViddha back onto the stored entry so all
-    // downstream code (renderEkadashiList, _computeParanaWindow) reads the
-    // mode-aware value without needing to recalculate independently.
-    const _ekIdx = App.S.customEkadashi.findIndex(e => _ekDate(e) === newSd);
-    if (_ekIdx !== -1) {
-      App.S.customEkadashi[_ekIdx].fastingDate = fastingDate;
-      App.S.customEkadashi[_ekIdx].isViddha    = isViddha;
-    }
-    App.S.occasions[fastingDate] = lbl + tnote;
-    App.save();
-    fbDebouncedPush();
-    renderEkadashiList();
-    renderCal();
-    toast(
-      "Ekadashi updated ✅ (Sunrise " +
-        fmtHour(sunriseH) +
-        ", Arunodaya " +
-        fmtHour(arunodayaH) +
-        ")",
-    );
-  }
-
-  // Use ONLY the coords saved by the GPS Location toggle.
-  // Never call navigator.geolocation independently.
-  const _editLat = App.S && App.S.lastLat;
-  const _editLng = App.S && App.S.lastLng;
-  if (_editLat && _editLng) {
-    const ekDate = new Date(newSd + "T00:00:00");
-    const srData = calcSunTimes(_editLat, _editLng, ekDate);
-    _applyEditFasting(srData ? srData.sunriseH : 6.0);
-  } else {
-    toast("⚠️ Turn on GPS Location toggle for accurate sunrise times");
-    _applyEditFasting(6.0);
-  }
-}
-
 // ── Graph range state: offset in days from today (0 = last 90d, -90 = prev 90d, etc.)
 let _bcRangeOffset = 0;
 
@@ -9686,9 +7622,7 @@ function calcSunTimes(lat, lng, date) {
   //   Celestial  → pure Vedic/astronomical: solar noon ± 6 hours (Local Apparent Solar Time)
   //
   // The function always computes the apparent (Earth-sky) times first.
-  // When horizonMode === "celestial" the returned sunriseH/sunsetH are overridden
   // with the solar-noon ± 6h values so Brahma Muhurta, Sandhya Kal, Parana,
-  // and Ekadashi viddha checks all use the correct ISKCON celestial times.
   const rad = Math.PI / 180;
 
   // JD at noon UTC for the requested calendar date (device local midnight → UTC noon)
@@ -9764,7 +7698,6 @@ function calcSunTimes(lat, lng, date) {
   // Celestial mode: ISKCON definition — solar noon ± exactly 6 hours
   // This equals Local Apparent Solar Time 06:00 and 18:00.
   const celestialMode =
-    typeof App !== "undefined" && App.S && App.S.horizonMode === "celestial";
   const sunriseH = celestialMode ? solarNoonH - 6 : apparentSunriseH;
   const sunsetH  = celestialMode ? solarNoonH + 6 : apparentSunsetH;
 
@@ -9832,7 +7765,6 @@ function updateSunInfo(lat, lng) {
     skEnd > 24 ? skEnd - 24 : skEnd,
   );
   document.getElementById("rh-sunset").textContent = times.sunset;
-  _updateCfgTimesPreview();
 }
 function initSunTimes() {
   // ARCHITECTURE: initSunTimes only reads coordinates saved by the GPS Location toggle.
@@ -10061,11 +7993,7 @@ window.addEventListener("load", async () => {
   fbInit();
   initSunTimes();
   buildPwaManifest();
-  // Migrate any legacy two-date Ekadashi occasions to single fasting date
-  _cleanLegacyEkadashiOccasions();
-  // Resync Ekadashi fasting dates using saved horizonMode + parampara
   // (ensures correct dates even if settings were changed on another device)
-  _resyncEkOccasions();
   // Persist the cleaned occasions immediately
   App.save();
   fbDebouncedPush();
@@ -11697,7 +9625,6 @@ function applySunCache(cache) {
   // In Celestial mode, sunrise = solar noon − 6h and sunset = solar noon + 6h.
   // Open-Meteo returns apparent sunrise. We derive the solar noon from it and
   // recalculate celestial times so reminder notifications match the main display.
-  if (typeof App !== "undefined" && App.S && App.S.horizonMode === "celestial") {
     const lat  = cache.lat  || (App.S && App.S.lastLat)  || 23.8103;
     const lng  = cache.lon  || (App.S && App.S.lastLng)  || 90.4125;
     const solarData = calcSunTimes(lat, lng, sr0);
@@ -11744,7 +9671,6 @@ function scheduleType(type, cfg) {
       let ss0 = new Date(cache.sunset0),
         ss1 = new Date(cache.sunset1);
       // Apply celestial horizon offset if needed (Open-Meteo returns apparent times)
-      if (typeof App !== "undefined" && App.S && App.S.horizonMode === "celestial") {
         const _off = 4 * 60 * 1000;
         sr0 = new Date(sr0.getTime() + _off);
         sr1 = new Date(sr1.getTime() + _off);
@@ -12946,124 +10872,6 @@ async function getLifetimeActivityLog() {
   });
   return all;
 }
-
-// ══════════════════════════════════════════════════════
-// ── Annual Ekadashi Calendar (2025/2026/2027) ─────────
-// ══════════════════════════════════════════════════════
-
-let _annualEkYear = null;
-let _annualEkComputing = false;
-
-function toggleAnnualEk(year) {
-  const listEl = document.getElementById("annualEkList");
-  const statusEl = document.getElementById("annualEkStatus");
-  if (!listEl) return;
-
-  // If same year toggled again, hide
-  if (_annualEkYear === year && listEl.style.display !== "none") {
-    listEl.style.display = "none";
-    _annualEkYear = null;
-    return;
-  }
-
-  _annualEkYear = year;
-  listEl.style.display = "block";
-  listEl.innerHTML =
-    '<div style="font-size:12px;color:rgba(255,255,255,0.4);text-align:center;padding:16px 0;">⏳ Computing ' +
-    year +
-    " Ekadashis…</div>";
-  if (statusEl) statusEl.textContent = "";
-
-  if (_annualEkComputing) return;
-  _annualEkComputing = true;
-
-  // Use saved GPS, fallback to India center
-  const lat = App.S && App.S.lastLat ? App.S.lastLat : 22.5;
-  const lng = App.S && App.S.lastLng ? App.S.lastLng : 78.5;
-
-  setTimeout(function () {
-    try {
-      const results = _computeYearEkadashis(year, lat, lng);
-      _renderAnnualEkList(results, year, listEl, statusEl);
-    } catch (e) {
-      listEl.innerHTML =
-        '<div style="font-size:12px;color:#e8336d;padding:8px;">Error: ' +
-        e.message +
-        "</div>";
-    }
-    _annualEkComputing = false;
-  }, 30);
-}
-
-function _computeYearEkadashis(year, lat, lng) {
-  const DAY = 86400000;
-  const results = [];
-  // Scan from Dec 1 prev year to Jan 15 next year (to catch all Ekadashis in the year)
-  const scanStart = new Date(year - 1, 11, 1); // Dec 1 of previous year
-  const scanEnd = new Date(year + 1, 0, 15); // Jan 15 of next year
-
-  for (const paksha of ["shukla", "krishna"]) {
-    let cur = new Date(scanStart);
-    while (cur < scanEnd) {
-      const wStart = new Date(cur);
-      const wEnd = new Date(cur.getTime() + 17 * DAY);
-      const ek = _findEkInWindow(wStart, wEnd, paksha);
-      if (ek && ek.ekStart.getFullYear() === year) {
-        const ekDateStr = ek.ekStart.toISOString().slice(0, 10);
-        const adhikWin = _getAdhikMaasWindow
-          ? _getAdhikMaasWindow(ekDateStr)
-          : null;
-        let name;
-        if (adhikWin) {
-          name = paksha === "shukla" ? "Padmini" : "Parama";
-        } else {
-          const mi = _getAdjustedMonthIndex(ek.ekStart, paksha);
-          name =
-            paksha === "shukla"
-              ? _EK_NAMES_SHUKLA[mi] || "Ekadashi"
-              : _EK_NAMES_KRISHNA[mi] || "Ekadashi";
-        }
-        const resolved = _resolveEkFasting(ek, lat, lng, name);
-        // Compute parana window
-        const parana = _computeParanaWindow(ek, lat, lng, resolved.fastingDate);
-        results.push({ ...resolved, parana });
-      }
-      cur.setTime(cur.getTime() + 15 * DAY);
-    }
-  }
-
-  // Sort by fasting date
-  results.sort((a, b) => (a.fastingDate < b.fastingDate ? -1 : 1));
-
-  // Remove duplicates (same fastingDate)
-  const seen = new Set();
-  return results.filter((r) => {
-    if (seen.has(r.fastingDate)) return false;
-    seen.add(r.fastingDate);
-    return true;
-  });
-}
-
-// Compute Parana (fast-breaking) window.
-//
-// Reverse-engineered Vaishnava (Gaudiya/ISKCON) rules:
-//   START   : max( sunrise on Dvadashi day , end of Hari Vāsara )
-//             where Hari Vāsara = last 1/4 of Ekadashi + first 1/4 of Dvadashi.
-//             End of Hari Vāsara = dvadashiStart + (dvadashiEnd − dvadashiStart) / 4
-//             (dvadashiStart = ekEnd). Breaking fast during Hari Vāsara is forbidden,
-//             so if HV extends past sunrise, Parana is pushed to the end of HV.
-//   END     : sunrise + 1/3 × apparent daytime (prātaḥ-kāla limit).
-//   HARD DEADLINE : Dvadashi tithi end on Paran day (must finish before this).
-//
-// Smarta fallback (when not in Vaishnava/Gaudiya mode):
-//   START = mode-aware sunrise
-//   END   = sunrise + 1/5 × mode-aware daytime
-// _computeParanaWindow moved to gaudiya-engine.js (loaded before app.js).
-
-function _decHToHHMM(h) {
-  const hh = Math.floor(h),
-    mm = Math.round((h - hh) * 60);
-  return String(hh).padStart(2, "0") + ":" + String(mm % 60).padStart(2, "0");
 }
 
 function _fmtDateDMY(dateStr) {
@@ -13079,53 +10887,6 @@ function _fmtDateDMY(dateStr) {
     String(parseInt(m)).padStart(2, "0") +
     ":" +
     y
-  );
-}
-
-function _renderAnnualEkList(results, year, listEl, statusEl) {
-  if (!results.length) {
-    listEl.innerHTML =
-      '<div style="font-size:12px;color:rgba(255,255,255,0.4);text-align:center;padding:10px;">No Ekadashis found for ' +
-      year +
-      "</div>";
-    return;
-  }
-  const parampara = App.S.ekParampara || "smarta";
-  const paramTag =
-    parampara === "vaishnava"
-      ? '<span style="font-size:8px;background:rgba(74,144,226,0.2);color:#6DB8FF;border-radius:4px;padding:1px 5px;">Vaishnava</span>'
-      : '<span style="font-size:8px;background:rgba(46,204,113,0.15);color:#2ecc71;border-radius:4px;padding:1px 5px;">Smarta</span>';
-
-  listEl.innerHTML = results
-    .map((r) => {
-      const pLabel =
-        r.paksha === "shukla"
-          ? '<span style="font-size:9px;background:rgba(241,196,15,0.2);color:#F1C40F;border-radius:4px;padding:2px 5px;font-weight:700;">☀️ SHUKLA</span>'
-          : '<span style="font-size:9px;background:rgba(155,89,182,0.25);color:#BD93F9;border-radius:4px;padding:2px 5px;font-weight:700;">🌙 KRISHNA</span>';
-      const viddhaTag = r.isViddha
-        ? ' <span style="font-size:8px;background:rgba(255,152,0,0.2);color:#FF9800;border-radius:4px;padding:1px 5px;">Mahadvadashi</span>'
-        : "";
-
-      const paranaHtml = r.parana
-        ? `<div style="margin-top:6px;padding:5px 8px;background:rgba(255,215,0,0.08);border:1px solid rgba(255,215,0,0.22);border-radius:7px;display:flex;align-items:center;gap:5px;flex-wrap:wrap;"><span style="font-size:10px;color:#FFD700;font-weight:700;">☀️ Parana</span><span style="font-size:9px;color:rgba(255,215,0,0.55);">|</span><span style="font-size:10px;color:#FFE566;">${_fmtDateDMY(r.parana.date)}</span><span style="font-size:9px;color:rgba(255,215,0,0.55);">·</span><span style="font-size:10px;color:#FFE566;font-weight:600;">${_fmtTime12(r.parana.windowStart)}</span><span style="font-size:9px;color:rgba(255,215,0,0.45);"> → </span><span style="font-size:10px;color:#FFE566;font-weight:600;">🌟 ${_fmtTime12(r.parana.recommendedEnd)}</span>${r.parana.hardDeadline ? '<span style="font-size:9px;color:rgba(255,100,100,0.7);"> (⏰ latest ' + _fmtTime12(r.parana.hardDeadline) + ')</span>' : ''}</div>`
-        : "";
-
-      return `<div style="background:rgba(74,144,226,0.07);border:1px solid rgba(74,144,226,0.18);border-radius:10px;padding:9px 11px;margin-bottom:7px;">
-      <div style="font-size:11px;color:#6DB8FF;font-weight:700;margin-bottom:2px;">${r.name} ${pLabel}${viddhaTag}</div>
-      <div style="font-size:11px;color:rgba(255,255,255,0.75);margin-bottom:2px;"><span style="font-size:9px;letter-spacing:0.8px;text-transform:uppercase;color:rgba(109,184,255,0.65);font-weight:700;">TITHI</span> <span style="color:#8EC8FF;font-weight:600;">${_fmtDateDMY(r.startDate)}</span>${r.startTime ? '<span style="color:rgba(255,255,255,0.5)"> · </span><span style="color:#FFE566;font-weight:700;">' + _fmtTime12(r.startTime) + '</span>' : ''} ${r.endDate && r.endDate !== r.startDate ? '<span style="color:rgba(255,255,255,0.4)"> → </span><span style="color:#8EC8FF;font-weight:600;">' + _fmtDateDMY(r.endDate) + '</span>' : ''} ${r.endTime ? '<span style="color:rgba(255,255,255,0.5)"> · </span><span style="color:#FFE566;font-weight:700;">' + _fmtTime12(r.endTime) + '</span>' : ''}</div>
-      <div style="font-size:10px;color:#76ff7a;font-weight:600;margin-top:2px;">🌙 Fast: ${_fmtDateDMY(r.fastingDate)} ${paramTag}</div>
-      ${paranaHtml}
-    </div>`;
-    })
-    .join("");
-
-  if (statusEl)
-    statusEl.textContent =
-      "✅ " +
-      results.length +
-      " Ekadashis for " +
-      year +
-      (App.S.lastLat ? " (GPS location)" : " (default location)");
 }
 
 /* ════════════════════════════════════════════════════════════

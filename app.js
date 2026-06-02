@@ -1945,8 +1945,6 @@ function tgs(k) {
           if (typeof renderCal === "function") renderCal();
           // Refresh reminder sun times using the now-saved coords
           loadSunTimes(true);
-
-          }
         },
         () => {
           if (statusEl) statusEl.textContent = "⚠️ Location access denied. Please allow GPS in browser settings.";
@@ -7695,11 +7693,8 @@ function calcSunTimes(lat, lng, date) {
   const apparentSunsetH  = toLocalH(sunsetUTC);
   const solarNoonH       = toLocalH(solarNoonUTC);
 
-  // Celestial mode: ISKCON definition — solar noon ± exactly 6 hours
-  // This equals Local Apparent Solar Time 06:00 and 18:00.
-  const celestialMode =
-  const sunriseH = celestialMode ? solarNoonH - 6 : apparentSunriseH;
-  const sunsetH  = celestialMode ? solarNoonH + 6 : apparentSunsetH;
+  const sunriseH = apparentSunriseH;
+  const sunsetH  = apparentSunsetH;
 
   function fmtH(h) {
     let hh = Math.floor(h),
@@ -9620,23 +9615,8 @@ async function loadSunTimes(forceRefresh) {
 
 function applySunCache(cache) {
   if (!cache) return;
-  let sr0 = new Date(cache.sunrise0);
-  let ss0 = new Date(cache.sunset0);
-  // In Celestial mode, sunrise = solar noon − 6h and sunset = solar noon + 6h.
-  // Open-Meteo returns apparent sunrise. We derive the solar noon from it and
-  // recalculate celestial times so reminder notifications match the main display.
-    const lat  = cache.lat  || (App.S && App.S.lastLat)  || 23.8103;
-    const lng  = cache.lon  || (App.S && App.S.lastLng)  || 90.4125;
-    const solarData = calcSunTimes(lat, lng, sr0);
-    if (solarData) {
-      // solarNoonH is local decimal hours; convert to a Date on the same day
-      const noonH = solarData.solarNoonH;
-      const base  = new Date(sr0);
-      base.setHours(0, 0, 0, 0);
-      sr0 = new Date(base.getTime() + (noonH - 6) * 3600000);
-      ss0 = new Date(base.getTime() + (noonH + 6) * 3600000);
-    }
-  }
+  const sr0 = new Date(cache.sunrise0);
+  const ss0 = new Date(cache.sunset0);
   const bTime = brahmaNotifyTime(sr0);
   const sTime = sandhyaNotifyTime(ss0);
   const btEl = document.getElementById("remTimeBrahma");
@@ -9670,13 +9650,6 @@ function scheduleType(type, cfg) {
         sr1 = new Date(cache.sunrise1);
       let ss0 = new Date(cache.sunset0),
         ss1 = new Date(cache.sunset1);
-      // Apply celestial horizon offset if needed (Open-Meteo returns apparent times)
-        const _off = 4 * 60 * 1000;
-        sr0 = new Date(sr0.getTime() + _off);
-        sr1 = new Date(sr1.getTime() + _off);
-        ss0 = new Date(ss0.getTime() - _off);
-        ss1 = new Date(ss1.getTime() - _off);
-      }
       if (type === "brahma") {
         fireAt = brahmaNotifyTime(sr0);
         if (fireAt <= now) fireAt = brahmaNotifyTime(sr1);
@@ -10872,7 +10845,6 @@ async function getLifetimeActivityLog() {
   });
   return all;
 }
-}
 
 function _fmtDateDMY(dateStr) {
   if (!dateStr) return "";
@@ -10887,6 +10859,7 @@ function _fmtDateDMY(dateStr) {
     String(parseInt(m)).padStart(2, "0") +
     ":" +
     y
+  );
 }
 
 /* ════════════════════════════════════════════════════════════

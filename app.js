@@ -9680,7 +9680,7 @@ function scheduleType(type, cfg) {
 }
 
 function fireReminder(type) {
-  if (Notification.permission !== "granted") return;
+  if (typeof Notification === "undefined" || Notification.permission !== "granted") return;
   const titles = {
     brahma: "ब्रह्म मुहूर्त 🌄",
     sandhya: "संध्याकाल 🌅",
@@ -9740,9 +9740,11 @@ async function toggleReminderType(type) {
     toast(`${label} reminder off`);
   } else {
     const perm =
-      Notification.permission === "granted"
+      typeof Notification !== "undefined" && Notification.permission === "granted"
         ? "granted"
-        : await Notification.requestPermission();
+        : typeof Notification !== "undefined"
+          ? await Notification.requestPermission()
+          : "denied";
     if (perm !== "granted") {
       showPwaGuide();
       return;
@@ -9832,7 +9834,7 @@ async function initReminderUI() {
 }
 
 (function restoreAllReminders() {
-  if (Notification.permission !== "granted") return;
+  if (typeof Notification === "undefined" || Notification.permission !== "granted") return;
   const cfg = getRemCfg();
   ["brahma", "sandhya", "manual"].forEach((type) => {
     if (cfg[type]?.enabled) scheduleType(type, cfg);

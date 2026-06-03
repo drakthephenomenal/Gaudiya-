@@ -7541,4 +7541,248 @@ nkc:`নারায়ণ কবচম্
 ॥ জয় জয় শ্রীহিত হরিবংশচন্দ্র বিরচিত
 শ্রীহিত স্ফুট বাণী জূ কী জয় জয় শ্রীহিত হরিবংশ ॥`
 
-}
+};
+// ═══════════════════════════════════════════════════════
+// SECTIONED-STOTRAM PICKER (svb, blv, …)
+// All UI/logic for stotrams that have numbered sub-sections
+// lives here so updates can be made in this file alone.
+// Styling lives in style-stotram.css (.sts-* classes).
+//
+// Depends on these globals defined in app.js:
+//   getEffectiveLyrics(id)  _renderVerse(idx,prev)  _initSwipeHandler()
+//   _verses (array)         _verseIdx (number)
+// ═══════════════════════════════════════════════════════
+(function (global) {
+  // Map of stotram-id → display title shown above the picker grid.
+  var SECTIONED = {
+    svb: 'শ্রী হিত সেবক বাণী',
+    blv: 'বয়ালীস লীলা'
+  };
+
+  var _sections = [];          // [{title, content}]
+  var _activeId = null;        // current sectioned-stotram id
+  var _inSectionView = false;
+
+  // ── Parse lyrics into sections by Bengali-numeral headings ────────────
+  function parseSections(ly) {
+    var lines = ly.split('\n');
+    var sections = [];
+    var curTitle = null;
+    var curLines = [];
+
+    function isTitle(line) {
+      if (/^[০-৯]+\./.test(line) && line.length < 100) return true;
+      // SVB-only: phalashruti section (no numeral): শ্রী সেবক বাণী-ফল স্তুতি
+      if (/ফল\s*(স্তুতি|শ্রুতি)/.test(line) && line.length < 100) return true;
+      return false;
+    }
+    function flush() {
+      if (curTitle && curLines.length > 0) {
+        sections.push({ title: curTitle, content: curLines.join('\n').trim() });
+      }
+      curTitle = null; curLines = [];
+    }
+
+    for (var i = 0; i < lines.length; i++) {
+      var raw = lines[i];
+      var line = raw.trim();
+      // Section closing marker: ! … !
+      if (line.startsWith('!') && line.endsWith('!')) { flush(); continue; }
+      if (isTitle(line)) {
+        if (curTitle) flush();
+        curTitle = line;
+        continue;
+      }
+      if (curTitle) curLines.push(raw);
+    }
+    flush();
+    return sections;
+  }
+
+  function isSectioned(id) { return Object.prototype.hasOwnProperty.call(SECTIONED, id); }
+
+  // ── Show the section picker grid ──────────────────────────────────────
+  function showPicker(id) {
+    _activeId = id;
+    var ly = (typeof getEffectiveLyrics === 'function') ? getEffectiveLyrics(id) : '';
+    _sections = parseSections(ly || '');
+    _inSectionView = false;
+
+    var lmo = document.getElementById('lmo');
+    var lmTitle = document.getElementById('lmTitle');
+    if (lmTitle) { lmTitle.textContent = SECTIONED[id] || ''; lmTitle.style.display = 'none'; }
+
+    // Hide verse-reader chrome
+    var lmb   = document.getElementById('lmb');
+    var lmNav = document.getElementById('lmNav');
+    if (lmb)   lmb.style.display   = 'none';
+    if (lmNav) lmNav.style.display = 'none';
+
+    var oldWrap = document.getElementById('lm-translate-wrap');
+    if (oldWrap) oldWrap.remove();
+
+    var oldPicker = document.getElementById('sts-picker');
+    if (oldPicker) oldPicker.remove();
+
+    var fsCtrl = document.getElementById('lyr-fs-ctrl');
+    if (fsCtrl) fsCtrl.style.display = 'none';
+
+    // Responsive numbers
+    var vw = window.innerWidth;
+    var isWide = vw >= 600;
+
+    var picker = document.createElement('div');
+    picker.id = 'sts-picker';
+    picker.className = 'sts-picker' + (isWide ? ' sts-wide' : '');
+
+    var titleDiv = document.createElement('div');
+    titleDiv.id  = 'sts-picker-title';
+    titleDiv.className = 'sts-picker-title';
+    titleDiv.textContent = SECTIONED[id] || '';
+    picker.appendChild(titleDiv);
+
+    var subtitle = document.createElement('div');
+    subtitle.className = 'sts-picker-subtitle';
+    subtitle.textContent = 'বিভাগ নির্বাচন করুন';
+    picker.appendChild(subtitle);
+
+    // Grid (two columns, balanced rows)
+    var grid = document.createElement('div');
+    grid.className = 'sts-picker-grid';
+    var rows = Math.max(1, Math.ceil(_sections.length / 2));
+    grid.style.gridTemplateRows = 'repeat(' + rows + ',auto)';
+
+    var glowColors = [
+      '#ffd700','#ffaa00','#ff6bff','#00e5ff','#7dff6b',
+      '#ff6b6b','#ffd700','#b388ff','#00ffcc','#ffaa00',
+      '#ffd700','#ff6bff','#00e5ff','#7dff6b','#ff6b6b',
+      '#ffd700','#b388ff'
+    ];
+
+    _sections.forEach(function (sec, idx) {
+      var btn = document.createElement('button');
+      var gc        = glowColors[idx % glowColors.length];
+      var pulseDur  = (2.8 + (idx % 5) * 0.4).toFixed(1) + 's';
+      var colorDur  = (8   + (idx % 4) * 1.5).toFixed(1) + 's';
+      var fadeDelay = (idx * 0.045).toFixed(2) + 's';
+      var colorOff  = '-' + (idx * 0.6).toFixed(1) + 's';
+
+      btn.className = 'sts-btn';
+      btn.style.setProperty('--gc', gc);
+      btn.style.setProperty('--pd', pulseDur);
+      btn.style.setProperty('--cd', colorDur);
+      btn.style.setProperty('--fd', fadeDelay);
+      btn.style.setProperty('--od', colorOff);
+      btn.style.setProperty('--ad', fadeDelay);
+
+      var numSpan = document.createElement('span');
+      numSpan.className = 'sts-btn-num';
+      numSpan.textContent = String(idx + 1);
+
+      var nameSpan = document.createElement('span');
+      nameSpan.className = 'sts-btn-name';
+      nameSpan.textContent = sec.title.replace(/^[০-৯]+\.\s*/, '');
+
+      btn.appendChild(numSpan);
+      btn.appendChild(nameSpan);
+      btn.onclick = function () { openSection(idx); };
+      grid.appendChild(btn);
+    });
+    picker.appendChild(grid);
+
+    var lmd = document.querySelector('.lmd');
+    if (lmd) lmd.appendChild(picker);
+    if (lmo) lmo.classList.add('show');
+  }
+
+  // ── Open one section in the verse reader ──────────────────────────────
+  function openSection(idx) {
+    var sec = _sections[idx];
+    if (!sec) return;
+
+    _inSectionView = true;
+
+    var picker = document.getElementById('sts-picker');
+    if (picker) picker.remove();
+
+    var lmb   = document.getElementById('lmb');
+    var lmNav = document.getElementById('lmNav');
+    if (lmb)   lmb.style.display   = '';
+    if (lmNav) lmNav.style.display = '';
+
+    var fsCtrl = document.getElementById('lyr-fs-ctrl');
+    if (fsCtrl) fsCtrl.style.display = '';
+
+    var lmTitle = document.getElementById('lmTitle');
+    if (lmTitle) {
+      lmTitle.style.display = '';
+      lmTitle.textContent = sec.title.replace(/^[০-৯]+\.\s*/, '');
+    }
+
+    // Back-to-sections button
+    var existing = document.getElementById('sts-back-btn');
+    if (!existing) {
+      var backBtn = document.createElement('button');
+      backBtn.id  = 'sts-back-btn';
+      backBtn.className = 'sts-back-btn';
+      backBtn.innerHTML = '&#8592; বিভাগ';
+      backBtn.onclick = function () {
+        _inSectionView = false;
+        var old = document.getElementById('sts-back-btn');
+        if (old) old.remove();
+        var lmb2   = document.getElementById('lmb');
+        var lmNav2 = document.getElementById('lmNav');
+        if (lmb2)   lmb2.style.display   = 'none';
+        if (lmNav2) lmNav2.style.display = 'none';
+        var w2 = document.getElementById('lm-translate-wrap');
+        if (w2) w2.remove();
+        showPicker(_activeId);
+      };
+      var lmo = document.getElementById('lmo');
+      if (lmo) lmo.appendChild(backBtn);
+    }
+
+    // Split section content into verses, merge orphan অর্থ-only blocks back
+    var allVerses = sec.content
+      .split(/\n{2,}/)
+      .map(function (b) { return b.trim(); })
+      .filter(function (b) { return b.length > 0; });
+
+    var merged = [];
+    for (var i = 0; i < allVerses.length; i++) {
+      var v = allVerses[i];
+      var linesOnly = v.split('\n').filter(function (l) { return l.trim().length > 0; });
+      var allArtha = linesOnly.length > 0 && linesOnly.every(function (l) {
+        return /^অর্থ\s*:/.test(l.trim());
+      });
+      if (allArtha && merged.length > 0) {
+        merged[merged.length - 1] += '\n\n' + v;
+      } else {
+        merged.push(v);
+      }
+    }
+
+    global._verses   = merged;
+    global._verseIdx = 0;
+
+    if (typeof _renderVerse      === 'function') _renderVerse(0, null);
+    if (typeof _initSwipeHandler === 'function') _initSwipeHandler();
+  }
+
+  // ── Reset, called by app.js when the lyrics modal is closed ───────────
+  function reset() {
+    _inSectionView = false;
+    _sections = [];
+    _activeId = null;
+    var p = document.getElementById('sts-picker');     if (p) p.remove();
+    var b = document.getElementById('sts-back-btn');   if (b) b.remove();
+  }
+
+  global.StotramSections = {
+    isSectioned: isSectioned,
+    show:        showPicker,
+    reset:       reset,
+    parse:       parseSections,
+    inSectionView: function () { return _inSectionView; }
+  };
+})(window);

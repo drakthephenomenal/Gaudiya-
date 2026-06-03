@@ -984,6 +984,18 @@
 <div class="view" id="vset">
   <div class="vt">Settings</div>
 
+  <!-- GPS Location — at the top for quick access -->
+  <div class="sc" style="background:rgba(8,12,35,0.82);border:1px solid rgba(255,215,0,0.25);padding:14px 15px;">
+    <div style="display:flex;align-items:center;gap:12px;" id="solarCompassCard">
+      <div style="font-size:20px;line-height:1;">📍</div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:13px;font-weight:700;color:#FFD700;line-height:1.2;">GPS Location</div>
+        <div style="font-size:10px;color:rgba(255,255,255,0.4);margin-top:3px;" id="gpsLocationStatus">Auto-detect for accurate Brahma Muhurta &amp; Sandhya times 🙏</div>
+      </div>
+      <div class="tg" id="tgGpsLocation" onclick="tgs('gpsLocation')" style="flex-shrink:0;"></div>
+    </div>
+  </div>
+
   <!-- SINGLE SIGN-IN WITH GOOGLE -->
   <div class="sc" id="fbCard">
     <h3>☁️ Cloud Sync &amp; Backup</h3>
@@ -1126,27 +1138,6 @@
         </div>
       </div>
     </div>
-  </div>
-
-  <!-- ═══ UNIFIED: Location · Horizon · Parampara · Live Times ═══ -->
-  <div class="sc" style="background:rgba(8,12,35,0.82);border:1px solid rgba(255,215,0,0.25);padding:18px 15px 15px;">
-
-    <!-- Header -->
-    <div style="text-align:center;margin-bottom:16px;">
-      <div style="font-size:15px;font-weight:800;background:linear-gradient(135deg,#FFD700,#FFA500);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;letter-spacing:0.5px;">⏱️ Sacred Times</div>
-      <div style="font-size:10px;color:rgba(255,255,255,0.32);margin-top:3px;letter-spacing:0.5px;">Location &amp; Sacred Times</div>
-    </div>
-
-    <!-- GPS Location -->
-    <div style="display:flex;align-items:center;gap:12px;background:rgba(255,215,0,0.07);border:1px solid rgba(255,215,0,0.2);border-radius:13px;padding:11px 14px;margin-bottom:16px;" id="solarCompassCard">
-      <div style="font-size:20px;line-height:1;">📍</div>
-      <div style="flex:1;min-width:0;">
-        <div style="font-size:13px;font-weight:700;color:#FFD700;line-height:1.2;">GPS Location</div>
-        <div style="font-size:10px;color:rgba(255,255,255,0.4);margin-top:3px;" id="gpsLocationStatus">Auto-detect for accurate times 🙏</div>
-      </div>
-      <div class="tg" id="tgGpsLocation" onclick="tgs('gpsLocation')" style="flex-shrink:0;"></div>
-    </div>
-
   </div>
 
   <!-- PREFERENCES -->
@@ -1335,6 +1326,7 @@
 <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
     <!-- Swiss Ephemeris WASM — Moshier mode (~1 arcsec, no data files needed) -->
     <!-- Gives tithi boundary accuracy matching ISKCON/Drik Panchang exactly -->
+    <script src="./panchangData.js?v=1"></script>
     <script src="./stotrams.js?v=91"></script>
     <script src="./app.js?v=112"></script>
   </body>

@@ -983,9 +983,14 @@ button.n28-gold-btn-danger,
 .fn-rv span{font-family:'Tiro Devanagari Hindi',serif;display:block;}
 
 /* MILESTONES VIEW — dedicated tab */
-#vms{background:radial-gradient(ellipse at top,#0A1535 0%,var(--bd) 60%);padding:22px 12px 80px;overflow-y:auto;-webkit-overflow-scrolling:touch;}
+#vms{background:radial-gradient(ellipse at top,#0A1535 0%,var(--bd) 60%);padding:0;overflow:hidden;}
 #vms > *{flex-shrink:0;}
-#msContent{flex:1 0 auto;}
+#vms .vt{padding:22px 12px 10px;flex-shrink:0;}
+#vms .ms-toggle-wrap{padding:0 12px;flex-shrink:0;}
+#vms .ms-sadhana-bar{margin:0 12px 8px;flex-shrink:0;}
+#vms .ms-sadhana-since{padding:0 12px 8px;flex-shrink:0;}
+/* msContent scrolls independently — fixes iOS Safari flex/overflow bug on iPad */
+#msContent{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:4px 12px 90px;}
 
 
 

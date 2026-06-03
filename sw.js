@@ -1,12 +1,12 @@
 // ═══════════════════════════════════════════════════════
 // Radha Naam Jap — Service Worker
+// v115: removed all Ekadashi / Mahadvadashi / Paran logic & UI
+//       (panchangData.js kept — only source of tithi calculation)
 // v113: stotrams.js → stotram.js in LOCAL_ASSETS
-// v112: fix Ekadashi viddha Condition 2 (compare ekEnd vs startDate sunrise not endDate);
-//       fix _resyncEkOccasions same bug; fix parana day advance when Dvadashi spans full day;
-//       fix hard deadline search anchored to paranaDay not ekEnd
-// v111: fix NaN Gaurabda — gaurabdaYear fallback; panchangData versioned; v108: celestial sunrise = solar noon − 6h (ISKCON match); BM end fixed 46→48 min; paran uses apparent daytime length
+// v111: fix NaN Gaurabda — gaurabdaYear fallback; panchangData versioned;
+//       v108: celestial sunrise = solar noon − 6h (ISKCON match); BM end fixed 46→48 min
 // ═══════════════════════════════════════════════════════
-const CACHE = 'radha-jap-v114';
+const CACHE = 'radha-jap-v115';
 
 const LOCAL_ASSETS = [
   './',

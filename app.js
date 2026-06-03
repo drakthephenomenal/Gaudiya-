@@ -78,7 +78,7 @@ const App = {
     syncBaselineHK: {},
     syncBaselineTimerHK: {},
     nameJapDeductHK: 0,
-    gaudiyaMode: true,  // single mode for all — Gaudiya/ISKCON Arunodaya Viddha
+    gaudiyaMode: true,  // single mode for all — Gaudiya/ISKCON
     hkLang: "hi",
   },
   lmcRV: 0,
@@ -6408,13 +6408,6 @@ function delSt(id) {
   renderSt();
   toast("Removed");
 }
-// ───────────────────────────────────────────────────────────────────
-// (loaded BEFORE this file). The following names are provided there
-// as window globals so legacy call sites in app.js keep working:
-//   _resolveMahadvadasiShift, _findEkInWindow, _d2hhmm, _d2ymd,
-//   _resolveEkFasting, _findNextPurnima, _getAdjustedMonthIndex,
-//   _EK_NAMES_SHUKLA, _EK_NAMES_KRISHNA, _computeParanaWindow.
-// ───────────────────────────────────────────────────────────────────
 
 // _ADHIK_MAAS_WINDOWS, _getAdhikMaasWindow, isAdhikMaasDate
 // defined in panchangData.js (loaded before app.js)
@@ -7110,7 +7103,6 @@ function renderCal() {
       // Strip parampara/paksha/time details — show only the core occasion name
       let occShort = occ
         .replace(/\s*[☀️🌙]\s*(Shukla|Krishna)(\s*Paksha)?/g, "") // remove paksha labels
-        .replace(/\s*\(Mahadvadashi[^)]*\)/g, "") // remove Mahadvadashi note
         .replace(/\s*\(Arunodaya[^)]*\)/g, "") // remove Arunodaya note
         .replace(/\s+\d{1,2}:\d{2}\s*(AM|PM)[\s\S]*$/i, "") // remove time ranges
         .replace(/\s*·\s*(Smarta|Vaishnava|Gaudiya)[^·]*/gi, "") // remove parampara
@@ -7620,7 +7612,6 @@ function calcSunTimes(lat, lng, date) {
   //   Celestial  → pure Vedic/astronomical: solar noon ± 6 hours (Local Apparent Solar Time)
   //
   // The function always computes the apparent (Earth-sky) times first.
-  // with the solar-noon ± 6h values so Brahma Muhurta, Sandhya Kal, Parana,
   const rad = Math.PI / 180;
 
   // JD at noon UTC for the requested calendar date (device local midnight → UTC noon)
@@ -7716,7 +7707,7 @@ function calcSunTimes(lat, lng, date) {
   return {
     sunriseH,
     sunsetH,
-    // Apparent values exposed so Paran window can always use apparent daytime length
+    // Apparent values exposed for any feature that needs apparent daytime length
     apparentSunriseH,
     apparentSunsetH,
     solarNoonH,

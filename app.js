@@ -7896,13 +7896,7 @@ function logActivity(entry) {
 
 // ── INIT ──
 window.addEventListener("load", async () => {
-  // ── Swiss Ephemeris WASM init (non-blocking background load) ─────────────
-  // _moonElongation() auto-uses SE once ready; Meeus 60-term is fallback.
-  if (typeof SEBridge !== "undefined") {
-    SEBridge.init()
-      .then(() => console.log("[App] Swiss Ephemeris ready — tithi precision ~1 arcsec ✓"))
-      .catch(e => console.warn("[App] SE WASM unavailable, using Meeus fallback:", e.message));
-  }
+
 
   await App.load();
   App.lmc = Math.floor(App.gTod() / (App.S.ms || 108));
@@ -8256,322 +8250,7 @@ const TRANSLATION_IDS = ["nkc", "gms", "rsn", "svb"];
 // ── IDs where prose sections need vertical-scroll mode
 const PROSE_IDS = ["nkc"];
 
-// ── SVB (Shri Hit Sevak Vani) section picker ─────────────────────────────────
-let _svbSections = [];      // [{title, content}]
-let _svbInSectionView = false;  // true when verse reader is showing a section
-
-function _svbParseSections(ly) {
-  var lines = ly.split('\n');
-  var sections = [];
-  var currentTitle = null;
-  var currentLines = [];
-
-  function _isSvbTitle(line) {
-    // Bengali-numeral + dot heading: ১. শ্রীহিত যস বিলাস
-    if (/^[০-৯]+\./.test(line) && line.length < 100) return true;
-    // ফলশ্রুতি section (no numeral): শ্রী সেবক বাণী-ফল স্তুতি
-    if (/ফল\s*(স্তুতি|শ্রুতি)/.test(line) && line.length < 100) return true;
-    return false;
-  }
-
-  function _flush() {
-    if (currentTitle && currentLines.length > 0) {
-      sections.push({ title: currentTitle, content: currentLines.join('\n').trim() });
-    }
-    currentTitle = null;
-    currentLines = [];
-  }
-
-  for (var i = 0; i < lines.length; i++) {
-    var raw = lines[i];
-    var line = raw.trim();
-
-    // Section closing marker: ! … !
-    if (line.startsWith('!') && line.endsWith('!')) {
-      _flush();
-      continue;
-    }
-
-    // Section title detected
-    if (_isSvbTitle(line)) {
-      // If we already have a section open, flush it first (handles sections 1–4
-      // which have no ! closing marker between them)
-      if (currentTitle) _flush();
-      currentTitle = line;
-      continue;
-    }
-
-    if (currentTitle) {
-      currentLines.push(raw);
-    }
-  }
-  // Flush last section if file ends without a ! marker
-  _flush();
-  return sections;
-}
-
-function _svbShowPicker() {
-  var ly = getEffectiveLyrics('svb');
-  _svbSections = _svbParseSections(ly);
-  _svbInSectionView = false;
-
-  var lmo = document.getElementById('lmo');
-  var lmTitle = document.getElementById('lmTitle');
-  if (lmTitle) { lmTitle.textContent = 'শ্রী হিত সেবক বাণী'; lmTitle.style.display = 'none'; }
-
-  // Hide verse-reader elements
-  var lmb = document.getElementById('lmb');
-  var lmNav = document.getElementById('lmNav');
-  if (lmb) lmb.style.display = 'none';
-  if (lmNav) lmNav.style.display = 'none';
-
-  // Remove translate wrap if present
-  var oldWrap = document.getElementById('lm-translate-wrap');
-  if (oldWrap) oldWrap.remove();
-
-  // Remove old picker if re-opening
-  var oldPicker = document.getElementById('svb-picker');
-  if (oldPicker) oldPicker.remove();
-
-  // Hide font-size controls while picker is visible
-  var fsCtrl = document.getElementById('lyr-fs-ctrl');
-  if (fsCtrl) fsCtrl.style.display = 'none';
-
-  // Inject premium animation keyframes once
-  if (!document.getElementById('svb-picker-styles')) {
-    var styleEl = document.createElement('style');
-    styleEl.id = 'svb-picker-styles';
-    styleEl.textContent = [
-      '@keyframes svbGlowPulse {',
-      '  0%,100% { box-shadow: 0 0 6px 1px var(--gc,#ffd700), inset 0 0 8px rgba(255,215,0,0.06); border-color: rgba(255,215,0,0.35); }',
-      '  50%    { box-shadow: 0 0 18px 4px var(--gc,#ffd700), inset 0 0 16px rgba(255,215,0,0.13); border-color: rgba(255,215,0,0.75); }',
-      '}',
-      '@keyframes svbColorShift {',
-      '  0%   { --gc: #ffd700; color: #ffd700; }',
-      '  20%  { --gc: #ff9d00; color: #ffb830; }',
-      '  40%  { --gc: #ff6bff; color: #ffaaff; }',
-      '  60%  { --gc: #00e5ff; color: #80f0ff; }',
-      '  80%  { --gc: #7dff6b; color: #b8ffb0; }',
-      '  100% { --gc: #ffd700; color: #ffd700; }',
-      '}',
-      '@keyframes svbTitleShimmer {',
-      '  0%,100% { background-position: -200% center; }',
-      '  100%    { background-position: 200% center; }',
-      '}',
-      '@keyframes svbFadeUp {',
-      '  from { opacity:0; transform:translateY(14px); }',
-      '  to   { opacity:1; transform:translateY(0); }',
-      '}',
-      '#svb-picker-title {',
-      '  background: linear-gradient(90deg,#ffd700 0%,#fff8dc 30%,#ffaa00 50%,#fff8dc 70%,#ffd700 100%);',
-      '  background-size: 200% auto;',
-      '  -webkit-background-clip: text;',
-      '  -webkit-text-fill-color: transparent;',
-      '  background-clip: text;',
-      '  animation: svbTitleShimmer 3s linear infinite;',
-      '}',
-      '.svb-btn {',
-      '  animation: svbGlowPulse var(--pd,3s) ease-in-out infinite, svbColorShift var(--cd,9s) ease-in-out infinite, svbFadeUp 0.4s ease both;',
-      '  animation-delay: var(--ad,0s), var(--od,0s), var(--fd,0s);',
-      '}',
-      '.svb-btn:active { transform: scale(0.96); filter: brightness(1.3); }',
-    ].join('\n');
-    document.head.appendChild(styleEl);
-  }
-
-  // Responsive sizing
-  var vw = window.innerWidth;
-  var isWide = vw >= 600;
-  var hPad = isWide ? '24px' : '14px';
-  var btnFontSize = isWide ? '16px' : '14px';
-  var btnPadding = isWide ? '16px 14px' : '13px 12px';
-  var gridGap = isWide ? '12px' : '10px';
-  var gridMaxWidth = isWide ? '860px' : '600px';
-  var topPad = isWide ? '48px' : '48px';
-
-  // Build picker
-  var picker = document.createElement('div');
-  picker.id = 'svb-picker';
-  picker.style.cssText = [
-    'position:absolute;inset:0;overflow-y:auto;',
-    'display:flex;flex-direction:column;align-items:center;',
-    'padding:' + topPad + ' ' + hPad + ' 28px;',
-    '-webkit-overflow-scrolling:touch;',
-    'box-sizing:border-box;'
-  ].join('');
-
-  // Shimmer title
-  var titleDiv = document.createElement('div');
-  titleDiv.id = 'svb-picker-title';
-  titleDiv.style.cssText = [
-    'font-family:"Hind Siliguri",serif;',
-    'font-size:' + (isWide ? '22px' : '18px') + ';',
-    'font-weight:700;letter-spacing:3px;',
-    'margin-bottom:6px;text-align:center;'
-  ].join('');
-  titleDiv.textContent = 'শ্রী হিত সেবক বাণী';
-  picker.appendChild(titleDiv);
-
-  var subtitle = document.createElement('div');
-  subtitle.style.cssText = [
-    'font-family:"Hind Siliguri",serif;',
-    'font-size:' + (isWide ? '12px' : '11px') + ';',
-    'color:rgba(255,215,0,0.50);letter-spacing:2.5px;',
-    'text-transform:uppercase;margin-bottom:18px;text-align:center;'
-  ].join('');
-  subtitle.textContent = 'বিভাগ নির্বাচন করুন';
-  picker.appendChild(subtitle);
-
-  // Two-column grid
-  var grid = document.createElement('div');
-  grid.style.cssText = [
-    'display:grid;grid-template-columns:1fr 1fr;',
-    'grid-template-rows:repeat(9,auto);',
-    'grid-auto-flow:column;',
-    'gap:' + gridGap + ';width:100%;max-width:' + gridMaxWidth + ';'
-  ].join('');
-
-  // Color palette cycling per button
-  var glowColors = [
-    '#ffd700','#ffaa00','#ff6bff','#00e5ff','#7dff6b',
-    '#ff6b6b','#ffd700','#b388ff','#00ffcc','#ffaa00',
-    '#ffd700','#ff6bff','#00e5ff','#7dff6b','#ff6b6b',
-    '#ffd700','#b388ff'
-  ];
-
-  _svbSections.forEach(function(sec, idx) {
-    var btn = document.createElement('button');
-    var gc = glowColors[idx % glowColors.length];
-    var pulseDur = (2.8 + (idx % 5) * 0.4).toFixed(1) + 's';
-    var colorDur = (8 + (idx % 4) * 1.5).toFixed(1) + 's';
-    var fadeDelay = (idx * 0.045).toFixed(2) + 's';
-    var colorOffset = '-' + (idx * 0.6).toFixed(1) + 's';
-
-    btn.className = 'svb-btn';
-    btn.style.cssText = [
-      '--gc:' + gc + ';',
-      '--pd:' + pulseDur + ';',
-      '--cd:' + colorDur + ';',
-      '--fd:' + fadeDelay + ';',
-      '--od:' + colorOffset + ';',
-      '--ad:' + fadeDelay + ';',
-      'background:rgba(0,0,0,0.45);',
-      'border:1px solid rgba(255,215,0,0.35);',
-      'border-radius:13px;padding:' + btnPadding + ';',
-      'color:#ffd700;font-family:"Hind Siliguri",serif;',
-      'font-size:' + btnFontSize + ';text-align:left;cursor:pointer;',
-      'line-height:1.45;',
-      'display:flex;gap:8px;align-items:center;',
-      'width:100%;box-sizing:border-box;',
-      'transition:transform 0.1s,filter 0.1s;',
-      '-webkit-tap-highlight-color:transparent;'
-    ].join('');
-
-    var numSpan = document.createElement('span');
-    numSpan.style.cssText = [
-      'opacity:0.38;font-size:11px;min-width:16px;',
-      'flex-shrink:0;font-weight:600;letter-spacing:0.5px;'
-    ].join('');
-    numSpan.textContent = String(idx + 1);
-
-    var nameSpan = document.createElement('span');
-    nameSpan.textContent = sec.title.replace(/^[০-৯]+\.\s*/, '');
-
-    btn.appendChild(numSpan);
-    btn.appendChild(nameSpan);
-    btn.onclick = function() { _svbOpenSection(idx); };
-    grid.appendChild(btn);
-  });
-  picker.appendChild(grid);
-
-  var lmd = document.querySelector('.lmd');
-  if (lmd) lmd.appendChild(picker);
-
-  lmo.classList.add('show');
-}
-
-function _svbOpenSection(idx) {
-  var sec = _svbSections[idx];
-  if (!sec) return;
-
-  _svbInSectionView = true;
-
-  // Remove picker
-  var picker = document.getElementById('svb-picker');
-  if (picker) picker.remove();
-
-  // Show verse-reader elements
-  var lmb = document.getElementById('lmb');
-  var lmNav = document.getElementById('lmNav');
-  if (lmb) lmb.style.display = '';
-  if (lmNav) lmNav.style.display = '';
-
-  // Restore font-size controls
-  var fsCtrl = document.getElementById('lyr-fs-ctrl');
-  if (fsCtrl) fsCtrl.style.display = '';
-
-
-  // Section title in header (strip Bengali number prefix)
-  var lmTitle = document.getElementById('lmTitle');
-  if (lmTitle) { lmTitle.style.display = ''; lmTitle.textContent = sec.title.replace(/^[০-৯]+\.\s*/, ''); }
-
-  // Add "← বিভাগ" back button if not already present
-  var existing = document.getElementById('svb-back-btn');
-  if (!existing) {
-    var backBtn = document.createElement('button');
-    backBtn.id = 'svb-back-btn';
-    backBtn.style.cssText = [
-      'position:absolute;top:max(env(safe-area-inset-top),10px);left:10px;',
-      'background:rgba(4,10,30,0.70);border:1px solid rgba(255,215,0,0.50);',
-      'border-radius:999px;padding:6px 12px;',
-      'color:#ffd700;font-size:12px;cursor:pointer;',
-      'display:flex;align-items:center;gap:5px;z-index:20;',
-      'font-family:"Hind Siliguri",sans-serif;'
-    ].join('');
-    backBtn.innerHTML = '&#8592; বিভাগ';
-    backBtn.onclick = function() {
-      _svbInSectionView = false;
-      var old = document.getElementById('svb-back-btn');
-      if (old) old.remove();
-      var lmb2 = document.getElementById('lmb');
-      var lmNav2 = document.getElementById('lmNav');
-      if (lmb2) lmb2.style.display = 'none';
-      if (lmNav2) lmNav2.style.display = 'none';
-      var oldWrap2 = document.getElementById('lm-translate-wrap');
-      if (oldWrap2) oldWrap2.remove();
-      _svbShowPicker();
-    };
-    var lmo = document.getElementById('lmo');
-    if (lmo) lmo.appendChild(backBtn);
-  }
-
-  // Parse and merge verses for this section
-  var allVerses = sec.content
-    .split(/\n{2,}/)
-    .map(function(b) { return b.trim(); })
-    .filter(function(b) { return b.length > 0; });
-
-  var mergedVerses = [];
-  for (var i = 0; i < allVerses.length; i++) {
-    var v = allVerses[i];
-    var linesOnly = v.split('\n').filter(function(l) { return l.trim().length > 0; });
-    var allArtha = linesOnly.length > 0 && linesOnly.every(function(l) {
-      return /^অর্থ\s*:/.test(l.trim());
-    });
-    if (allArtha && mergedVerses.length > 0) {
-      mergedVerses[mergedVerses.length - 1] += '\n\n' + v;
-    } else {
-      mergedVerses.push(v);
-    }
-  }
-
-  _verses = mergedVerses;
-  _verseIdx = 0;
-
-  _renderVerse(0, null);
-  _initSwipeHandler();
-}
-// ─────────────────────────────────────────────────────────────────────────────
+// ── Sectioned-stotram picker (svb, blv, …) lives in stotrams.js ─────────────
 
 // ── showLyrics — watery card swipe reader ──
 let _verses = [],
@@ -8703,13 +8382,13 @@ function showLyrics(id) {
     ? _globalTranslationPref
     : false;
 
-  // ── SVB: show section picker instead of flat verse reader ──
-  if (id === "svb") {
-    var svbCard = document.querySelector(".lm-water-card");
-    if (svbCard) svbCard.setAttribute("data-theme", "radha");
-    var svbLmo = document.getElementById("lmo");
-    if (svbLmo) svbLmo.setAttribute("data-bg", "radha");
-    _svbShowPicker();
+  // ── Sectioned stotrams (svb, blv, …): show section picker ──
+  if (window.StotramSections && window.StotramSections.isSectioned(id)) {
+    var stsCard = document.querySelector(".lm-water-card");
+    if (stsCard) stsCard.setAttribute("data-theme", "radha");
+    var stsLmo = document.getElementById("lmo");
+    if (stsLmo) stsLmo.setAttribute("data-bg", "radha");
+    window.StotramSections.show(id);
     return;
   }
 
@@ -9076,14 +8755,9 @@ function closeLyrics() {
   _verseIdx = 0;
   _currentStotramId = "";
   _translationVisible = false;
-  _svbInSectionView = false;
-  _svbSections = [];
+  if (window.StotramSections) window.StotramSections.reset();
   var oldWrap = document.getElementById("lm-translate-wrap");
   if (oldWrap) oldWrap.remove();
-  var svbPicker = document.getElementById("svb-picker");
-  if (svbPicker) svbPicker.remove();
-  var svbBack = document.getElementById("svb-back-btn");
-  if (svbBack) svbBack.remove();
   var navBar = document.getElementById("lmNav");
   if (navBar) navBar.style.display = "";
   var lmb = document.getElementById("lmb");

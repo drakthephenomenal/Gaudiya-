@@ -1,12 +1,12 @@
 // ═══════════════════════════════════════════════════════
 // Radha Naam Jap — Service Worker
+// v116: removed dead se-bridge.js + dead Ekadashi detector (getEkadashiInfo)
+//       from panchangData.js; asset versions aligned to 115; offline-ready.
 // v115: removed all Ekadashi / Mahadvadashi / Paran logic & UI
 //       (panchangData.js kept — only source of tithi calculation)
-// v113: stotrams.js → stotram.js in LOCAL_ASSETS
-// v111: fix NaN Gaurabda — gaurabdaYear fallback; panchangData versioned;
-//       v108: celestial sunrise = solar noon − 6h (ISKCON match); BM end fixed 46→48 min
+
 // ═══════════════════════════════════════════════════════
-const CACHE = 'radha-jap-v115';
+const CACHE = 'radha-jap-v116';
 
 const LOCAL_ASSETS = [
   './',
@@ -17,7 +17,6 @@ const LOCAL_ASSETS = [
   './stotrams.js',
   './app.js',
   './panchangData.js',
-  './se-bridge.js',
   './guru.jpg',
   './icon-192.png',
   './icon-512.png',

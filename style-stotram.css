@@ -802,3 +802,157 @@
     right: calc(50vw - 27.33dvh + 4px);
   }
 }
+
+/* ═══════════════════════════════════════════════════════════
+   SECTIONED-STOTRAM PICKER (svb, blv, …)
+   Styles for the section-picker grid shown when opening a
+   stotram that has numbered sub-sections. Logic in stotrams.js.
+   ═══════════════════════════════════════════════════════════ */
+
+@keyframes stsGlowPulse {
+  0%,100% {
+    box-shadow: 0 0 6px 1px var(--gc, #ffd700),
+                inset 0 0 8px rgba(255,215,0,0.06);
+    border-color: rgba(255,215,0,0.35);
+  }
+  50% {
+    box-shadow: 0 0 18px 4px var(--gc, #ffd700),
+                inset 0 0 16px rgba(255,215,0,0.13);
+    border-color: rgba(255,215,0,0.75);
+  }
+}
+@keyframes stsColorShift {
+  0%   { --gc: #ffd700; color: #ffd700; }
+  20%  { --gc: #ff9d00; color: #ffb830; }
+  40%  { --gc: #ff6bff; color: #ffaaff; }
+  60%  { --gc: #00e5ff; color: #80f0ff; }
+  80%  { --gc: #7dff6b; color: #b8ffb0; }
+  100% { --gc: #ffd700; color: #ffd700; }
+}
+@keyframes stsTitleShimmer {
+  0%,100% { background-position: -200% center; }
+  100%    { background-position:  200% center; }
+}
+@keyframes stsFadeUp {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Container */
+.sts-picker {
+  position: absolute;
+  inset: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 48px 14px 28px;
+  box-sizing: border-box;
+}
+.sts-picker.sts-wide { padding-left: 24px; padding-right: 24px; }
+
+/* Shimmering title */
+.sts-picker-title {
+  font-family: "Hind Siliguri", serif;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 3px;
+  margin-bottom: 6px;
+  text-align: center;
+  background: linear-gradient(90deg,
+    #ffd700 0%, #fff8dc 30%, #ffaa00 50%, #fff8dc 70%, #ffd700 100%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: stsTitleShimmer 3s linear infinite;
+}
+.sts-picker.sts-wide .sts-picker-title { font-size: 22px; }
+
+.sts-picker-subtitle {
+  font-family: "Hind Siliguri", serif;
+  font-size: 11px;
+  color: rgba(255,215,0,0.50);
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  margin-bottom: 18px;
+  text-align: center;
+}
+.sts-picker.sts-wide .sts-picker-subtitle { font-size: 12px; }
+
+/* Two-column grid */
+.sts-picker-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-auto-flow: column;
+  gap: 10px;
+  width: 100%;
+  max-width: 600px;
+}
+.sts-picker.sts-wide .sts-picker-grid {
+  gap: 12px;
+  max-width: 860px;
+}
+
+/* Buttons */
+.sts-btn {
+  background: rgba(0,0,0,0.45);
+  border: 1px solid rgba(255,215,0,0.35);
+  border-radius: 13px;
+  padding: 13px 12px;
+  color: #ffd700;
+  font-family: "Hind Siliguri", serif;
+  font-size: 14px;
+  text-align: left;
+  cursor: pointer;
+  line-height: 1.45;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  width: 100%;
+  box-sizing: border-box;
+  transition: transform 0.1s, filter 0.1s;
+  -webkit-tap-highlight-color: transparent;
+  animation:
+    stsGlowPulse var(--pd, 3s) ease-in-out infinite,
+    stsColorShift var(--cd, 9s) ease-in-out infinite,
+    stsFadeUp 0.4s ease both;
+  animation-delay: var(--ad, 0s), var(--od, 0s), var(--fd, 0s);
+}
+.sts-picker.sts-wide .sts-btn {
+  font-size: 16px;
+  padding: 16px 14px;
+}
+.sts-btn:active {
+  transform: scale(0.96);
+  filter: brightness(1.3);
+}
+.sts-btn-num {
+  opacity: 0.38;
+  font-size: 11px;
+  min-width: 16px;
+  flex-shrink: 0;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+.sts-btn-name { display: inline-block; }
+
+/* Back-to-sections button */
+.sts-back-btn {
+  position: absolute;
+  top: max(env(safe-area-inset-top), 10px);
+  left: 10px;
+  background: rgba(4,10,30,0.70);
+  border: 1px solid rgba(255,215,0,0.50);
+  border-radius: 999px;
+  padding: 6px 12px;
+  color: #ffd700;
+  font-size: 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  z-index: 20;
+  font-family: "Hind Siliguri", sans-serif;
+}

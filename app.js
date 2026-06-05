@@ -840,7 +840,20 @@ const App = {
 
   // ── Main tap ──
   ht(e) {
-    e.preventDefault();
+    // Suppress synthesized mousedown that follows a touchstart on the same tap
+    if (e) {
+      try { e.preventDefault(); } catch (_) {}
+      const now = Date.now();
+      if (e.type === "touchstart") {
+        this._lastTouchTs = now;
+      } else if (
+        e.type === "mousedown" &&
+        this._lastTouchTs &&
+        now - this._lastTouchTs < 700
+      ) {
+        return;
+      }
+    }
     const ms = this.S.ms || 108;
     const isRV = this.S.japMode === "rv";
     const isHK = this.S.japMode === "hk";
@@ -853,8 +866,8 @@ const App = {
       this.S.history[this.S.tk] = (this.S.history[this.S.tk] || 0) + 1;
     }
     this.ensureMalaWallStart();
-    this.save();
-    fbDebouncedPush();
+    // Defer persistence off the input critical path — tap feels instant
+    this._saveSoon();
     // Haptic heartbeat — 10ms bead feeling
     this.vib([10]);
     this.tapTimer();
@@ -873,6 +886,25 @@ const App = {
       App.silentMonkBackup();
     }
     this.ua();
+  },
+
+  // Coalesced save scheduler — collapses many taps into a single save,
+  // and pushes save off the gesture frame so the UI updates immediately.
+  _saveSoon() {
+    if (this._saveScheduled) return;
+    this._saveScheduled = true;
+    const run = () => {
+      this._saveScheduled = false;
+      try { this.save(); } catch (e) { console.warn("save:", e); }
+      // Debounced cloud push (also guarded inside fbPushFull)
+      if (typeof fbDebouncedPush === "function") fbDebouncedPush();
+    };
+    // Run after the current frame so visuals + haptic land first
+    if (typeof requestAnimationFrame === "function") {
+      requestAnimationFrame(() => setTimeout(run, 0));
+    } else {
+      setTimeout(run, 0);
+    }
   },
 
   undo1() {
@@ -1066,7 +1098,19 @@ const App = {
 
   // ── 28 Names tap ──
   h28(e) {
-    e.preventDefault();
+    if (e) {
+      try { e.preventDefault(); } catch (_) {}
+      const now = Date.now();
+      if (e.type === "touchstart") {
+        this._lastTouchTs28 = now;
+      } else if (
+        e.type === "mousedown" &&
+        this._lastTouchTs28 &&
+        now - this._lastTouchTs28 < 700
+      ) {
+        return;
+      }
+    }
     if (this._n28CompletionAnimating) return;
     // If paused, resume on tap
     if (this._n28Paused) {
@@ -1075,8 +1119,8 @@ const App = {
     if (!this.S.h28[this.S.tk]) this.S.h28[this.S.tk] = 0;
     const posBefore = get28Pos();
     this.S.h28[this.S.tk]++;
-    this.save();
-    fbDebouncedPush();
+    // Defer persistence + cloud push off the gesture critical path
+    this._saveSoon();
     this.vib([10]);
     this.start28Timers();
     // Also drive the unified Jap timer so both tabs share the same clock
@@ -3722,16 +3766,37 @@ function exportAllData() {
     malaLogHK: App.S.malaLogHK || [],
     gaudiyaMode: App.S.gaudiyaMode || false,
   };
-  const url = URL.createObjectURL(blob);
-  a.href = url;
-  a.download = "radha-naam-jap-backup-" + App.getTk() + ".json";
-  document.body.appendChild(a);
-  a.click();
-  setTimeout(() => {
-    URL.revokeObjectURL(url);
-    a.remove();
-  }, 1000);
-  toast("Backup downloaded! 🙏 Jai Radhe!");
+  try {
+    const json = JSON.stringify(backup, null, 2);
+    const blob = new Blob([json], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const filename =
+      "radha-naam-jap-backup-" + App.getTk() + ".json";
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    a.rel = "noopener";
+    a.style.display = "none";
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => {
+      URL.revokeObjectURL(url);
+      a.remove();
+    }, 1500);
+    // iOS Safari fallback — if download attribute is ignored, open in a new tab
+    setTimeout(() => {
+      if (
+        /iPad|iPhone|iPod/.test(navigator.userAgent) &&
+        !window.MSStream
+      ) {
+        try { window.open(url, "_blank"); } catch (_) {}
+      }
+    }, 50);
+    toast("Backup downloaded! 🙏 Jai Radhe!");
+  } catch (e) {
+    console.error("exportAllData failed:", e);
+    toast("❌ Backup failed: " + (e && e.message ? e.message : e));
+  }
 }
 
 function importAllData(input) {
@@ -4971,9 +5036,27 @@ async function fbMigrate() {
       .collection("data")
       .doc("main");
     setSyncPill("syncing", "Loading from cloud…");
-    const snap = await docRef.get();
+    // CRITICAL: a brand-new device has an empty offline cache. The default
+    // get() can resolve from that empty cache and incorrectly report
+    // "no cloud doc exists", which would then push local zeroes and wipe
+    // the user's real cloud data. Force a server fetch on the initial pull.
+    let snap;
+    try {
+      snap = await docRef.get({ source: "server" });
+    } catch (eServer) {
+      // Offline or server unreachable — fall back to cache, but DO NOT
+      // treat a cache miss as proof there's no cloud doc.
+      console.warn("Server pull failed, falling back to cache:", eServer.message);
+      snap = await docRef.get({ source: "cache" }).catch(() => null);
+      if (!snap || !snap.exists) {
+        // Could not confirm cloud state — refuse to push so we never
+        // overwrite real cloud data with empty local state.
+        setSyncPill("error", "Offline — cloud not loaded");
+        return;
+      }
+    }
     if (!snap.exists) {
-      // No cloud doc exists yet — safe to push local state up as the initial copy.
+      // Confirmed by server: no cloud doc yet — safe to seed initial copy.
       App._allowInitialPush = true;
       try { await fbPushFull(); } finally { App._allowInitialPush = false; }
       App._cloudHydrated = true;

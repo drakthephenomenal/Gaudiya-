@@ -1,10 +1,9 @@
 // ═══════════════════════════════════════════════════════
 // Radha Naam Jap — Service Worker
-// v118: FCM push integration — firebase-messaging-sw.js added to cache;
-//       firebase-messaging-compat.js added to EXTERNAL_ASSETS; cache bumped.
+// Push notifications & FCM removed.
 
 // ═══════════════════════════════════════════════════════
-const CACHE = 'radha-jap-v119';
+const CACHE = 'radha-jap-v121';
 
 const LOCAL_ASSETS = [
   './',
@@ -19,14 +18,12 @@ const LOCAL_ASSETS = [
   './icon-192.png',
   './icon-512.png',
   './manifest.json',
-  './firebase-messaging-sw.js',
 ];
 
 const EXTERNAL_ASSETS = [
   'https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js',
   'https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js',
   'https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js',
-  'https://www.gstatic.com/firebasejs/9.23.0/firebase-messaging-compat.js',
   'https://fonts.googleapis.com/css2?family=Tiro+Devanagari+Hindi&family=Hind+Siliguri:wght@400;600;700&family=Cinzel+Decorative:wght@400;700&family=EB+Garamond:wght@400;600&family=Inter:wght@300;400;500;600&family=Noto+Sans+Devanagari:wght@400;700&family=Noto+Sans+Bengali:wght@400;500;600;700&display=swap',
   'https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js',
 ];
@@ -40,7 +37,6 @@ const BYPASS = [
   'firebaseio.com',
   'oauth2.googleapis.com',
   'accounts.google.com',
-  'fcm.googleapis.com',
 ];
 
 function withinScopePath(pathname) {
@@ -146,28 +142,6 @@ self.addEventListener('fetch', (event) => {
 });
 
 self.addEventListener('message', (event) => {
-  if (event.data && event.data.type === 'SHOW_NOTIFICATION') {
-    event.waitUntil(
-      self.registration.showNotification(event.data.title, {
-        body: event.data.body,
-        tag: event.data.tag,
-        renotify: true,
-        vibrate: [200, 100, 200],
-        icon: './icon-192.png',
-      })
-    );
-  }
   if (event.data && event.data.type === 'SKIP_WAITING') self.skipWaiting();
 });
 
-self.addEventListener('notificationclick', (event) => {
-  event.notification.close();
-  event.waitUntil(
-    clients.matchAll({ type: 'window' }).then((list) => {
-      for (const client of list) {
-        if ('focus' in client) return client.focus();
-      }
-      if (clients.openWindow) return clients.openWindow('./');
-    })
-  );
-});

@@ -253,7 +253,7 @@ const App = {
     try {
       localStorage.setItem(this._lsKey(), JSON.stringify(this.S));
     } catch (e) {}
-    if (fbUser && !fbForcedSignout && !this._suspendCloudSync)
+    if (fbUser && !fbForcedSignout && !this._suspendCloudSync && App._cloudHydrated)
       fbDebouncedPush();
   },
 
@@ -371,10 +371,7 @@ const App = {
       // New day or no jap done today — discard any previous log entirely
       this.S.malaLog = [];
       await this.dbPut("malaLog", "today", { date: this.S.tk, log: [] });
-      // Force push empty log to Firebase so stale cloud data is overwritten
-      setTimeout(() => {
-        if (fbUser && !fbForcedSignout) fbDebouncedPush();
-      }, 3000);
+      // (removed) destructive force-push of empty malaLog — would overwrite cloud on cold start
     }
     STLIST.forEach((x) => {
       if (!this.S.stotrams[x.id]) this.S.stotrams[x.id] = {};
@@ -533,6 +530,8 @@ const App = {
     document.getElementById("timerBtn").className = "tbtn pause";
     this.timerInterval = setInterval(() => {
       this.timerSeconds++;
+      // Persist so per-mala duration survives app close / reopen
+      try { localStorage.setItem("rjap_timerSeconds", String(this.timerSeconds)); } catch(e){}
       document.getElementById("timerDisplay").textContent = this.fmtTime(
         this.timerSeconds,
       );
@@ -595,7 +594,7 @@ const App = {
     this.timerSeconds = 0;
     this.timerSavedSeconds = 0;
     this._malaTimerStart = 0; // reset per-mala timer anchor
-    document.getElementById("timerDisplay").textContent = "00:00:00";
+    document.getElementById("timerDisplay").textContent = App.fmtTime(App.timerSeconds);
     document.getElementById("timerDisplay").classList.remove("running");
     document.getElementById("timerBtn").textContent = "▶ Start";
     document.getElementById("timerBtn").className = "tbtn start";
@@ -702,8 +701,9 @@ const App = {
       this.malaWallStart = Date.now();
       localStorage.setItem("rjap_malaWallStart", String(this.malaWallStart));
       // Also anchor the timer-based mala start — this is the authoritative clock
-      if (this._malaTimerStart === undefined)
+      if (this._malaTimerStart === undefined || this._malaTimerStart === null)
         this._malaTimerStart = this.timerSeconds;
+      localStorage.setItem("rjap_malaTimerStart", String(this._malaTimerStart));
     }
   },
 
@@ -755,8 +755,12 @@ const App = {
         Math.round((Date.now() - this.malaWallStart) / 1000),
       );
     }
+    // Capture the REAL wall-clock start of this mala BEFORE we reset it
+    const _malaRealStart = this.malaWallStart || (Date.now() - malaDuration * 1000);
     // Anchor next mala's timer start to current timerSeconds
     this._malaTimerStart = this.timerSeconds;
+    localStorage.setItem("rjap_malaTimerStart", String(this._malaTimerStart));
+    localStorage.setItem("rjap_timerSeconds", String(this.timerSeconds));
     this.malaWallStart = Date.now();
     localStorage.setItem("rjap_malaWallStart", String(this.malaWallStart));
     const isRVm = this.S.japMode === "rv";
@@ -777,7 +781,8 @@ const App = {
       ? (this.S.malaLogRV || []).length
       : (this.S.malaLog || []).length;
     // Store wall-clock start so the history detail can show accurate start time
-    const malaStartTs = Date.now() - malaDuration * 1000;
+    // Real wall-clock start (e.g. 12:01) and real end (e.g. 12:21)
+    const malaStartTs = _malaRealStart;
     logActivity({
       t: "mala",
       ts: Date.now(),
@@ -1794,7 +1799,6 @@ function sv(id, btn) {
     const tgG = document.getElementById("tgGaudiya");
     if (tgG)
       App.S.gaudiyaMode ? tgG.classList.add("on") : tgG.classList.remove("on");
-    initReminderUI();
     // Populate the app link display
     const appUrl = _getAppUrl();
     const linkEl = document.getElementById("appLinkDisplay");
@@ -1804,6 +1808,7 @@ function sv(id, btn) {
 
 // ── Settings ──
 document.addEventListener("DOMContentLoaded", () => {
+
   const dti = document.getElementById("dtIn");
   const lti = document.getElementById("ltIn");
   if (dti)
@@ -1943,8 +1948,6 @@ function tgs(k) {
           if (statusEl) statusEl.textContent = "✅ Location detected · " + lat.toFixed(3) + ", " + lng.toFixed(3);
           toast("📍 GPS location saved! Brahma Muhurta times updated 🙏");
           if (typeof renderCal === "function") renderCal();
-          // Refresh reminder sun times using the now-saved coords
-          loadSunTimes(true);
         },
         () => {
           if (statusEl) statusEl.textContent = "⚠️ Location access denied. Please allow GPS in browser settings.";
@@ -1970,10 +1973,9 @@ function tgs(k) {
   }
 
   App.S.cfg[k] = !App.S.cfg[k];
-  const m = { vib: "tgVib", sound: "tgSnd" };
-  App.S.cfg[k]
-    ? document.getElementById(m[k]).classList.add("on")
-    : document.getElementById(m[k]).classList.remove("on");
+  const m = { sound: "tgSnd" };
+  const el = m[k] ? document.getElementById(m[k]) : null;
+  if (el) App.S.cfg[k] ? el.classList.add("on") : el.classList.remove("on");
   App.save();
   fbDebouncedPush();
 }
@@ -4511,6 +4513,9 @@ function fbInit() {
         // ── CRITICAL: if UID changed, reload data scoped to new user ──
         if (prevUid !== user.uid) {
           App._uid = user.uid;
+          // Preserve GPS coords across user switch
+          const _prevLat = App.S.lastLat ?? null;
+          const _prevLng = App.S.lastLng ?? null;
           // Reset in-memory state to defaults before loading new user's data
           App.S = {
             tk: App.getTk(),
@@ -4550,9 +4555,12 @@ function fbInit() {
             syncBaselineTimerHK: {},
             nameJapDeductHK: 0,
             gaudiyaMode: false,
+            lastLat: _prevLat,
+            lastLng: _prevLng,
           };
           // ── Always load IDB first so app is usable offline ──
           // Cloud pull in fbMigrate() will immediately overwrite with authoritative data.
+          App._cloudHydrated = false; // block any push until cloud pull completes
           await App.load();
           App.lmc = Math.floor(App.gTod() / (App.S.ms || 108));
           App.lmcRV = Math.floor(
@@ -4719,6 +4727,13 @@ async function fbPushDelta() {
 
 async function fbPushFull() {
   if (!fbUser) return;
+  // SAFETY: never push local state to cloud until we have successfully
+  // pulled the authoritative cloud copy at least once this session.
+  // Prevents wiping cloud data after "Clear app data" + re-login.
+  if (!App._cloudHydrated && !App._allowInitialPush) {
+    console.warn("fbPushFull blocked: cloud not yet hydrated");
+    return;
+  }
   setSyncPill("syncing", "Syncing…");
   const payload = {
     history: App.S.history || {},
@@ -4942,11 +4957,14 @@ async function fbMigrate() {
     setSyncPill("syncing", "Loading from cloud…");
     const snap = await docRef.get();
     if (!snap.exists) {
-      // No cloud data yet — push local state up
-      await fbPushFull();
+      // No cloud doc exists yet — safe to push local state up as the initial copy.
+      App._allowInitialPush = true;
+      try { await fbPushFull(); } finally { App._allowInitialPush = false; }
+      App._cloudHydrated = true;
     } else {
       // Cloud data exists — ALWAYS apply it (overrides local cache)
       fbApplyRemote({ ...snap.data(), deviceId: null });
+      App._cloudHydrated = true; // cloud copy applied, future saves may push
       if (!App.S.migrationV2Done) {
         // First-ever migration: push merged state back
         await fbPushFull();
@@ -7912,21 +7930,30 @@ window.addEventListener("load", async () => {
   App.timerSeconds = 0;
   App.timerSavedSeconds = 0;
   App._malaTimerStart = 0; // timer-based anchor for mala duration (authoritative clock)
-  // Restore wall-clock mala start for cross-session timing (fallback only)
+  // Restore wall-clock mala start for cross-session timing
   const savedMalaWall = localStorage.getItem("rjap_malaWallStart");
   const todayCount = App.gTod();
   const ms = App.S.ms || 108;
   const countInCurrentMala = todayCount % ms;
   if (savedMalaWall && countInCurrentMala > 0) {
     App.malaWallStart = parseInt(savedMalaWall);
+    // Mala in progress → restore active-tap timer so duration accumulates correctly
+    const savedTS = parseInt(localStorage.getItem("rjap_timerSeconds") || "0");
+    const savedMTS = parseInt(localStorage.getItem("rjap_malaTimerStart") || "0");
+    if (!isNaN(savedTS) && savedTS > 0) {
+      App.timerSeconds = savedTS;
+      App.timerSavedSeconds = savedTS;
+    }
+    if (!isNaN(savedMTS)) App._malaTimerStart = savedMTS;
   } else {
     App.malaWallStart = Date.now();
     localStorage.setItem("rjap_malaWallStart", String(App.malaWallStart));
+    localStorage.removeItem("rjap_timerSeconds");
+    localStorage.removeItem("rjap_malaTimerStart");
   }
   document.getElementById("timerDisplay").textContent = "00:00:00";
 
   // Apply settings UI
-  if (App.S.cfg.vib) document.getElementById("tgVib").classList.add("on");
   if (App.S.cfg.sound) document.getElementById("tgSnd").classList.add("on");
 
   // GPS Location toggle — ON if saved coords exist
@@ -8047,7 +8074,7 @@ function showInstallModal() {
       <img src="./icon-192.png" style="width:72px;height:72px;border-radius:18px;margin-bottom:14px;box-shadow:0 0 28px rgba(255,215,0,0.35);">
       <div style="font-family:'Cinzel Decorative',serif;font-size:17px;color:#FFD700;letter-spacing:1px;margin-bottom:6px;">Radha Naam Jap</div>
       <div style="font-size:13px;color:rgba(255,255,255,0.65);line-height:1.6;margin-bottom:22px;font-family:Inter,sans-serif;">
-        Press <b style="color:#FFD700">Install</b> to get an app icon on your Home Screen for quick, easy access — with daily reminders &amp; offline use 🙏
+        Press <b style="color:#FFD700">Install</b> to get an app icon on your Home Screen for quick, easy access — for offline use 🙏
       </div>
       <button id="installModalBtn" style="
         display:block;width:100%;padding:15px;margin-bottom:11px;
@@ -9182,336 +9209,6 @@ function _hcjRenderPlayer(idx) {
     if (pw && inner) inner.style.bottom = pw.offsetHeight + "px";
   });
 }
-
-// DAILY REMINDERS — Brahma Muhurta, Sandhyakal, Manual
-// DAILY REMINDERS — FCM Push (Firebase Cloud Messaging)
-// Replaces old local setTimeout system with server-sent push notifications.
-// Works when app is closed/backgrounded on iOS PWA + Android Chrome PWA.
-// ═══════════════════════════════════════════════════════
-const REM_KEY   = "radhaJapReminders_v2";
-const FCM_VAPID = "BBgnbM2KTEB0yT9xOHK--eWm6MO93ihHSLwNpu-NieG59LwygSfRk9MF66_9zjrOrPe0Pff78RmPu68gJ3t-k3o";
-
-let _fcmMessaging = null;
-let _fcmToken     = null;
-
-// ── PWA install guide ────────────────────────────────────────────────────
-function showPwaGuide() {
-  document.getElementById("pwaMo").classList.add("show");
-  document.body.style.overflow = "hidden";
-}
-function closePwaGuide() {
-  document.getElementById("pwaMo").classList.remove("show");
-  document.body.style.overflow = "";
-}
-
-// ── Local reminder config (enabled state + sun cache for display) ─────────
-function getRemCfg() {
-  try { return JSON.parse(localStorage.getItem(REM_KEY)) || {}; }
-  catch { return {}; }
-}
-function saveRemCfg(cfg) {
-  localStorage.setItem(REM_KEY, JSON.stringify(cfg));
-}
-
-// ── Lazy FCM messaging instance ───────────────────────────────────────────
-function _getFcmMessaging() {
-  if (_fcmMessaging) return _fcmMessaging;
-  if (typeof firebase === "undefined" || !firebase.messaging) return null;
-  try {
-    _fcmMessaging = firebase.messaging();
-    return _fcmMessaging;
-  } catch (e) {
-    console.warn("FCM messaging init failed:", e.message);
-    return null;
-  }
-}
-
-// ── Request permission + get FCM token + save to Firestore ───────────────
-async function fcmRequestAndSaveToken() {
-  const perm =
-    typeof Notification !== "undefined" && Notification.permission === "granted"
-      ? "granted"
-      : typeof Notification !== "undefined"
-        ? await Notification.requestPermission()
-        : "denied";
-  if (perm !== "granted") return null;
-
-  const msg = _getFcmMessaging();
-  if (!msg) { console.warn("FCM messaging not available"); return null; }
-
-  try {
-    const token = await msg.getToken({ vapidKey: FCM_VAPID });
-    if (!token) return null;
-    _fcmToken = token;
-    await _saveFcmTokenToFirestore(token);
-    return token;
-  } catch (e) {
-    console.warn("FCM getToken failed:", e.message);
-    return null;
-  }
-}
-
-async function _saveFcmTokenToFirestore(token) {
-  if (!fbUser || !fbDb) return;
-  try {
-    await fbDb
-      .collection("users").doc(fbUser.uid)
-      .collection("fcmTokens").doc("web")
-      .set(
-        { token, updatedAt: firebase.firestore.FieldValue.serverTimestamp() },
-        { merge: true }
-      );
-  } catch (e) {
-    console.warn("FCM token save failed:", e.message);
-  }
-}
-
-// ── Push reminder prefs to Firestore so Cloud Function can schedule ───────
-async function _saveRemPrefsToFirestore(cfg) {
-  if (!fbUser || !fbDb) return;
-  const prefs = {};
-  ["brahma", "sandhya", "manual"].forEach((type) => {
-    if (cfg[type]) {
-      prefs[type] = {
-        enabled: !!cfg[type].enabled,
-        ...(type === "manual" && cfg[type].time ? { time: cfg[type].time } : {}),
-      };
-    }
-  });
-  prefs.lat = App.S.lastLat  ?? null;
-  prefs.lng = App.S.lastLng  ?? null;
-  prefs.tz  = Intl.DateTimeFormat().resolvedOptions().timeZone || "";
-  try {
-    await fbDb
-      .collection("users").doc(fbUser.uid)
-      .collection("reminders").doc("prefs")
-      .set(
-        { ...prefs, updatedAt: firebase.firestore.FieldValue.serverTimestamp() },
-        { merge: true }
-      );
-  } catch (e) {
-    console.warn("Reminder prefs save failed:", e.message);
-  }
-}
-
-// ── FCM foreground handler — show notification when app is open ───────────
-function _initFcmForegroundHandler() {
-  const msg = _getFcmMessaging();
-  if (!msg) return;
-  msg.onMessage((payload) => {
-    const title = payload.notification?.title || "राधे राधे 🙏";
-    const body  = payload.notification?.body  || "Time for your daily Naam Jap!";
-    const tag   = payload.notification?.tag   || payload.data?.tag || "radha-jap";
-    if ("serviceWorker" in navigator && navigator.serviceWorker.controller) {
-      navigator.serviceWorker.controller.postMessage({
-        type: "SHOW_NOTIFICATION", title, body, tag,
-      });
-    }
-  });
-}
-
-// ── Sun time helpers (for UI display only — actual scheduling is server-side) ─
-async function fetchSunTimes(lat, lon) {
-  const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=sunrise,sunset&timezone=auto&forecast_days=2`;
-  const r = await fetch(url);
-  const d = await r.json();
-  return {
-    sunrise: [new Date(d.daily.sunrise[0]), new Date(d.daily.sunrise[1])],
-    sunset:  [new Date(d.daily.sunset[0]),  new Date(d.daily.sunset[1])],
-  };
-}
-function brahmaNotifyTime(sunrise) { return new Date(sunrise.getTime() - 101 * 60 * 1000); }
-function sandhyaNotifyTime(sunset)  { return new Date(sunset.getTime()  -   5 * 60 * 1000); }
-function fmt12(date) {
-  let h = date.getHours(), m = date.getMinutes();
-  const ap = h >= 12 ? "PM" : "AM";
-  h = h % 12 || 12;
-  return `${h}:${String(m).padStart(2, "0")} ${ap}`;
-}
-
-async function loadSunTimes(forceRefresh) {
-  const cfg    = getRemCfg();
-  const now    = Date.now();
-  const cached = cfg.sunCache;
-  const locEl  = document.getElementById("remLocStatus");
-
-  if (!forceRefresh && cached && now - cached.ts < 6 * 3600 * 1000) {
-    applySunCache(cached);
-    return cached;
-  }
-
-  // Reads ONLY the coords saved by the GPS Location toggle — never calls GPS directly
-  const savedLat = App.S && App.S.lastLat;
-  const savedLng = App.S && App.S.lastLng;
-
-  if (!savedLat || !savedLng) {
-    if (locEl) locEl.textContent = "⚠️ Turn on GPS Location toggle to enable sun times";
-    return null;
-  }
-
-  if (locEl) locEl.textContent = "📍 Computing sun times…";
-
-  try {
-    const sun = await fetchSunTimes(savedLat, savedLng);
-    const cache = {
-      ts: now, lat: savedLat, lon: savedLng,
-      sunrise0: sun.sunrise[0].toISOString(), sunrise1: sun.sunrise[1].toISOString(),
-      sunset0:  sun.sunset[0].toISOString(),  sunset1:  sun.sunset[1].toISOString(),
-    };
-    cfg.sunCache = cache;
-    saveRemCfg(cfg);
-    applySunCache(cache);
-    if (locEl) locEl.textContent = "📍 Location active · Times update daily";
-    return cache;
-  } catch (e) {
-    if (locEl) locEl.textContent = "⚠️ Could not fetch sun times. Check internet.";
-    return null;
-  }
-}
-
-function applySunCache(cache) {
-  if (!cache) return;
-  const sr0   = new Date(cache.sunrise0);
-  const ss0   = new Date(cache.sunset0);
-  const bTime = brahmaNotifyTime(sr0);
-  const sTime = sandhyaNotifyTime(ss0);
-  const btEl  = document.getElementById("remTimeBrahma");
-  const stEl  = document.getElementById("remTimeSandhya");
-  if (btEl) btEl.textContent = `Notify at ${fmt12(bTime)} · Sunrise ${fmt12(sr0)}`;
-  if (stEl) stEl.textContent = `Notify at ${fmt12(sTime)} · Sunset ${fmt12(ss0)}`;
-}
-
-// ── Toggle called by UI buttons ───────────────────────────────────────────
-async function toggleReminderType(type) {
-  if (!("Notification" in window)) { showPwaGuide(); return; }
-
-  const cfg   = getRemCfg();
-  const isOn  = cfg[type]?.enabled;
-  const label = type === "brahma" ? "Brahma Muhurta"
-              : type === "sandhya" ? "Sandhyakal"
-              : "Custom";
-
-  if (isOn) {
-    // Turn OFF
-    cfg[type] = { ...(cfg[type] || {}), enabled: false };
-    saveRemCfg(cfg);
-    updateReminderUI(type, false, cfg);
-    await _saveRemPrefsToFirestore(cfg);
-    toast(`${label} reminder off`);
-    return;
-  }
-
-  // Turn ON — need permission + FCM token first
-  const perm =
-    typeof Notification !== "undefined" && Notification.permission === "granted"
-      ? "granted"
-      : typeof Notification !== "undefined"
-        ? await Notification.requestPermission()
-        : "denied";
-  if (perm !== "granted") { showPwaGuide(); return; }
-
-  if (!_fcmToken) {
-    const tok = await fcmRequestAndSaveToken();
-    if (!tok) {
-      toast("Could not register for notifications. Allow notifications & retry.");
-      return;
-    }
-  }
-
-  // For GPS-based reminders, load sun times for display
-  if (type !== "manual") {
-    const cache = await loadSunTimes(false);
-    if (!cache) { toast("Could not get location. Please allow GPS access."); return; }
-  }
-
-  if (!cfg[type]) cfg[type] = {};
-  cfg[type].enabled = true;
-  if (type === "manual" && !cfg.manual?.time) cfg.manual.time = "06:00";
-  saveRemCfg(cfg);
-  updateReminderUI(type, true, cfg);
-  await _saveRemPrefsToFirestore(cfg);
-  const icon = type === "brahma" ? "🌄" : type === "sandhya" ? "🌅" : "🕐";
-  toast(`${icon} ${label} reminder on!`);
-}
-
-function saveManualReminderTime() {
-  const time = document.getElementById("reminderTimeIn").value;
-  if (!time) { toast("Please select a time"); return; }
-  const cfg = getRemCfg();
-  if (!cfg.manual) cfg.manual = {};
-  cfg.manual.time    = time;
-  cfg.manual.enabled = true;
-  saveRemCfg(cfg);
-  updateReminderUI("manual", true, cfg);
-  _saveRemPrefsToFirestore(cfg);
-  toast("Custom reminder saved 🙏");
-}
-
-function updateReminderUI(type, on, cfg) {
-  const tgMap = { brahma: "tgBrahma", sandhya: "tgSandhya", manual: "tgManual" };
-  const tg = document.getElementById(tgMap[type]);
-  if (tg) on ? tg.classList.add("on") : tg.classList.remove("on");
-  if (type === "manual") {
-    const row    = document.getElementById("reminderTimeRow");
-    const timeEl = document.getElementById("remTimeManual");
-    if (row) row.style.display = on ? "flex" : "none";
-    if (timeEl) {
-      const t = cfg.manual?.time;
-      if (on && t) {
-        const [h, m] = t.split(":").map(Number);
-        const ap = h >= 12 ? "PM" : "AM", h12 = h % 12 || 12;
-        timeEl.textContent = `${h12}:${String(m).padStart(2, "0")} ${ap} daily`;
-      } else {
-        timeEl.textContent = "Not set";
-      }
-    }
-  }
-}
-
-async function initReminderUI() {
-  const cfg = getRemCfg();
-  ["brahma", "sandhya", "manual"].forEach((type) =>
-    updateReminderUI(type, !!cfg[type]?.enabled, cfg)
-  );
-  if (cfg.manual?.time) document.getElementById("reminderTimeIn").value = cfg.manual.time;
-  if (cfg.sunCache) applySunCache(cfg.sunCache);
-  if (cfg.brahma?.enabled || cfg.sandhya?.enabled) {
-    await loadSunTimes(false);
-  } else {
-    const locEl = document.getElementById("remLocStatus");
-    if (locEl) locEl.textContent = "Enable Brahma Muhurta or Sandhyakal to auto-detect times";
-  }
-  // Re-register FCM token if reminders already enabled (e.g. after re-login)
-  const anyEnabled = ["brahma", "sandhya", "manual"].some((t) => cfg[t]?.enabled);
-  if (
-    anyEnabled && fbUser && !_fcmToken &&
-    typeof Notification !== "undefined" &&
-    Notification.permission === "granted"
-  ) {
-    fcmRequestAndSaveToken().catch(() => {});
-  }
-  _initFcmForegroundHandler();
-}
-
-// ── Re-register token automatically on login if reminders were previously ON ─
-(function _restoreTokenOnLogin() {
-  const _poll = setInterval(() => {
-    if (typeof fbUser === "undefined") return;
-    clearInterval(_poll);
-    if (!fbUser) return;
-    const cfg        = getRemCfg();
-    const anyEnabled = ["brahma", "sandhya", "manual"].some((t) => cfg[t]?.enabled);
-    if (
-      anyEnabled &&
-      typeof Notification !== "undefined" &&
-      Notification.permission === "granted" &&
-      !_fcmToken
-    ) {
-      fcmRequestAndSaveToken().catch(() => {});
-    }
-  }, 800);
-  setTimeout(() => clearInterval(_poll), 30000);
-})();
 
 
 // ══════════════════════════════════════════

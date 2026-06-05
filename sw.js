@@ -4,7 +4,7 @@
 //       firebase-messaging-compat.js added to EXTERNAL_ASSETS; cache bumped.
 
 // ═══════════════════════════════════════════════════════
-const CACHE = 'radha-jap-v118';
+const CACHE = 'radha-jap-v119';
 
 const LOCAL_ASSETS = [
   './',

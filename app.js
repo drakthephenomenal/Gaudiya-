@@ -71,6 +71,7 @@ const App = {
     syncBaselineTimerRV: {},
     activityLog: [],
     sadhanaStart: "",
+    milestones: { reached: {}, lastChecked: 0 },
     historyHK: {},
     timerHistoryHK: {},
     dtHK: 0,
@@ -183,6 +184,9 @@ const App = {
   },
 
   async save() {
+    // GUEST MODE: never persist to IDB or localStorage — guest jap is intentionally ephemeral.
+    // Only signed-in users get local persistence (as an offline buffer for cloud sync).
+    if (!this._uid) return;
     // Save full state snapshot to IDB so all dates and edits persist locally
     await this.dbPut("state", this._stateKey(), {
       ms: this.S.ms,
@@ -226,6 +230,8 @@ const App = {
       syncBaselineTimerHK: this.S.syncBaselineTimerHK || {},
       nameJapDeductHK: this.S.nameJapDeductHK || 0,
       gaudiyaMode: this.S.gaudiyaMode || false,
+      dt28Cycles: this.S.dt28Cycles || 0,
+      milestones: this.S.milestones || { reached: {}, lastChecked: 0 },
       hkLang: this.S.hkLang || "hi",
       lastLat: this.S.lastLat ?? null,
       lastLng: this.S.lastLng ?? null,
@@ -260,6 +266,10 @@ const App = {
   async load() {
     await this.initDB();
     this.S.tk = this.getTk();
+
+    // GUEST MODE: never load from IDB or localStorage — start clean every time.
+    // Signed-in users load from IDB as an offline buffer; cloud pull immediately follows.
+    if (!this._uid) return;
 
     // Try IndexedDB first
     const main = await this.dbGet("state", this._stateKey());
@@ -1620,6 +1630,7 @@ function initJapModeUI() {
   if (lblH) lblH.textContent = App.S.hkLang === "bn" ? "Bangla" : "Hindi";
   // Apply all language-sensitive labels on load
   applyHKLangLabels(App.S.hkLang || "hi");
+  try { populateSettingsUI(); } catch (_e) {}
 }
 
 // ── Naam Selector Toggle ──
@@ -1807,63 +1818,63 @@ function sv(id, btn) {
     renderMilestonesTab();
   }
   if (id === "vset") {
-    const ms = App.S.ms || 108;
-    if (App.S.dt) document.getElementById("dtIn").value = App.S.dt;
-    if (App.S.lt) document.getElementById("ltIn").value = App.S.lt;
-    document.getElementById("msIn").value = ms;
-    // Populate mala equivalents for Radha targets
-    const dtMalaInEl = document.getElementById("dtMalaIn");
-    if (dtMalaInEl)
-      dtMalaInEl.value = App.S.dt > 0 ? Math.round(App.S.dt / ms) : "";
-    const ltMalaInEl = document.getElementById("ltMalaIn");
-    if (ltMalaInEl)
-      ltMalaInEl.value = App.S.lt > 0 ? Math.round(App.S.lt / ms) : "";
-    // Populate crore equivalent
-    const ltCroreInEl = document.getElementById("ltCroreIn");
-    const ltCroreDispEl = document.getElementById("ltCroreDisp");
-    if (ltCroreInEl)
-      ltCroreInEl.value = App.S.lt > 0 ? +(App.S.lt / 10000000).toFixed(4) : "";
-    if (ltCroreDispEl)
-      ltCroreDispEl.textContent =
-        App.S.lt > 0 ? (App.S.lt / 10000000).toFixed(2) : "0";
-    // Populate mala display
-    const ltMalaDispEl = document.getElementById("ltMala");
-    if (ltMalaDispEl)
-      ltMalaDispEl.textContent =
-        App.S.lt > 0 ? Math.ceil(App.S.lt / ms).toLocaleString() : "0";
-    // Populate RV daily target (fix: was missing, target not showing)
-    const dtRVEl = document.getElementById("dtRVIn");
-    if (dtRVEl) dtRVEl.value = App.S.dtRV > 0 ? App.S.dtRV : "";
-    const dtRVMalaInEl = document.getElementById("dtRVMalaIn");
-    if (dtRVMalaInEl)
-      dtRVMalaInEl.value = App.S.dtRV > 0 ? Math.round(App.S.dtRV / ms) : "";
-    const dtRVMalaDisp = document.getElementById("dtRVMala");
-    if (dtRVMalaDisp)
-      dtRVMalaDisp.textContent = Math.floor((App.S.dtRV || 0) / ms);
-    // Populate HK daily target
-    const dtHKEl = document.getElementById("dtHKIn");
-    if (dtHKEl) dtHKEl.value = (App.S.dtHK || 0) > 0 ? App.S.dtHK : "";
-    const dtHKMalaInEl = document.getElementById("dtHKMalaIn");
-    if (dtHKMalaInEl)
-      dtHKMalaInEl.value =
-        (App.S.dtHK || 0) > 0 ? Math.round((App.S.dtHK || 0) / ms) : "";
-    const dtHKMalaDisp = document.getElementById("dtHKMala");
-    if (dtHKMalaDisp)
-      dtHKMalaDisp.textContent = Math.floor((App.S.dtHK || 0) / ms);
-    // Populate 28 Names daily target
-    const dt28El = document.getElementById("dt28CycleIn");
-    if (dt28El) dt28El.value = (App.S.dt28Cycles || 0) > 0 ? App.S.dt28Cycles : "";
-    const dt28Disp = document.getElementById("dt28JapDisp");
-    if (dt28Disp) dt28Disp.textContent = (App.S.dt28Cycles || 0) * 28;
-    // Gaudiya Mode toggle
-    const tgG = document.getElementById("tgGaudiya");
-    if (tgG)
-      App.S.gaudiyaMode ? tgG.classList.add("on") : tgG.classList.remove("on");
-    // Populate the app link display
-    const appUrl = _getAppUrl();
-    const linkEl = document.getElementById("appLinkDisplay");
-    if (linkEl) linkEl.textContent = appUrl;
+    populateSettingsUI();
   }
+}
+
+// ── Populate ALL Settings target/input fields from App.S ──
+// Safe to call anytime (no-ops when elements aren't present yet).
+// Called when navigating to Settings AND after every cloud pull / sign-in.
+function populateSettingsUI() {
+  const ms = App.S.ms || 108;
+  // Radha Daily
+  const dtIn = document.getElementById("dtIn");
+  if (dtIn) dtIn.value = App.S.dt > 0 ? App.S.dt : "";
+  const dtMalaInEl = document.getElementById("dtMalaIn");
+  if (dtMalaInEl) dtMalaInEl.value = App.S.dt > 0 ? Math.round(App.S.dt / ms) : "";
+  const dtMalaDisp = document.getElementById("dtMala");
+  if (dtMalaDisp) dtMalaDisp.textContent = App.S.dt > 0 ? Math.ceil(App.S.dt / ms) : "0";
+  // Radha Lifetime
+  const ltIn = document.getElementById("ltIn");
+  if (ltIn) ltIn.value = App.S.lt > 0 ? App.S.lt : "";
+  const ltMalaInEl = document.getElementById("ltMalaIn");
+  if (ltMalaInEl) ltMalaInEl.value = App.S.lt > 0 ? Math.round(App.S.lt / ms) : "";
+  const ltCroreInEl = document.getElementById("ltCroreIn");
+  if (ltCroreInEl) ltCroreInEl.value = App.S.lt > 0 ? +(App.S.lt / 10000000).toFixed(4) : "";
+  const ltCroreDispEl = document.getElementById("ltCroreDisp");
+  if (ltCroreDispEl) ltCroreDispEl.textContent = App.S.lt > 0 ? (App.S.lt / 10000000).toFixed(2) : "0";
+  const ltMalaDispEl = document.getElementById("ltMala");
+  if (ltMalaDispEl) ltMalaDispEl.textContent = App.S.lt > 0 ? Math.ceil(App.S.lt / ms).toLocaleString() : "0";
+  // Mala size
+  const msIn = document.getElementById("msIn");
+  if (msIn) msIn.value = ms;
+  // RV Daily
+  const dtRVEl = document.getElementById("dtRVIn");
+  if (dtRVEl) dtRVEl.value = App.S.dtRV > 0 ? App.S.dtRV : "";
+  const dtRVMalaInEl = document.getElementById("dtRVMalaIn");
+  if (dtRVMalaInEl) dtRVMalaInEl.value = App.S.dtRV > 0 ? Math.round(App.S.dtRV / ms) : "";
+  const dtRVMalaDisp = document.getElementById("dtRVMala");
+  if (dtRVMalaDisp) dtRVMalaDisp.textContent = App.S.dtRV > 0 ? Math.floor(App.S.dtRV / ms) : "0";
+  // HK Daily
+  const dtHKEl = document.getElementById("dtHKIn");
+  if (dtHKEl) dtHKEl.value = (App.S.dtHK || 0) > 0 ? App.S.dtHK : "";
+  const dtHKMalaInEl = document.getElementById("dtHKMalaIn");
+  if (dtHKMalaInEl) dtHKMalaInEl.value = (App.S.dtHK || 0) > 0 ? Math.round((App.S.dtHK || 0) / ms) : "";
+  const dtHKMalaDisp = document.getElementById("dtHKMala");
+  if (dtHKMalaDisp) dtHKMalaDisp.textContent = (App.S.dtHK || 0) > 0 ? Math.floor((App.S.dtHK || 0) / ms) : "0";
+  // 28 Names daily target (cycles)
+  const dt28El = document.getElementById("dt28CycleIn");
+  if (dt28El) dt28El.value = (App.S.dt28Cycles || 0) > 0 ? App.S.dt28Cycles : "";
+  const dt28Disp = document.getElementById("dt28JapDisp");
+  if (dt28Disp) dt28Disp.textContent = (App.S.dt28Cycles || 0) * 28;
+  // Gaudiya Mode toggle
+  const tgG = document.getElementById("tgGaudiya");
+  if (tgG) App.S.gaudiyaMode ? tgG.classList.add("on") : tgG.classList.remove("on");
+  // App link display (if visible)
+  try {
+    const linkEl = document.getElementById("appLinkDisplay");
+    if (linkEl && typeof _getAppUrl === "function") linkEl.textContent = _getAppUrl();
+  } catch (_e) {}
 }
 
 // ── Settings ──
@@ -3589,11 +3600,16 @@ async function _fbResetPush() {
   clearTimeout(_fbDeb);
   _fbDeb = null;
   // 2. Push the clean local state to Firebase immediately (overwrite cloud)
+  // IMPORTANT: bypass the _cloudHydrated guard — a reset must ALWAYS reach Firebase.
   if (fbUser && !fbForcedSignout) {
+    const prevAllowInitialPush = App._allowInitialPush;
+    App._allowInitialPush = true; // force push through the hydration guard
     try {
       await fbPushFull();
     } catch (e) {
       console.warn("Reset push failed:", e.message);
+    } finally {
+      App._allowInitialPush = prevAllowInitialPush;
     }
   }
   // 3. Re-start the listener so future changes sync normally
@@ -3686,8 +3702,11 @@ function doReset() {
     App.lmcRV = 0;
     App.lmcHK = 0;
     App.dbClearStore("history");
+    App.dbClearStore("historyRV").catch(() => {});
+    App.dbClearStore("historyHK").catch(() => {});
     App.dbClearStore("timerHistory");
     App.dbClearStore("timerHistoryRV");
+    App.dbClearStore("timerHistoryHK").catch(() => {});
     App.dbClearStore("activityLogArchive");
     App.dbClearStore("malaLog");
     App.resetTimer();
@@ -3705,6 +3724,8 @@ function doReset() {
     App.S.brahmacharya_start_date = "";
     App.S.sankalpas = [];
     App.S.occasions = {};
+    App.S.milestones = { reached: {}, lastChecked: 0 };
+    try { localStorage.removeItem("rjap_milestones"); } catch (_) {}
     const msEl = document.getElementById("msIn");
     if (msEl) msEl.value = "";
     initBrahmaStartInput();
@@ -4583,6 +4604,27 @@ function fbInit() {
         console.warn("getRedirectResult:", e.message);
       });
 
+    // ── When the device comes back online, push any local changes
+    //    accumulated while offline. Firestore persistence also replays its
+    //    own queued writes, but this ensures the latest in-memory state
+    //    (including counters incremented since the last debounced push)
+    //    reaches the cloud immediately on reconnect.
+    if (!fbInit._onlineHooked) {
+      fbInit._onlineHooked = true;
+      window.addEventListener("online", () => {
+        if (fbUser && !fbForcedSignout) {
+          if (!App._cloudHydrated) {
+            // App went offline before the initial cloud pull completed.
+            // Re-run the full sync cycle: pull from Firebase first, then push offline work.
+            fbAutoSync().catch((e) => console.warn("Online resync (full):", e && e.message));
+          } else {
+            // Already hydrated — just push any offline jap accumulated since last sync.
+            fbPushFull().catch((e) => console.warn("Online resync (push):", e && e.message));
+          }
+        }
+      });
+    }
+
     fbAuth.onAuthStateChanged(async (user) => {
       if (fbForcedSignout) {
         lockSignedOutScreen();
@@ -4636,11 +4678,13 @@ function fbInit() {
             syncBaselineTimerHK: {},
             nameJapDeductHK: 0,
             gaudiyaMode: false,
+            milestones: { reached: {}, lastChecked: 0 },
             lastLat: _prevLat,
             lastLng: _prevLng,
           };
-          // ── Always load IDB first so app is usable offline ──
-          // Cloud pull in fbMigrate() will immediately overwrite with authoritative data.
+          // ── Load IDB offline buffer (only if we were previously signed in offline) ──
+          // Cloud pull in fbMigrate() will ALWAYS overwrite with authoritative data.
+          // Guest-mode jap is intentionally NOT carried over here (guest IDB is never written).
           App._cloudHydrated = false; // block any push until cloud pull completes
           await App.load();
           App.lmc = Math.floor(App.gTod() / (App.S.ms || 108));
@@ -4687,6 +4731,86 @@ function fbInit() {
         if (fbSessionListener) {
           fbSessionListener();
           fbSessionListener = null;
+        }
+        if (fbListener) {
+          fbListener();
+          fbListener = null;
+        }
+        // ── Sign-out: reset in-memory jap state so the device shows a clean
+        // slate. Any jap done while signed out then accumulates in the
+        // "guest" IDB bucket (App._uid = null) and CANNOT leak back into
+        // the previously signed-in account on next login, because the
+        // sign-in flow does a fresh App.load() + cloud pull keyed by uid.
+        if (prevUid) {
+          App._uid = null;
+          App._cloudHydrated = false;
+          App._allowInitialPush = false;
+          const _prevLat2 = App.S && App.S.lastLat != null ? App.S.lastLat : null;
+          const _prevLng2 = App.S && App.S.lastLng != null ? App.S.lastLng : null;
+          App.S = {
+            tk: App.getTk(),
+            ms: 108,
+            dt: 0,
+            lt: 0,
+            cfg: { vib: true, sound: true },
+            history: {},
+            h28: {},
+            stotrams: {},
+            brahma: {},
+            customSt: [],
+            timerHistory: {},
+            timer28History: {},
+            sankalpas: [],
+            occasions: {},
+            syncBaseline: {},
+            syncBaseline28: {},
+            syncBaselineTimer: {},
+            syncBaselineTimer28: {},
+            migrationV2Done: false,
+            japMode: "radha",
+            historyRV: {},
+            timerHistoryRV: {},
+            dtRV: 0,
+            ltRV: 0,
+            nameJapDeductRV: 0,
+            malaLogRV: [],
+            activityLog: [],
+            syncBaselineRV: {},
+            syncBaselineTimerRV: {},
+            historyHK: {},
+            timerHistoryHK: {},
+            dtHK: 0,
+            malaLogHK: [],
+            syncBaselineHK: {},
+            syncBaselineTimerHK: {},
+            nameJapDeductHK: 0,
+            gaudiyaMode: false,
+            dt28Cycles: 0,
+            milestones: { reached: {}, lastChecked: 0 },
+            lastLat: _prevLat2,
+            lastLng: _prevLng2,
+          };
+          // GUEST MODE: intentionally do NOT load from IDB or localStorage.
+          // Guest jap is ephemeral — never persisted, never merged into signed-in state.
+          App.lmc = Math.floor(App.gTod() / (App.S.ms || 108));
+          App.lmcRV = Math.floor(
+            (App.S.historyRV[App.S.tk] || 0) / (App.S.ms || 108),
+          );
+          App.lmcHK = Math.floor(
+            ((App.S.historyHK || {})[App.S.tk] || 0) / (App.S.ms || 108),
+          );
+          App.lm28 = Math.floor((App.S.h28[App.S.tk] || 0) / (App.S.ms || 108));
+          document.body.classList.remove("gaudiya-mode");
+          switchJapMode(App.S.japMode || "radha");
+          App.ua();
+          try { renderSt(); } catch (_e) {}
+          try { u28(); } catch (_e) {}
+          try { renderBcal(); } catch (_e) {}
+          try { renderCal(); } catch (_e) {}
+          try { uStats(); } catch (_e) {}
+          try { renderSankalpas(); } catch (_e) {}
+          try { renderMalaLog(); } catch (_e) {}
+          try { populateSettingsUI(); } catch (_e) {}
         }
       }
     });
@@ -4789,17 +4913,101 @@ function fbSignInZoho() {
     });
 }
 
-function fbSignOut() {
+// ── Wipe ALL locally cached data for a given UID. Used on sign-out so
+//    the next login (same device or another) ALWAYS pulls authoritative
+//    state from Firebase, never from a stale local cache. Guest data is
+//    cleared too so the signed-out screen shows a clean zero-zero state.
+async function clearLocalUserData(uid) {
+  try {
+    if (App.db) {
+      // Remove this UID's main snapshot
+      await new Promise((res) => {
+        const tx = App.db.transaction("state", "readwrite");
+        tx.objectStore("state").delete((uid || "guest") + ":main");
+        tx.oncomplete = res; tx.onerror = res; tx.onabort = res;
+      });
+      // Also clear the guest snapshot so guest mode starts clean.
+      await new Promise((res) => {
+        const tx = App.db.transaction("state", "readwrite");
+        tx.objectStore("state").delete("guest:main");
+        tx.oncomplete = res; tx.onerror = res; tx.onabort = res;
+      });
+      // Clear shared per-date stores (not UID-scoped in IDB schema).
+      for (const store of ["history","h28","timerHistory","timer28History","malaLog","activityLogArchive"]) {
+        try { await App.dbClearStore(store); } catch (_) {}
+      }
+    }
+  } catch (e) { console.warn("clearLocalUserData IDB:", e.message); }
+  // Wipe localStorage mirrors for both UID and legacy keys.
+  try { if (uid) localStorage.removeItem("rjap5_" + uid); } catch (_) {}
+  try { localStorage.removeItem("rjap5_guest"); } catch (_) {}
+  try { localStorage.removeItem("rjap5"); } catch (_) {}
+  try { localStorage.removeItem("rjap_sadhana_start"); } catch (_) {}
+}
+
+async function fbSignOut() {
   if (!fbAuth) return;
-  if (fbSessionListener) {
-    fbSessionListener();
-    fbSessionListener = null;
+  const outgoingUid = (fbUser && fbUser.uid) || App._uid || null;
+  // ── STEP 1: Push current state to Firebase BEFORE signing out so the
+  //    user's "last state" is preserved as the next-login baseline.
+  //    Firestore offline persistence will queue the write while offline;
+  //    we still attempt it so reconnection can replay it.
+  if (fbUser && App._cloudHydrated) {
+    try {
+      setSyncPill("syncing", "Saving before sign-out…");
+      if (!navigator.onLine) {
+        toast("Offline — your last state will sync when you're back online");
+      }
+      await fbPushFull();
+    } catch (e) {
+      console.warn("Push before sign-out failed:", e && e.message);
+    }
   }
-  if (fbListener) {
-    fbListener();
-    fbListener = null;
-  }
+  // Stop sync listeners so cloud changes cannot resurrect local state mid-wipe.
+  if (fbSessionListener) { fbSessionListener(); fbSessionListener = null; }
+  if (fbListener) { fbListener(); fbListener = null; }
+  // Block any further writes until the next sign-in completes its cloud pull.
+  App._cloudHydrated = false;
+  App._allowInitialPush = false;
+  App._suspendCloudSync = true;
+  // ── STEP 2: Wipe local data so re-login always reflects Firebase, and
+  //    so the signed-out (guest) display starts at zero-zero.
+  await clearLocalUserData(outgoingUid);
   App._uid = null;
+  App._suspendCloudSync = false;
+
+  // ── Reset in-memory state to zero-zero immediately ──
+  // Do NOT wait for onAuthStateChanged — it won't re-render because _uid is already null.
+  const _prevLat = App.S && App.S.lastLat != null ? App.S.lastLat : null;
+  const _prevLng = App.S && App.S.lastLng != null ? App.S.lastLng : null;
+  App.S = {
+    tk: App.getTk(), ms: 108, dt: 0, lt: 0,
+    cfg: { vib: true, sound: true },
+    history: {}, h28: {}, stotrams: {}, brahma: {}, customSt: [],
+    timerHistory: {}, timer28History: {}, sankalpas: [], occasions: {},
+    syncBaseline: {}, syncBaseline28: {}, syncBaselineTimer: {}, syncBaselineTimer28: {},
+    migrationV2Done: false, japMode: "radha",
+    historyRV: {}, timerHistoryRV: {}, dtRV: 0, ltRV: 0, nameJapDeductRV: 0,
+    malaLogRV: [], activityLog: [], syncBaselineRV: {}, syncBaselineTimerRV: {},
+    historyHK: {}, timerHistoryHK: {}, dtHK: 0, malaLogHK: [],
+    syncBaselineHK: {}, syncBaselineTimerHK: {}, nameJapDeductHK: 0,
+    gaudiyaMode: false, dt28Cycles: 0,
+    milestones: { reached: {}, lastChecked: 0 },
+    lastLat: _prevLat, lastLng: _prevLng,
+  };
+  App.lmc = 0; App.lmcRV = 0; App.lmcHK = 0; App.lm28 = 0;
+  document.body.classList.remove("gaudiya-mode");
+  switchJapMode("radha");
+  try { App.ua(); } catch (_e) {}
+  try { renderSt(); } catch (_e) {}
+  try { u28(); } catch (_e) {}
+  try { renderBcal(); } catch (_e) {}
+  try { renderCal(); } catch (_e) {}
+  try { uStats(); } catch (_e) {}
+  try { renderSankalpas(); } catch (_e) {}
+  try { renderMalaLog(); } catch (_e) {}
+  try { populateSettingsUI(); } catch (_e) {}
+
   fbAuth.signOut().then(() => toast("Signed out 🙏"));
 }
 async function fbPushDelta() {
@@ -4850,6 +5058,8 @@ async function fbPushFull() {
     nameJapDeductHK: App.S.nameJapDeductHK || 0,
     malaLogHK: App.S.malaLogHK || [],
     gaudiyaMode: App.S.gaudiyaMode || false,
+    dt28Cycles: App.S.dt28Cycles || 0,
+    milestones: App.S.milestones || { reached: {}, lastChecked: 0 },
     lastSync: firebase.firestore.FieldValue.serverTimestamp(),
     deviceId: fbDeviceId,
   };
@@ -4961,6 +5171,27 @@ function fbApplyRemote(d) {
   if ("timerHistoryHK" in d)
     App.S.timerHistoryHK = JSON.parse(JSON.stringify(d.timerHistoryHK || {}));
   if (d.dtHK !== undefined) App.S.dtHK = d.dtHK;
+  if (d.dt28Cycles !== undefined) {
+    // Only apply remote dt28Cycles if it's actually set (>0), or if local is also 0.
+    // Prevents a stale Firebase doc (dt28Cycles:0) from wiping a freshly saved target.
+    if ((d.dt28Cycles || 0) > 0 || (App.S.dt28Cycles || 0) === 0) {
+      App.S.dt28Cycles = d.dt28Cycles;
+    }
+  }
+  if (d.milestones) {
+    // Merge: union of local + remote reached flags so neither device loses a celebration
+    const localReached = (App.S.milestones && App.S.milestones.reached) || {};
+    const remoteReached = d.milestones.reached || {};
+    App.S.milestones = {
+      reached: { ...remoteReached, ...localReached },
+      lastChecked: Math.max(
+        (App.S.milestones && App.S.milestones.lastChecked) || 0,
+        d.milestones.lastChecked || 0
+      ),
+    };
+    // Keep localStorage mirror in sync
+    try { localStorage.setItem("rjap_milestones", JSON.stringify(App.S.milestones)); } catch (_) {}
+  }
   if (d.nameJapDeductHK !== undefined)
     App.S.nameJapDeductHK = d.nameJapDeductHK;
   if (d.gaudiyaMode !== undefined) {
@@ -5022,6 +5253,7 @@ function fbApplyRemote(d) {
   uStats();
   renderSankalpas();
   renderMalaLog();
+  try { populateSettingsUI(); } catch (_e) {}
   setSyncPill("", "🔄 Synced from cloud");
 }
 
@@ -5051,19 +5283,94 @@ async function fbMigrate() {
       if (!snap || !snap.exists) {
         // Could not confirm cloud state — refuse to push so we never
         // overwrite real cloud data with empty local state.
-        setSyncPill("error", "Offline — cloud not loaded");
+        // _cloudHydrated stays false — the "online" listener will retry fbAutoSync() automatically.
+        App._cloudHydrated = false;
+        setSyncPill("error", "Offline — will sync when online");
         return;
       }
     }
     if (!snap.exists) {
-      // Confirmed by server: no cloud doc yet — safe to seed initial copy.
-      App._allowInitialPush = true;
-      try { await fbPushFull(); } finally { App._allowInitialPush = false; }
-      App._cloudHydrated = true;
+      // Server confirmed no cloud doc exists yet.
+      // SAFETY: only seed Firebase if local state actually has meaningful data.
+      // After a browser "Delete & reset", local is zeros AND cloud may incorrectly
+      // appear empty due to cache wipe — never overwrite cloud with zeros.
+      const hasLocalData =
+        Object.values(App.S.history || {}).some(v => v > 0) ||
+        Object.values(App.S.historyRV || {}).some(v => v > 0) ||
+        Object.values(App.S.historyHK || {}).some(v => v > 0) ||
+        (App.S.dt || 0) > 0 || (App.S.dtRV || 0) > 0 || (App.S.dtHK || 0) > 0;
+      if (hasLocalData) {
+        // Genuine first-time user with local data — seed Firebase
+        App._allowInitialPush = true;
+        try { await fbPushFull(); } finally { App._allowInitialPush = false; }
+        App._cloudHydrated = true;
+      } else {
+        // Local is zeros — could be a fresh install OR a browser reset wipe.
+        // Do a second server fetch after a short delay to confirm truly no doc.
+        await new Promise(r => setTimeout(r, 2000));
+        let snap2 = null;
+        try { snap2 = await docRef.get({ source: "server" }); } catch (_) {}
+        if (snap2 && snap2.exists) {
+          // Doc appeared on retry — browser reset scenario. Apply cloud data.
+          fbApplyRemote({ ...snap2.data(), deviceId: null });
+          App._cloudHydrated = true;
+        } else {
+          // Confirmed truly new user — safe to seed
+          App._allowInitialPush = true;
+          try { await fbPushFull(); } finally { App._allowInitialPush = false; }
+          App._cloudHydrated = true;
+        }
+      }
     } else {
-      // Cloud data exists — ALWAYS apply it (overrides local cache)
+      // ── OFFLINE-WORK PRESERVATION ──
+      // Snapshot local counts BEFORE applying cloud data.
+      // If the user did jap while signed-in but offline (app closed & reopened),
+      // local IDB has higher counts than cloud. We must not overwrite them.
+      const localHistory      = JSON.parse(JSON.stringify(App.S.history      || {}));
+      const localH28          = JSON.parse(JSON.stringify(App.S.h28          || {}));
+      const localTimerHistory = JSON.parse(JSON.stringify(App.S.timerHistory || {}));
+      const localHistoryRV    = JSON.parse(JSON.stringify(App.S.historyRV    || {}));
+      const localHistoryHK    = JSON.parse(JSON.stringify(App.S.historyHK    || {}));
+      const localTimerHistoryRV = JSON.parse(JSON.stringify(App.S.timerHistoryRV || {}));
+      const localTimerHistoryHK = JSON.parse(JSON.stringify(App.S.timerHistoryHK || {}));
+      const localDt   = App.S.dt   || 0;
+      const localDtRV = App.S.dtRV || 0;
+      const localDtHK = App.S.dtHK || 0;
+
+      // Cloud data exists — apply it (overrides local cache)
       fbApplyRemote({ ...snap.data(), deviceId: null });
       App._cloudHydrated = true; // cloud copy applied, future saves may push
+
+      // ── MERGE: for each date key, keep whichever is higher (local offline wins) ──
+      let offlineWorkFound = false;
+      function mergeMax(local, applied) {
+        for (const k in local) {
+          if ((local[k] || 0) > (applied[k] || 0)) {
+            applied[k] = local[k];
+            offlineWorkFound = true;
+          }
+        }
+      }
+      mergeMax(localHistory,        App.S.history);
+      mergeMax(localH28,            App.S.h28);
+      mergeMax(localTimerHistory,   App.S.timerHistory);
+      mergeMax(localHistoryRV,      App.S.historyRV);
+      mergeMax(localHistoryHK,      App.S.historyHK);
+      mergeMax(localTimerHistoryRV, App.S.timerHistoryRV);
+      mergeMax(localTimerHistoryHK, App.S.timerHistoryHK);
+      // Also preserve higher dt (lifetime jap seconds) if local is ahead
+      if (localDt   > App.S.dt)   { App.S.dt   = localDt;   offlineWorkFound = true; }
+      if (localDtRV > App.S.dtRV) { App.S.dtRV = localDtRV; offlineWorkFound = true; }
+      if (localDtHK > App.S.dtHK) { App.S.dtHK = localDtHK; offlineWorkFound = true; }
+
+      if (offlineWorkFound) {
+        // Local had offline jap ahead of cloud — push the merged state immediately
+        console.log("Offline work detected — pushing merged state to Firebase");
+        setSyncPill("syncing", "Syncing offline jap…");
+        App._allowInitialPush = true;
+        try { await fbPushFull(); } finally { App._allowInitialPush = false; }
+      }
+
       if (!App.S.migrationV2Done) {
         // First-ever migration: push merged state back
         await fbPushFull();
@@ -5315,9 +5622,17 @@ function sync28CycleTarget() {
 function svt28() {
   const v = parseInt(document.getElementById("dt28CycleIn")?.value) || 0;
   App.S.dt28Cycles = v;
-  save();
-  toast("✅ 28 Names daily target saved: " + v + " cycle" + (v !== 1 ? "s" : "") + " (" + (v * 28) + " japs/day)");
+  App.save();
+  // Push immediately (not debounced) so the value reaches Firebase before
+  // the realtime listener can fire back with a stale dt28Cycles value.
+  if (typeof fbPushFull === "function" && App._cloudHydrated) {
+    fbPushFull().catch(e => console.warn("svt28 push:", e && e.message));
+  } else if (typeof fbDebouncedPush === "function") {
+    fbDebouncedPush();
+  }
+  App.ua();
   u28();
+  toast("✅ 28 Names daily target saved: " + v + " cycle" + (v !== 1 ? "s" : "") + " (" + (v * 28) + " japs/day)");
 }
 function _update28ProgressBar(todJaps) {
   const targetCycles = App.S.dt28Cycles || 0;
@@ -8517,6 +8832,14 @@ function showLyrics(id) {
   }
 
   _currentStotramId = id;
+  // Premium-theme hook: mark overlay + card with the stotram id so CSS
+  // can apply the extraordinary HCJ / RKS skins (see style-stotram.css).
+  try {
+    var _lmoEl = document.getElementById("lmo");
+    if (_lmoEl) _lmoEl.setAttribute("data-stotram-id", id);
+    var _lmCard = document.querySelector(".lm-water-card");
+    if (_lmCard) _lmCard.setAttribute("data-stotram-id", id);
+  } catch (_) {}
   // Inherit the global translation preference set on the list screen
   _translationVisible = TRANSLATION_IDS.includes(id)
     ? _globalTranslationPref
@@ -8836,7 +9159,7 @@ function _initSwipeHandler() {
   // Remove any previous swipe listeners
   card._swipeCleanup && card._swipeCleanup();
 
-  if (_currentStotramId === "hcj") return; // HCJ uses its own audio player arrows
+  // HCJ side-swipe enabled — _renderVerse() keeps the audio player in sync via _hcjOnVerseChange().
 
   let startX = 0,
     startY = 0,
@@ -8878,6 +9201,9 @@ function closeLyrics() {
   var lmo = document.getElementById("lmo");
   lmo.classList.remove("show");
   lmo.removeAttribute("data-bg");
+  lmo.removeAttribute("data-stotram-id");
+  var _lmCard2 = document.querySelector(".lm-water-card");
+  if (_lmCard2) _lmCard2.removeAttribute("data-stotram-id");
   var card = document.querySelector(".lm-water-card");
   if (card) card.removeAttribute("data-theme");
   /* Clean up HCJ player window listeners before destroying audio */
@@ -9530,6 +9856,8 @@ function formatMsCountLabel(n) {
 }
 
 function getMilestoneData() {
+  // Primary: use App.S (synced via Firebase). Fallback: localStorage (legacy).
+  if (App.S && App.S.milestones) return App.S.milestones;
   try {
     const d = localStorage.getItem("rjap_milestones");
     return d ? JSON.parse(d) : { reached: {}, lastChecked: 0 };
@@ -9539,6 +9867,13 @@ function getMilestoneData() {
 }
 
 function saveMilestoneData(data) {
+  // Save to App.S so it gets persisted to IDB and pushed to Firebase.
+  if (App.S) {
+    App.S.milestones = data;
+    App.save();
+    if (typeof fbDebouncedPush === "function" && App._cloudHydrated) fbDebouncedPush();
+  }
+  // Also mirror to localStorage as fallback.
   try {
     localStorage.setItem("rjap_milestones", JSON.stringify(data));
   } catch (e) {}
@@ -10742,3 +11077,292 @@ function _fmtDateDMY(dateStr) {
     init();
   }
 })();
+
+
+// ═══════════════════════════════════════════════════════
+// AUTO LOCAL BACKUP — hourly + nightly (00:00) snapshots
+// • Stored in IndexedDB so the Service Worker can also write
+//   them via the Periodic Background Sync API when the app is
+//   closed (Android Chrome only — falls back to in-app timer
+//   on every other platform, which is good enough because the
+//   app gets reopened daily).
+// • Hourly snapshot OVERWRITES the previous hourly file.
+// • Midnight snapshot keeps the date+time in the filename so
+//   you get one new file every night.
+// ═══════════════════════════════════════════════════════
+(function () {
+  if (typeof window === "undefined") return;
+  var DB_NAME = "RadhaJapDB";
+  var STORE   = "backups";
+  var HOURLY_KEY = "auto-hourly";
+  var MIDNIGHT_PREFIX = "auto-midnight-";
+  var LATEST_SNAPSHOT_KEY = "latest-snapshot";
+
+  // ── tiny IDB helper that opens the *same* DB used by App,
+  // upgrading to add the `backups` store if missing. ──
+  function openBackupDB() {
+    return new Promise(function (res, rej) {
+      // Bump to v5 so the new `backups` object store is created.
+      var req = indexedDB.open(DB_NAME, 5);
+      req.onupgradeneeded = function (e) {
+        var db = e.target.result;
+        if (!db.objectStoreNames.contains("state"))               db.createObjectStore("state");
+        if (!db.objectStoreNames.contains("history"))             db.createObjectStore("history");
+        if (!db.objectStoreNames.contains("h28"))                 db.createObjectStore("h28");
+        if (!db.objectStoreNames.contains("timerHistory"))        db.createObjectStore("timerHistory");
+        if (!db.objectStoreNames.contains("timer28History"))      db.createObjectStore("timer28History");
+        if (!db.objectStoreNames.contains("malaLog"))             db.createObjectStore("malaLog");
+        if (!db.objectStoreNames.contains("activityLogArchive"))  db.createObjectStore("activityLogArchive");
+        if (!db.objectStoreNames.contains(STORE))                 db.createObjectStore(STORE);
+      };
+      req.onsuccess = function (e) { res(e.target.result); };
+      req.onerror   = function () { rej(req.error); };
+    });
+  }
+  function idbPut(key, value) {
+    return openBackupDB().then(function (db) {
+      return new Promise(function (res) {
+        var tx = db.transaction(STORE, "readwrite");
+        tx.objectStore(STORE).put(value, key);
+        tx.oncomplete = function () { res(true); };
+        tx.onerror    = function () { res(false); };
+      });
+    });
+  }
+  function idbGet(key) {
+    return openBackupDB().then(function (db) {
+      return new Promise(function (res) {
+        var tx = db.transaction(STORE, "readonly");
+        var r = tx.objectStore(STORE).get(key);
+        r.onsuccess = function () { res(r.result || null); };
+        r.onerror   = function () { res(null); };
+      });
+    });
+  }
+  function idbKeys() {
+    return openBackupDB().then(function (db) {
+      return new Promise(function (res) {
+        var tx = db.transaction(STORE, "readonly");
+        var r = tx.objectStore(STORE).getAllKeys();
+        r.onsuccess = function () { res(r.result || []); };
+        r.onerror   = function () { res([]); };
+      });
+    });
+  }
+
+  function ts() {
+    var d = new Date();
+    var pad = function (n) { return n < 10 ? "0" + n : "" + n; };
+    return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()) +
+           "_" + pad(d.getHours()) + "-" + pad(d.getMinutes());
+  }
+  function dateStr(d) {
+    d = d || new Date();
+    var pad = function (n) { return n < 10 ? "0" + n : "" + n; };
+    return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate());
+  }
+
+  // ── Build a backup payload using the same shape as exportAllData ──
+  function buildBackup() {
+    if (!window.App || !App.S) return null;
+    return {
+      _version: 3,
+      _exported: new Date().toISOString(),
+      _auto: true,
+      history: App.S.history || {},
+      h28: App.S.h28 || {},
+      timerHistory: App.S.timerHistory || {},
+      timer28History: App.S.timer28History || {},
+      stotrams: App.S.stotrams || {},
+      brahma: App.S.brahma || {},
+      customSt: App.S.customSt || [],
+      sankalpas: App.S.sankalpas || [],
+      occasions: App.S.occasions || {},
+      ms: App.S.ms || 108,
+      dt: App.S.dt || 0,
+      lt: App.S.lt || 0,
+      nameJapDeduct: App.S.nameJapDeduct || 0,
+      cfg: App.S.cfg || {},
+      malaLog: App.S.malaLog || [],
+      malaLogDate: App.S.tk,
+      brahmacharya_start_date: App.S.brahmacharya_start_date || "",
+      japMode: App.S.japMode || "radha",
+      historyRV: App.S.historyRV || {},
+      timerHistoryRV: App.S.timerHistoryRV || {},
+      dtRV: App.S.dtRV || 0,
+      ltRV: App.S.ltRV || 0,
+      nameJapDeductRV: App.S.nameJapDeductRV || 0,
+      malaLogRV: App.S.malaLogRV || [],
+      historyHK: App.S.historyHK || {},
+      timerHistoryHK: App.S.timerHistoryHK || {},
+      dtHK: App.S.dtHK || 0,
+      nameJapDeductHK: App.S.nameJapDeductHK || 0,
+      malaLogHK: App.S.malaLogHK || [],
+      gaudiyaMode: App.S.gaudiyaMode || false
+    };
+  }
+
+  // Mirror the freshest snapshot into IDB on every App.save() so the
+  // service worker (which can't read localStorage / window.App) can
+  // still write a real backup when the app is closed.
+  function installSaveMirror() {
+    if (!window.App || typeof App.save !== "function" || App._autoBackupHooked) return;
+    App._autoBackupHooked = true;
+    var _origSave = App.save.bind(App);
+    App.save = async function () {
+      var r = await _origSave();
+      try {
+        var snap = buildBackup();
+        if (snap) await idbPut(LATEST_SNAPSHOT_KEY, { savedAt: Date.now(), data: snap });
+      } catch (_) {}
+      return r;
+    };
+  }
+
+  async function writeHourly() {
+    var snap = buildBackup(); if (!snap) return false;
+    await idbPut(HOURLY_KEY, { savedAt: Date.now(), filename: "radha-naam-jap-hourly.json", data: snap });
+    return true;
+  }
+  async function writeMidnight() {
+    var snap = buildBackup(); if (!snap) return false;
+    var key = MIDNIGHT_PREFIX + ts();
+    await idbPut(key, { savedAt: Date.now(), filename: "radha-naam-jap-" + ts() + ".json", data: snap });
+    return true;
+  }
+
+  function downloadJSON(filename, obj) {
+    try {
+      var blob = new Blob([JSON.stringify(obj, null, 2)], { type: "application/json" });
+      var url  = URL.createObjectURL(blob);
+      var a = document.createElement("a");
+      a.href = url; a.download = filename; a.rel = "noopener"; a.style.display = "none";
+      document.body.appendChild(a); a.click();
+      setTimeout(function () { URL.revokeObjectURL(url); a.remove(); }, 1500);
+      return true;
+    } catch (e) { return false; }
+  }
+
+  // ── Foreground scheduler — fires when the app is open ──
+  var _hourlyTimer = null;
+  var _midnightTimer = null;
+  function scheduleNext() {
+    clearTimeout(_hourlyTimer); clearTimeout(_midnightTimer);
+    var now = new Date();
+    // Next top of the hour
+    var nextHr = new Date(now); nextHr.setHours(now.getHours() + 1, 0, 5, 0);
+    _hourlyTimer = setTimeout(function () { writeHourly().finally(scheduleNext); }, nextHr - now);
+    // Next midnight
+    var nextMid = new Date(now); nextMid.setHours(24, 0, 10, 0);
+    _midnightTimer = setTimeout(function () { writeMidnight(); }, nextMid - now);
+  }
+
+  // ── Register Periodic Background Sync with the service worker ──
+  async function registerPeriodicSync() {
+    if (!("serviceWorker" in navigator)) return { ok: false, reason: "no-sw" };
+    try {
+      var reg = await navigator.serviceWorker.ready;
+      if (!("periodicSync" in reg)) return { ok: false, reason: "unsupported" };
+      var status = await navigator.permissions.query({ name: "periodic-background-sync" });
+      if (status.state !== "granted") return { ok: false, reason: "no-permission" };
+      // Hourly tag
+      await reg.periodicSync.register("auto-backup-hourly",   { minInterval: 60 * 60 * 1000 });
+      // Daily tag (browser decides the exact moment — usually overnight)
+      await reg.periodicSync.register("auto-backup-midnight", { minInterval: 24 * 60 * 60 * 1000 });
+      return { ok: true };
+    } catch (e) {
+      return { ok: false, reason: (e && e.message) || "error" };
+    }
+  }
+
+  // ── Public API ──
+  window.AutoBackup = {
+    init: function () {
+      installSaveMirror();
+      // Write an immediate snapshot so users always have something to download
+      setTimeout(function () { writeHourly(); }, 4000);
+      scheduleNext();
+      // Re-arm the scheduler whenever the tab regains focus (handles laptop sleep)
+      document.addEventListener("visibilitychange", function () {
+        if (document.visibilityState === "visible") {
+          writeHourly();
+          scheduleNext();
+        }
+      });
+      registerPeriodicSync(); // best-effort; quiet failures on iOS/desktop
+    },
+    requestPeriodicSync: registerPeriodicSync,
+    runHourlyNow:   writeHourly,
+    runMidnightNow: writeMidnight,
+
+    downloadHourly: async function () {
+      var rec = await idbGet(HOURLY_KEY);
+      if (!rec) { if (window.toast) toast("No hourly backup yet ⏳"); return false; }
+      downloadJSON(rec.filename || "radha-naam-jap-hourly.json", rec.data);
+      if (window.toast) toast("Hourly backup downloaded 🙏");
+      return true;
+    },
+    downloadLatestMidnight: async function () {
+      var keys = (await idbKeys()).filter(function (k) { return String(k).indexOf(MIDNIGHT_PREFIX) === 0; }).sort();
+      if (!keys.length) { if (window.toast) toast("No midnight backup yet 🌙"); return false; }
+      var rec = await idbGet(keys[keys.length - 1]);
+      if (!rec) return false;
+      downloadJSON(rec.filename || ("radha-naam-jap-" + ts() + ".json"), rec.data);
+      if (window.toast) toast("Midnight backup downloaded 🙏");
+      return true;
+    },
+    listMidnights: async function () {
+      var keys = (await idbKeys()).filter(function (k) { return String(k).indexOf(MIDNIGHT_PREFIX) === 0; }).sort();
+      var rows = [];
+      for (var i = keys.length - 1; i >= 0 && rows.length < 30; i--) {
+        var r = await idbGet(keys[i]);
+        if (r) rows.push({ key: keys[i], filename: r.filename, savedAt: r.savedAt });
+      }
+      return rows;
+    },
+    downloadByKey: async function (key) {
+      var rec = await idbGet(key);
+      if (!rec) return false;
+      return downloadJSON(rec.filename || (key + ".json"), rec.data);
+    },
+    status: async function () {
+      var hourly = await idbGet(HOURLY_KEY);
+      var keys = (await idbKeys()).filter(function (k) { return String(k).indexOf(MIDNIGHT_PREFIX) === 0; }).sort();
+      var latestMid = keys.length ? await idbGet(keys[keys.length - 1]) : null;
+      return {
+        hourly:   hourly   ? { savedAt: hourly.savedAt, filename: hourly.filename } : null,
+        midnight: latestMid ? { savedAt: latestMid.savedAt, filename: latestMid.filename, count: keys.length } : { count: 0 }
+      };
+    },
+    refreshStatusUI: async function () {
+      var el = document.getElementById("autoBackupStatus");
+      if (!el) return;
+      var s = await this.status();
+      var fmt = function (t) { return t ? new Date(t).toLocaleString() : "—"; };
+      el.innerHTML =
+        '<div style="display:flex;justify-content:space-between;gap:8px">' +
+          '<span>⏱ Hourly</span><b>' + fmt(s.hourly && s.hourly.savedAt) + '</b>' +
+        '</div>' +
+        '<div style="display:flex;justify-content:space-between;gap:8px;margin-top:4px">' +
+          '<span>🌙 Nightly</span><b>' + fmt(s.midnight && s.midnight.savedAt) +
+          ' <span style="opacity:.65">(' + (s.midnight && s.midnight.count || 0) + ' kept)</span></b>' +
+        '</div>';
+    }
+  };
+
+  // Boot once the App object is ready. App.init isn't promise-based here,
+  // so we just wait for App.S to appear.
+  function boot() {
+    if (window.App && App.S) {
+      window.AutoBackup.init();
+    } else {
+      setTimeout(boot, 600);
+    }
+  }
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", boot);
+  } else {
+    boot();
+  }
+})();
+

@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<meta name="app-version" content="121">
+<meta name="app-version" content="124">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -23,8 +23,8 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<link rel="stylesheet" href="./style.css?v=121">
-  <link rel="stylesheet" href="./style-stotram.css?v=121">
+<link rel="stylesheet" href="./style.css?v=124">
+  <link rel="stylesheet" href="./style-stotram.css?v=124">
 </head>
 <body>
 <!-- LOADING -->
@@ -1034,6 +1034,31 @@
       <input type="file" id="restoreFileIn" accept=".json" style="display:none" onchange="importAllData(this)">
     </label>
     <div id="restoreStatus" style="font-size:12px;margin-top:8px;text-align:center;color:var(--green);min-height:18px"></div>
+
+    <!-- ── AUTO BACKUP (hourly + nightly) ─────────────────────────── -->
+    <div class="auto-backup-block" style="margin-top:18px;padding-top:14px;border-top:1px dashed rgba(255,215,0,0.18)">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+        <span style="font-size:18px">🌙</span>
+        <b style="font-size:13px;letter-spacing:.4px">Automatic Daily Backup</b>
+      </div>
+      <p style="font-size:11px;color:var(--td);margin:0 0 10px;line-height:1.55">
+        Two snapshots are saved on your device every day:<br>
+        • One every hour (overwrites the previous hour)<br>
+        • One every night at midnight (kept with date &amp; time in the filename)<br>
+        On Android Chrome (installed app) backups also run in the background while the app is closed.
+      </p>
+      <div id="autoBackupStatus" style="font-size:11px;background:rgba(255,215,0,0.06);border:1px solid rgba(255,215,0,0.18);border-radius:10px;padding:8px 10px;margin-bottom:10px;color:var(--td)">
+        <div style="opacity:.7">Loading status…</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <button class="pb" style="padding:9px 6px;font-size:11px" onclick="AutoBackup.downloadHourly().then(()=>AutoBackup.refreshStatusUI())">⏱ Download Hourly</button>
+        <button class="pb" style="padding:9px 6px;font-size:11px" onclick="AutoBackup.downloadLatestMidnight().then(()=>AutoBackup.refreshStatusUI())">🌙 Download Last Night</button>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px">
+        <button class="pb" style="padding:8px 6px;font-size:11px;opacity:.85" onclick="AutoBackup.runHourlyNow().then(()=>AutoBackup.refreshStatusUI())">↻ Snapshot Now</button>
+        <button class="pb" style="padding:8px 6px;font-size:11px;opacity:.85" onclick="AutoBackup.requestPeriodicSync().then(r=>toast(r.ok?'Background backup enabled 🙏':'Open the installed app on Android Chrome to enable.'))">📲 Enable Background</button>
+      </div>
+    </div>
   </div>
   <!-- GAUDIYA / ISKCON MODE — large aesthetic switch -->
   <div class="sc gaudiya-mode-card" id="gaudiyaModeCard">
@@ -1228,5 +1253,21 @@
     <script src="./panchangData.js?v=117"></script>
     <script src="./stotrams.js?v=115"></script>
     <script src="./app.js?v=118"></script>
-  </body>
+  
+<script>
+  // Keep the auto-backup status panel fresh whenever Settings becomes visible
+  (function(){
+    function refresh(){ if(window.AutoBackup && AutoBackup.refreshStatusUI) AutoBackup.refreshStatusUI(); }
+    document.addEventListener('DOMContentLoaded', function(){
+      setTimeout(refresh, 1500);
+      // Re-render whenever the user navigates to the settings tab
+      document.addEventListener('click', function(e){
+        var t = e.target && e.target.closest ? e.target.closest('[data-nav="settings"], [onclick*="settings"]') : null;
+        if (t) setTimeout(refresh, 200);
+      });
+      setInterval(refresh, 60 * 1000);
+    });
+  })();
+</script>
+</body>
 </html>

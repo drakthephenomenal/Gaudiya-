@@ -153,7 +153,7 @@
     -webkit-overflow-scrolling: touch;
     background: transparent;
     /* padding-top guards first-line ascenders from frame border clip */
-    padding: 16px 8px 8px;
+    padding: 4px 8px 8px;
     z-index: 2;
   }
   /* Portrait phones (aspect < 2/3): cover → image fills HEIGHT (100dvh)
@@ -185,22 +185,14 @@
     }
   }
 
-  /* Spacer BEFORE lyrics — grows when there's free space,
-     compresses to 0 when content overflows (long lyrics) */
-  .lm-card-inner::before {
-    content: '';
-    display: block;
-    flex: 1 1 0;
-    min-height: 0;
-    max-height: 40%; /* don't push short content too far down */
-  }
-  /* Spacer AFTER lyrics */
+  /* Spacers BEFORE & AFTER lyrics — equal flex so short verses are
+     perfectly centred vertically; both collapse to 0 when content overflows. */
+  .lm-card-inner::before,
   .lm-card-inner::after {
     content: '';
     display: block;
     flex: 1 1 0;
     min-height: 0;
-    max-height: 40%;
   }
 
   /* Override old rule that hid ::before on themed cards */

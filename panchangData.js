@@ -99,24 +99,70 @@ const _PAKSHA_GAUDIYA_BN = { shukla: 'গৌর পক্ষ',     krishna: 'ক
 const _PAKSHA            = { shukla: 'Shukla Paksha', krishna: 'Krishna Paksha' };
 const _PAKSHA_BN         = { shukla: 'শুক্ল পক্ষ',   krishna: 'কৃষ্ণ পক্ষ' };
 
-// ─── ADHIK MAAS WINDOWS ─────────────────────────────────────────────
-// Verified dates matching ISKCON / Drikpanchang (Dhaka coordinates)
-// 2026: Adhik Jyeshtha (Purushottama Maas)
-//   Begins: May 17, 2026 — Adhik Jyeshtha Shukla Pratipada
-//   Ends  : Jun 15, 2026 — Adhik Jyeshtha Amavasya; Nija Jyeshtha begins Jun 16
-//   Adhik Ekadashis inside this window:
-//     Padmini Ekadashi (Shukla) : May 27, 2026
-//     Parama  Ekadashi (Krishna): Jun 11, 2026
-const _ADHIK_MAAS_WINDOWS = [
-  { start: '2026-05-17', end: '2026-06-15' }, // Adhik Jyeshtha 2026
-  { start: '2029-07-18', end: '2029-08-16' },
-  { start: '2032-09-01', end: '2032-09-29' },
-];
-function _getAdhikMaasWindow(dateStr) {
-  return _ADHIK_MAAS_WINDOWS.find(w => dateStr >= w.start && dateStr <= w.end) || null;
+// ─── ADHIK MAAS (PURUSHOTTAMA MAAS) — ASTRONOMICAL DETECTION ─────────
+// No hard-coded date ranges. A lunar month (amavasya → amavasya) is an
+// "Adhik Maas" when NO solar sankranti (the Sun crossing into a new
+// sidereal zodiac sign, i.e. a multiple of 30°) happens inside it.
+// Normally every lunar month contains exactly one sankranti; when two
+// new moons fall inside a single solar month, that extra lunar month has
+// none — that is Purushottama / Adhik Maas. Works fully offline because
+// it relies only on the local Sun/Moon engine below.
+//
+// Helpers reference _elongation / _sunMoonLongitudes which are function
+// declarations defined later in this file (hoisted at runtime).
+
+const _SYNODIC = 29.530588853; // mean synodic month (days)
+
+// Moon–Sun elongation mapped to (−180, 180], so it crosses 0 at new moon.
+function _elongSigned(date) {
+  const e = _elongation(date);
+  return e > 180 ? e - 360 : e;
 }
-function isAdhikMaasDate(dateStr) {
-  return !!_getAdhikMaasWindow(dateStr);
+
+// Find the new-moon (amavasya) moment nearest the given approximate date,
+// by locating the upward zero-crossing of the signed elongation.
+function _findNewMoon(approxDate) {
+  let prev = new Date(approxDate.getTime() - 2 * 86400000);
+  let pv = _elongSigned(prev);
+  const end = approxDate.getTime() + 2 * 86400000;
+  for (let t = prev.getTime() + 3600000; t <= end; t += 3600000) {
+    const d = new Date(t);
+    const v = _elongSigned(d);
+    if (pv < 0 && v >= 0) { // ascending through 0 = new moon
+      let lo = prev, hi = d;
+      for (let j = 0; j < 50; j++) {
+        const mid = new Date((lo.getTime() + hi.getTime()) / 2);
+        if (_elongSigned(mid) < 0) lo = mid; else hi = mid;
+        if (hi.getTime() - lo.getTime() < 10000) break;
+      }
+      return new Date((lo.getTime() + hi.getTime()) / 2);
+    }
+    prev = d; pv = v;
+  }
+  return null;
+}
+
+// Sidereal zodiac sign index (0–11) of the Sun at a moment.
+function _sunSignIdx(date) {
+  const s = _sunMoonLongitudes(date).sunSid;
+  return Math.floor(((s % 360) + 360) % 360 / 30);
+}
+
+// True when the lunar month containing `date` has no sankranti → Adhik Maas.
+function _isAdhikMaasAstro(date) {
+  const daysSince = (_elongation(date) / 360) * _SYNODIC;
+  const startNM = _findNewMoon(new Date(date.getTime() - daysSince * 86400000));
+  if (!startNM) return false;
+  const endNM = _findNewMoon(new Date(startNM.getTime() + _SYNODIC * 86400000));
+  if (!endNM) return false;
+  // No solar sign change between the two new moons = extra (adhik) month.
+  return _sunSignIdx(startNM) === _sunSignIdx(endNM);
+}
+
+function isAdhikMaasDate(dateInput) {
+  const d = (dateInput instanceof Date) ? dateInput : new Date(dateInput + 'T06:00:00');
+  if (isNaN(d.getTime())) return false;
+  return _isAdhikMaasAstro(d);
 }
 
 // ─── FORMATTING HELPERS ─────────────────────────────────────────────
@@ -142,12 +188,12 @@ function _dateStr(d) {
 //  (Used when API is unavailable — offline fallback)
 // ═══════════════════════════════════════════════════════════════════
 
-// Lahiri Ayanamsha — IAU/Lahiri standard formula (accurate to ~1 arcmin)
+// Lahiri (Chitrapaksha) Ayanamsha — accurate standard formula.
+// Lahiri ayanamsha ≈ 23.8504° at J2000.0, precessing ~50.29"/yr.
+// (The previous 23.473° base was ~0.37° too low, which flipped
+//  borderline Adhik Maas decisions — sankranti timing is that sensitive.)
 function _ayanamsha(T) {
-  // Fagan-Bradley base: 24.044°at J2000, rate 50.27686"/year
-  // Lahiri offset: −0.571°from Fagan-Bradley
-  // = 23.473° + T*1.3966° (degrees per Julian century)
-  const ayan = 23.473 + T * 1.3966 + 0.0003 * T * T;
+  const ayan = 23.8504 + T * 1.3969 + 0.0001 * T * T;
   return ayan;
 }
 

@@ -12021,6 +12021,11 @@ window.renderPhotoPickers = async function() {
     // If a custom photo is in IDB, append it as a thumbnail always
     const customData = await PhotosDB.get(key);
     if (customData) {
+      const wrap = document.createElement('div');
+      wrap.style.position = 'relative';
+      wrap.style.display = 'inline-block';
+      wrap.style.flexShrink = '0';
+      
       const img = document.createElement('img');
       img.className = `photo-thumb ${currentVal === 'custom' ? 'selected' : ''}`;
       img.src = customData;
@@ -12030,7 +12035,33 @@ window.renderPhotoPickers = async function() {
         renderPhotoPickers();
         applyBgPhotos();
       };
-      strip.appendChild(img);
+      
+      const delBtn = document.createElement('div');
+      delBtn.innerHTML = '🗑️';
+      delBtn.style.position = 'absolute';
+      delBtn.style.top = '-4px';
+      delBtn.style.right = '-4px';
+      delBtn.style.background = '#ff4d4d';
+      delBtn.style.borderRadius = '50%';
+      delBtn.style.padding = '4px';
+      delBtn.style.fontSize = '12px';
+      delBtn.style.lineHeight = '1';
+      delBtn.style.cursor = 'pointer';
+      delBtn.style.boxShadow = '0 2px 5px rgba(0,0,0,0.5)';
+      delBtn.onclick = async (e) => {
+        e.stopPropagation();
+        await PhotosDB.del(key);
+        if (App.S[conf.stateKey] === 'custom') {
+          App.S[conf.stateKey] = 1;
+          App.save();
+          applyBgPhotos();
+        }
+        renderPhotoPickers();
+      };
+      
+      wrap.appendChild(img);
+      wrap.appendChild(delBtn);
+      strip.appendChild(wrap);
     }
     
     // Update active state of buttons below the strip

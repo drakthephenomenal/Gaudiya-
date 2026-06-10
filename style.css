@@ -2578,10 +2578,10 @@ body.hk-bn #hkLangBtnHi{opacity:0.55;}
   pointer-events:none; user-select:none; z-index:1;
 }
 
-/* Gurudev — bottom-right, sits just below RV's bottom edge */
+/* Gurudev — bottom-right, same plane as Hitju */
 .tz .gurudev-wm{
   position:absolute;
-  bottom: clamp(14px, 3vh, 50px);
+  bottom: clamp(22px, 4.5vh, 60px);
   right:10px;
   width:var(--side-w); height:auto;
   opacity:.5;
@@ -2700,11 +2700,12 @@ body.gaudiya-mode .tz .cm-wm{
   display:flex;gap:6px;padding:12px 12px 6px;
 }
 .lb-tab{
-  flex:1;padding:9px 4px;border-radius:12px;
+  flex:1;padding:8px 2px;border-radius:12px;
   border:1px solid rgba(74,144,226,0.2);
   background:rgba(74,144,226,0.06);
-  color:var(--td);font-size:11px;font-weight:600;cursor:pointer;
-  font-family:'Inter',sans-serif;letter-spacing:0.3px;transition:all 0.25s;
+  color:var(--td);font-size:10px;font-weight:600;cursor:pointer;
+  font-family:'Inter',sans-serif;letter-spacing:0.2px;transition:all 0.25s;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
 }
 .lb-tab.active{
   background:linear-gradient(135deg,rgba(255,215,0,0.18),rgba(255,180,0,0.08));

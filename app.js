@@ -45,7 +45,7 @@ const App = {
     ms: 108,
     dt: 0,
     lt: 0,
-    cfg: { vib: true, sound: true },
+    cfg: { vib: true, sound: true, soundType: "shankya" },
     history: {},
     h28: {},
     stotrams: {},
@@ -79,8 +79,10 @@ const App = {
     syncBaselineHK: {},
     syncBaselineTimerHK: {},
     nameJapDeductHK: 0,
-    gaudiyaMode: true,  // single mode for all — Gaudiya/ISKCON
+    gaudiyaMode: false,  // single mode for all — Gaudiya/ISKCON
     hkLang: "hi",
+    lbOptIn: false,        // leaderboard opt-in
+    lbDisplayName: "",     // leaderboard display name
   },
   lmcRV: 0,
   lmcHK: 0,
@@ -752,8 +754,8 @@ const App = {
       f.classList.add("show");
       setTimeout(() => f.classList.remove("show"), 2800);
     }
-    // Bell sound
-    if (this.S.cfg.sound) playSynthBell();
+    // Completion sound (bell chime or Panchojanno Shankya)
+    if (this.S.cfg.sound) playMalaSound();
     // Triple long vibration synced with bell
     this.vib([200, 80, 200, 80, 300]);
     // ── ARIA live region: announce mala completion to screen readers ──
@@ -1201,9 +1203,40 @@ function playSynthBell() {
   } catch (e) {}
 }
 
-// Test Bell Sound button
+// Panchojanno Shankya — plays the bundled MP3
+const SHANKYA_URL = "./Panchojanno%20Shankya.mp3";
+let _shankyaAudio = null;
+function playShankya() {
+  try {
+    if (!_shankyaAudio) {
+      _shankyaAudio = new Audio(SHANKYA_URL);
+      _shankyaAudio.preload = "auto";
+    }
+    _shankyaAudio.currentTime = 0;
+    const p = _shankyaAudio.play();
+    if (p && typeof p.catch === "function") p.catch(() => {});
+  } catch (e) {}
+}
+
+// Decide which completion sound to play based on user preference
+function playMalaSound() {
+  const t = (App.S && App.S.cfg && App.S.cfg.soundType) || "shankya";
+  if (t === "shankya") playShankya();
+  else playSynthBell();
+}
+
+// Test Sound button
 function testSound() {
-  playSynthBell();
+  playMalaSound();
+}
+
+// Setting handler for the sound type <select>
+function setSoundType(v) {
+  if (!App.S.cfg) App.S.cfg = {};
+  App.S.cfg.soundType = v === "shankya" ? "shankya" : "bell";
+  try { App.save(); } catch (_e) {}
+  try { fbDebouncedPush(); } catch (_e) {}
+  playMalaSound();
 }
 
 // Floating राधा spawn
@@ -1870,16 +1903,20 @@ function populateSettingsUI() {
   // Gaudiya Mode toggle
   const tgG = document.getElementById("tgGaudiya");
   if (tgG) App.S.gaudiyaMode ? tgG.classList.add("on") : tgG.classList.remove("on");
+  // Sound type select
+  const stSel = document.getElementById("soundTypeSel");
+  if (stSel) stSel.value = (App.S.cfg && App.S.cfg.soundType) || "shankya";
   // App link display (if visible)
   try {
     const linkEl = document.getElementById("appLinkDisplay");
     if (linkEl && typeof _getAppUrl === "function") linkEl.textContent = _getAppUrl();
   } catch (_e) {}
+  // Leaderboard settings
+  try { populateLbSettingsUI(); } catch (_e) {}
 }
 
 // ── Settings ──
 document.addEventListener("DOMContentLoaded", () => {
-
   const dti = document.getElementById("dtIn");
   const lti = document.getElementById("ltIn");
   if (dti)
@@ -2014,6 +2051,14 @@ function tgs(k) {
         (pos) => {
           const lat = pos.coords.latitude, lng = pos.coords.longitude;
           if (App.S) { App.S.lastLat = lat; App.S.lastLng = lng; App.save(); }
+          // Persist GPS-enabled state and coords to localStorage so the toggle
+          // stays ON across refreshes for both guest and signed-in users,
+          // WITHOUT re-prompting for geolocation permission on load.
+          try {
+            localStorage.setItem("rjap_gps_enabled", "1");
+            localStorage.setItem("rjap_lastLat", String(lat));
+            localStorage.setItem("rjap_lastLng", String(lng));
+          } catch(e) {}
           updateSunInfo(lat, lng);
           if (tgGps) tgGps.classList.add("on");
           if (statusEl) statusEl.textContent = "✅ Location detected · " + lat.toFixed(3) + ", " + lng.toFixed(3);
@@ -2029,6 +2074,11 @@ function tgs(k) {
     } else {
       // Turning OFF — clear saved location and reset everything that depended on GPS
       if (App.S) { delete App.S.lastLat; delete App.S.lastLng; App.save(); }
+      try {
+        localStorage.removeItem("rjap_gps_enabled");
+        localStorage.removeItem("rjap_lastLat");
+        localStorage.removeItem("rjap_lastLng");
+      } catch(e) {}
       if (tgGps) tgGps.classList.remove("on");
       const statusEl = document.getElementById("gpsLocationStatus");
       if (statusEl) statusEl.textContent = "— Tap toggle to detect your location 📍";
@@ -2338,7 +2388,7 @@ function addManualJap() {
         setTimeout(() => _mf.classList.remove("show"), 2800);
       }
     }
-    if (App.S.cfg && App.S.cfg.sound) playSynthBell();
+    if (App.S.cfg && App.S.cfg.sound) playMalaSound();
     App.vib([200, 80, 200, 80, 300]);
     App.flashMalaDuration(avgPerMala);
   }
@@ -3994,10 +4044,13 @@ function renderMilestonesTab() {
   }
   const startInput = document.getElementById("msSadhanaStart");
   if (startInput && saved) startInput.value = saved;
+  const msDisp = document.getElementById("msSadhanaStartDisp");
+  if (msDisp) msDisp.textContent = _fmtDateFriendly(saved);
   const sinceEl = document.getElementById("msSadhanaSince");
   if (sinceEl && saved) {
-    const diff = Date.now() - new Date(saved).getTime();
-    const days = Math.floor(diff / 86400000);
+    const startLocal = _gpsParseDate(saved);
+    const todayLocal = _gpsLocalToday();
+    const days = Math.round((todayLocal - startLocal) / 86400000) + 1; // +1: start day = Day 1
     const yrs = Math.floor(days / 365),
       rem = days % 365,
       mos = Math.floor(rem / 30);
@@ -4033,13 +4086,8 @@ function renderMilestonesTab() {
     const daysNeeded = Math.ceil(remaining / avg7);
     const d = new Date();
     d.setDate(d.getDate() + daysNeeded);
-    return (
-      String(d.getDate()).padStart(2, "0") +
-      ":" +
-      String(d.getMonth() + 1).padStart(2, "0") +
-      ":" +
-      d.getFullYear()
-    );
+    const months = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+    return d.getDate() + " " + months[d.getMonth()] + ", " + d.getFullYear();
   }
 
   let out = "";
@@ -4332,8 +4380,10 @@ function openMsDetail(type, count, pct, achieved) {
   const startDate = localStorage.getItem("rjap_sadhana_start");
   let totalDays = "—";
   if (startDate) {
-    const diff = Date.now() - new Date(startDate).getTime();
-    totalDays = Math.floor(diff / 86400000) + " days";
+    const startLocal = _gpsParseDate(startDate);
+    const todayLocal = _gpsLocalToday();
+    const d = Math.round((todayLocal - startLocal) / 86400000) + 1; // +1: start = Day 1
+    totalDays = d + " day" + (d !== 1 ? "s" : "");
   }
 
   // Peak day
@@ -4341,6 +4391,7 @@ function openMsDetail(type, count, pct, achieved) {
   Object.keys(histRV).forEach((k) => {
     allHist[k] = (allHist[k] || 0) + (histRV[k] || 0);
   });
+  const _pdMonths = ["January","February","March","April","May","June","July","August","September","October","November","December"];
   let peakDay = "—",
     peakVal = 0;
   Object.entries(allHist).forEach(([k, v]) => {
@@ -4350,16 +4401,10 @@ function openMsDetail(type, count, pct, achieved) {
     }
   });
   if (peakVal > 0) {
-    const _pd = new Date(peakDay);
+    const _pd = new Date(peakDay + "T00:00:00");
     peakDay =
-      String(_pd.getDate()).padStart(2, "0") +
-      ":" +
-      String(_pd.getMonth() + 1).padStart(2, "0") +
-      ":" +
-      _pd.getFullYear() +
-      " (" +
-      peakVal.toLocaleString("en-IN") +
-      " jap)";
+      _pd.getDate() + " " + _pdMonths[_pd.getMonth()] + ", " + _pd.getFullYear() +
+      " (" + peakVal.toLocaleString("en-IN") + " jap)";
   }
 
   const displayDesc = lang === "bn" && descBn ? descBn : desc;
@@ -4645,7 +4690,7 @@ function fbInit() {
             ms: 108,
             dt: 0,
             lt: 0,
-            cfg: { vib: true, sound: true },
+            cfg: { vib: true, sound: true, soundType: "shankya" },
             history: {},
             h28: {},
             stotrams: {},
@@ -4752,7 +4797,7 @@ function fbInit() {
             ms: 108,
             dt: 0,
             lt: 0,
-            cfg: { vib: true, sound: true },
+            cfg: { vib: true, sound: true, soundType: "shankya" },
             history: {},
             h28: {},
             stotrams: {},
@@ -4913,6 +4958,226 @@ function fbSignInZoho() {
     });
 }
 
+// ── Email / Password sign-in helpers ──
+function _fbEmailErr(msg) {
+  const el = document.getElementById("fbErr");
+  if (el) {
+    el.textContent = msg || "";
+    if (msg) setTimeout(() => { if (el.textContent === msg) el.textContent = ""; }, 6000);
+  }
+}
+function _fbReadEmailPass() {
+  const e = (document.getElementById("fbEmailIn") || {}).value || "";
+  const p = (document.getElementById("fbPassIn") || {}).value || "";
+  return { email: e.trim(), pass: p };
+}
+function fbSignInEmail() {
+  if (!fbInit()) { toast("Firebase not ready. Check your connection."); return; }
+  const { email, pass } = _fbReadEmailPass();
+  if (!email || !pass) { _fbEmailErr("Enter email and password"); return; }
+  fbAuth.signInWithEmailAndPassword(email, pass)
+    .then((cred) => {
+      const u = cred && cred.user;
+      if (u && !u.emailVerified) {
+        try { u.sendEmailVerification(); } catch (_e) {}
+        try { fbAuth.signOut(); } catch (_e) {}
+        _fbEmailErr("Please verify your email first. A new verification link has been sent to " + (u.email || email) + ".");
+        return;
+      }
+      toast("Signed in! ☁️ Sync active 🙏"); _fbEmailErr("");
+    })
+    .catch((e) => _fbEmailErr(e.message || "Sign-in failed"));
+}
+// ── Persistent info modal for auth flows. Stays open until the user
+//    explicitly closes it (no auto-dismiss timer). Used for verification
+//    email + forgot-password confirmations so the instructions stay
+//    visible long enough to read.
+function _fbInfoModal(title, bodyHtml) {
+  try {
+    var old = document.getElementById("fbAuthInfoModal");
+    if (old) old.remove();
+    var ov = document.createElement("div");
+    ov.id = "fbAuthInfoModal";
+    ov.style.cssText = "position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.72);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;padding:18px;font-family:Inter,sans-serif;animation:fbInfoFade .2s ease-out";
+    ov.innerHTML = ''
+      + '<style>@keyframes fbInfoFade{from{opacity:0}to{opacity:1}}@keyframes fbInfoPop{from{transform:translateY(14px) scale(.97);opacity:0}to{transform:none;opacity:1}}</style>'
+      + '<div role="dialog" aria-modal="true" style="max-width:440px;width:100%;max-height:88vh;overflow-y:auto;background:linear-gradient(180deg,#1a2244,#0f1530);border:1px solid rgba(255,215,0,0.25);border-radius:18px;padding:22px 22px 18px;box-shadow:0 24px 60px rgba(0,0,0,0.55);animation:fbInfoPop .25s ease-out">'
+      +   '<div style="font-size:17px;font-weight:700;color:#ffd97a;margin-bottom:12px;text-align:center;letter-spacing:.3px">' + title + '</div>'
+      +   '<div style="font-size:13.5px;color:#e6e9f5;line-height:1.65">' + bodyHtml + '</div>'
+      +   '<button id="fbAuthInfoClose" style="margin-top:18px;width:100%;padding:12px;border-radius:12px;border:1px solid rgba(74,144,226,0.5);background:rgba(74,144,226,0.22);color:#cfe2ff;font-size:14px;font-weight:600;cursor:pointer;font-family:Inter,sans-serif">Got it</button>'
+      + '</div>';
+    document.body.appendChild(ov);
+    var close = function () { try { ov.remove(); } catch (_) {} };
+    ov.querySelector("#fbAuthInfoClose").addEventListener("click", close);
+    // Click backdrop (outside dialog) does NOT close — prevents accidental dismissal.
+    // User must tap the explicit button.
+  } catch (e) { try { alert(title + "\n\n" + bodyHtml.replace(/<[^>]+>/g, "")); } catch (_) {} }
+}
+
+// ── Phone / OTP sign-in (Firebase) ──────────────────────────────────
+// Requires "Phone" provider enabled in Firebase Console → Authentication.
+let _fbRecaptcha = null;
+let _fbConfirmation = null;
+
+function _fbEnsureRecaptcha() {
+  if (!fbAuth) return null;
+  if (_fbRecaptcha) return _fbRecaptcha;
+  try {
+    _fbHideRecaptchaBadge();
+    _fbRecaptcha = new firebase.auth.RecaptchaVerifier("fbRecaptchaContainer", {
+      size: "invisible",
+      callback: function () { _fbHideRecaptchaBadge(); },
+      "expired-callback": function () {
+        try { _fbRecaptcha.clear(); } catch (_) {}
+        _fbRecaptcha = null;
+      }
+    });
+    _fbRecaptcha.render()
+      .then(function () { _fbHideRecaptchaBadge(); })
+      .catch(function (e) { console.warn("reCAPTCHA render:", e && e.message); });
+  } catch (e) {
+    console.warn("reCAPTCHA init:", e && e.message);
+    _fbRecaptcha = null;
+  }
+  return _fbRecaptcha;
+}
+
+function _fbHideRecaptchaBadge() {
+  try {
+    var st = document.getElementById("fbRecaptchaHideStyle");
+    if (!st) {
+      st = document.createElement("style");
+      st.id = "fbRecaptchaHideStyle";
+      st.textContent = ".grecaptcha-badge{visibility:hidden!important;pointer-events:none!important}#fbRecaptchaContainer{position:absolute!important;left:-9999px!important;width:1px!important;height:1px!important;overflow:hidden!important}";
+      document.head.appendChild(st);
+    }
+  } catch (_) {}
+}
+
+function _fbReadPhone() {
+  const el = document.getElementById("fbPhoneIn");
+  let v = (el && el.value || "").trim().replace(/[\s\-()]/g, "");
+  return v;
+}
+
+function fbSendPhoneOtp(isResend) {
+  if (!fbInit()) { toast("Firebase not ready. Check your connection."); return; }
+  const phone = _fbReadPhone();
+  if (!phone || !/^\+[1-9]\d{6,14}$/.test(phone)) {
+    _fbEmailErr("Enter phone with country code, e.g. +919876543210");
+    return;
+  }
+  const verifier = _fbEnsureRecaptcha();
+  if (!verifier) { _fbEmailErr("Could not initialize verification. Please reload."); return; }
+
+  const btn = document.getElementById("fbPhoneSendBtn");
+  if (btn) { btn.disabled = true; btn.textContent = isResend ? "Resending…" : "Sending…"; }
+  _fbEmailErr("");
+
+  fbAuth.signInWithPhoneNumber(phone, verifier)
+    .then(function (confirmation) {
+      _fbConfirmation = confirmation;
+      const otpRow = document.getElementById("fbOtpRow");
+      if (otpRow) otpRow.style.display = "block";
+      const otpIn = document.getElementById("fbOtpIn");
+      if (otpIn) { otpIn.value = ""; try { otpIn.focus(); } catch (_) {} }
+      if (btn) { btn.disabled = false; btn.textContent = "Resend"; }
+      _fbInfoModal("📱 OTP sent",
+        '<p style="margin:0 0 10px">A 6-digit code has just been texted to:<br><span style="color:#ffd97a">' + phone + '</span></p>'
+        + '<ol style="margin:8px 0 10px 18px;padding:0">'
+        +   '<li>Check your Messages/SMS inbox. On Android, the code may also appear in the keyboard suggestion/clipboard bar.</li>'
+        +   '<li>Tap that suggested code or type it into the <b>OTP</b> field, then tap <b>Verify &amp; Sign In</b>.</li>'
+        +   '<li>Didn\'t get it within a minute? Tap <b>Resend OTP</b>.</li>'
+        + '</ol>'
+        + '<p style="margin:10px 0 0;font-size:12.5px;opacity:.85">Make sure the number includes your country code (e.g. <b>+91</b> for India, <b>+1</b> for US).</p>'
+      );
+    })
+    .catch(function (e) {
+      if (btn) { btn.disabled = false; btn.textContent = "Send OTP"; }
+      try { if (_fbRecaptcha) { _fbRecaptcha.clear(); } } catch (_) {}
+      _fbRecaptcha = null;
+      _fbEmailErr((e && e.message) || "Could not send OTP");
+    });
+}
+
+function fbVerifyPhoneOtp() {
+  if (!_fbConfirmation) { _fbEmailErr("Please request an OTP first"); return; }
+  const otpEl = document.getElementById("fbOtpIn");
+  const code = (otpEl && otpEl.value || "").trim();
+  if (!/^\d{4,8}$/.test(code)) { _fbEmailErr("Enter the 6-digit OTP from your SMS"); return; }
+  _fbEmailErr("");
+  _fbConfirmation.confirm(code)
+    .then(function () {
+      _fbConfirmation = null;
+      try { if (_fbRecaptcha) { _fbRecaptcha.clear(); } } catch (_) {}
+      _fbRecaptcha = null;
+      const otpRow = document.getElementById("fbOtpRow");
+      if (otpRow) otpRow.style.display = "none";
+      toast("Signed in! ☁️ Sync active 🙏");
+    })
+    .catch(function (e) {
+      _fbEmailErr((e && e.message) || "Invalid or expired OTP");
+    });
+}
+
+function fbResetPhoneOtp() {
+  _fbConfirmation = null;
+  const otpRow = document.getElementById("fbOtpRow");
+  if (otpRow) otpRow.style.display = "none";
+  const btn = document.getElementById("fbPhoneSendBtn");
+  if (btn) { btn.disabled = false; btn.textContent = "Send OTP"; }
+  _fbEmailErr("");
+}
+
+function fbSignUpEmail() {
+
+  if (!fbInit()) { toast("Firebase not ready. Check your connection."); return; }
+  const { email, pass } = _fbReadEmailPass();
+  if (!email || !pass) { _fbEmailErr("Enter email and password"); return; }
+  if (pass.length < 6) { _fbEmailErr("Password must be at least 6 characters"); return; }
+  fbAuth.createUserWithEmailAndPassword(email, pass)
+    .then((cred) => {
+      const u = cred && cred.user;
+      const send = (u && u.sendEmailVerification)
+        ? u.sendEmailVerification()
+        : Promise.resolve();
+      return send.then(() => {
+        try { fbAuth.signOut(); } catch (_e) {}
+        _fbEmailErr("");
+        const addr = (u && u.email) ? u.email : email;
+        _fbInfoModal("📬 Verification email sent",
+          '<p style="margin:0 0 10px"><b>A verification link has been sent to:</b><br><span style="color:#ffd97a;word-break:break-all">' + addr + '</span></p>'
+          + '<ol style="margin:8px 0 10px 18px;padding:0">'
+          +   '<li>Open your inbox and tap the link to verify your email.</li>'
+          +   '<li><b>Can\'t find it?</b> Check your <b>Spam</b>, <b>Promotions</b>, or <b>Junk</b> folder.</li>'
+          +   '<li>Come back here and tap <b>Sign In</b> with the same email & password.</li>'
+          + '</ol>'
+          + '<p style="margin:10px 0 0;font-size:12.5px;opacity:.85">Once verified, future sign-ins on this or any other device will <u>not</u> need another confirmation email.</p>'
+        );
+      });
+    })
+    .catch((e) => _fbEmailErr(e.message || "Sign-up failed"));
+}
+function fbResetEmail() {
+  if (!fbInit()) { toast("Firebase not ready. Check your connection."); return; }
+  const { email } = _fbReadEmailPass();
+  if (!email) { _fbEmailErr("Enter your email above first"); return; }
+  fbAuth.sendPasswordResetEmail(email)
+    .then(() => {
+      _fbEmailErr("");
+      _fbInfoModal("🔑 Password reset email sent",
+        '<p style="margin:0 0 10px"><b>A password-reset link has been sent to:</b><br><span style="color:#ffd97a;word-break:break-all">' + email + '</span></p>'
+        + '<ol style="margin:8px 0 10px 18px;padding:0">'
+        +   '<li>Open your inbox and tap the reset link.</li>'
+        +   '<li><b>Can\'t find it?</b> Check your <b>Spam</b>, <b>Promotions</b>, or <b>Junk</b> folder.</li>'
+        +   '<li>Choose a new password, then come back and tap <b>Sign In</b>.</li>'
+        + '</ol>'
+        + '<p style="margin:10px 0 0;font-size:12.5px;opacity:.85">The link expires after a short time — request another one if needed.</p>'
+      );
+    })
+    .catch((e) => _fbEmailErr(e.message || "Could not send reset email"));
+}
+
 // ── Wipe ALL locally cached data for a given UID. Used on sign-out so
 //    the next login (same device or another) ALWAYS pulls authoritative
 //    state from Firebase, never from a stale local cache. Guest data is
@@ -4982,7 +5247,7 @@ async function fbSignOut() {
   const _prevLng = App.S && App.S.lastLng != null ? App.S.lastLng : null;
   App.S = {
     tk: App.getTk(), ms: 108, dt: 0, lt: 0,
-    cfg: { vib: true, sound: true },
+    cfg: { vib: true, sound: true, soundType: "shankya" },
     history: {}, h28: {}, stotrams: {}, brahma: {}, customSt: [],
     timerHistory: {}, timer28History: {}, sankalpas: [], occasions: {},
     syncBaseline: {}, syncBaseline28: {}, syncBaselineTimer: {}, syncBaselineTimer28: {},
@@ -5060,6 +5325,8 @@ async function fbPushFull() {
     gaudiyaMode: App.S.gaudiyaMode || false,
     dt28Cycles: App.S.dt28Cycles || 0,
     milestones: App.S.milestones || { reached: {}, lastChecked: 0 },
+    lbOptIn: App.S.lbOptIn || false,
+    lbDisplayName: App.S.lbDisplayName || "",
     lastSync: firebase.firestore.FieldValue.serverTimestamp(),
     deviceId: fbDeviceId,
   };
@@ -5070,6 +5337,8 @@ async function fbPushFull() {
       .collection("data")
       .doc("main")
       .set(payload);
+    // ── Push leaderboard entry if opted in ──
+    pushLeaderboard().catch(() => {});
     App.S.syncBaseline = JSON.parse(JSON.stringify(App.S.history || {}));
     App.S.syncBaseline28 = JSON.parse(JSON.stringify(App.S.h28 || {}));
     App.S.syncBaselineTimer = JSON.parse(
@@ -5216,6 +5485,9 @@ function fbApplyRemote(d) {
     const inp = document.getElementById("msSadhanaStart");
     if (inp) inp.value = d.sadhanaStart;
   }
+  // Leaderboard settings
+  if (d.lbOptIn !== undefined) App.S.lbOptIn = d.lbOptIn;
+  if (d.lbDisplayName !== undefined) App.S.lbDisplayName = d.lbDisplayName;
 
   // Old saves wrote both startDate AND endDate to occasions. Remove the endDate entry
 
@@ -6988,6 +7260,51 @@ function _localDateStr(d) {
     String(d.getDate()).padStart(2, "0")
   );
 }
+
+// Returns UTC offset in minutes for a given GPS longitude.
+// Snaps to the nearest standard timezone offset used in the region.
+// Falls back to device timezone if no GPS available.
+function _gpsUtcOffsetMin() {
+  const lat = (App.S && App.S.lastLat != null) ? App.S.lastLat
+            : parseFloat(localStorage.getItem("rjap_lastLat") || "");
+  const lng = (App.S && App.S.lastLng != null) ? App.S.lastLng
+            : parseFloat(localStorage.getItem("rjap_lastLng") || "");
+  if (isNaN(lat) || isNaN(lng)) {
+    // No GPS — fall back to device timezone
+    return -new Date().getTimezoneOffset();
+  }
+  // Derive raw solar offset from longitude (15° = 1 hour)
+  const rawMin = Math.round(lng / 15 * 60);
+  // Snap to real standard timezone offsets (covers India, Bangladesh, and neighbours)
+  const knownOffsets = [
+    -600,-570,-540,-510,-480,-450,-420,-390,-360,-330,-300,-270,-240,-210,
+    -180,-150,-120,-60,0,60,120,180,210,240,270,300,330,345,360,390,
+    420,450,480,510,525,540,570,600,630,660
+  ];
+  return knownOffsets.reduce((best, off) =>
+    Math.abs(off - rawMin) < Math.abs(best - rawMin) ? off : best
+  , knownOffsets[0]);
+}
+
+// Returns "today" Date object at GPS-local midnight (00:00:00 in the GPS timezone).
+function _gpsLocalToday() {
+  const offsetMin = _gpsUtcOffsetMin();
+  const nowUtcMs = Date.now();
+  // Shift now into the GPS timezone, extract calendar date, return midnight in that tz
+  const localMs = nowUtcMs + offsetMin * 60000;
+  const d = new Date(localMs);
+  const yyyy = d.getUTCFullYear(), mm = d.getUTCMonth(), dd = d.getUTCDate();
+  // Return as UTC ms representing midnight in GPS timezone
+  return new Date(Date.UTC(yyyy, mm, dd) - offsetMin * 60000);
+}
+
+// Parse a YYYY-MM-DD string as midnight in the GPS timezone.
+function _gpsParseDate(isoStr) {
+  if (!isoStr) return null;
+  const [y, mo, day] = isoStr.split("-").map(Number);
+  const offsetMin = _gpsUtcOffsetMin();
+  return new Date(Date.UTC(y, mo - 1, day) - offsetMin * 60000);
+}
 // Short alias
 function _ldk(d) {
   return _localDateStr(d);
@@ -7369,11 +7686,21 @@ function confirmBrahmaStartChange(val) {
   App.save();
   fbDebouncedPush();
   renderBcal();
+  const disp = document.getElementById("brahmaStartDisp");
+  if (disp) disp.textContent = _fmtDateFriendly(val);
   toast("Start date updated 🛡️");
+}
+function _fmtDateFriendly(isoStr) {
+  if (!isoStr) return "";
+  const months = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+  const d = new Date(isoStr + "T00:00:00");
+  return d.getDate() + " " + months[d.getMonth()] + ", " + d.getFullYear();
 }
 function initBrahmaStartInput() {
   const el = document.getElementById("brahmaStartInput");
   if (el) el.value = getBrahmaStart();
+  const disp = document.getElementById("brahmaStartDisp");
+  if (disp) disp.textContent = _fmtDateFriendly(getBrahmaStart());
 }
 let bcd = new Date();
 const MN = [
@@ -7399,13 +7726,9 @@ function cbm(d) {
   renderBcal();
 }
 function openBcDay(key, isBroken, cnt) {
-  const parts = key.split("-"),
-    label =
-      String(parseInt(parts[2])).padStart(2, "0") +
-      ":" +
-      String(parseInt(parts[1])).padStart(2, "0") +
-      ":" +
-      parts[0];
+  const parts = key.split("-");
+  const _bcMonths = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+  const label = parseInt(parts[2]) + " " + _bcMonths[parseInt(parts[1]) - 1] + ", " + parts[0];
   document.getElementById("bcmoT").textContent =
     (isBroken ? "❌ Broken — " : "✅ Maintained — ") + label;
   document.getElementById("bcmoD").textContent = isBroken
@@ -8384,17 +8707,42 @@ window.addEventListener("load", async () => {
   // Apply settings UI
   if (App.S.cfg.sound) document.getElementById("tgSnd").classList.add("on");
 
-  // GPS Location toggle — ON if saved coords exist
+  // GPS Location toggle — persist across refreshes via localStorage flag.
+  // Never auto-request geolocation permission on app load (the user enables it
+  // manually from settings). Toggle state survives refresh / re-open even for
+  // guest users (who don't persist App.S), as long as data is not cleared.
   const tgGpsInit = document.getElementById("tgGpsLocation");
   if (tgGpsInit) {
-    const hasCoords = App.S && App.S.lastLat && App.S.lastLng;
-    if (hasCoords) tgGpsInit.classList.add("on");
+    let lsGpsOn = false, lsLat = null, lsLng = null;
+    try {
+      lsGpsOn = localStorage.getItem("rjap_gps_enabled") === "1";
+      const _la = parseFloat(localStorage.getItem("rjap_lastLat"));
+      const _ln = parseFloat(localStorage.getItem("rjap_lastLng"));
+      if (!isNaN(_la) && !isNaN(_ln)) { lsLat = _la; lsLng = _ln; }
+    } catch(e) {}
+    // Backfill App.S coords from localStorage if missing (e.g. guest mode).
+    if (App.S && (App.S.lastLat == null || App.S.lastLng == null) && lsLat != null) {
+      App.S.lastLat = lsLat; App.S.lastLng = lsLng;
+    }
+    // Backfill localStorage from App.S for users who enabled GPS before this fix.
+    if (!lsGpsOn && App.S && App.S.lastLat != null && App.S.lastLng != null) {
+      try {
+        localStorage.setItem("rjap_gps_enabled", "1");
+        localStorage.setItem("rjap_lastLat", String(App.S.lastLat));
+        localStorage.setItem("rjap_lastLng", String(App.S.lastLng));
+      } catch(e) {}
+      lsGpsOn = true;
+    }
+    const hasCoords = App.S && App.S.lastLat != null && App.S.lastLng != null;
+    const gpsOn = lsGpsOn || hasCoords;
+    if (gpsOn) tgGpsInit.classList.add("on");
     const gpsStatusEl = document.getElementById("gpsLocationStatus");
     if (gpsStatusEl) {
       gpsStatusEl.textContent = hasCoords
         ? "✅ Location saved · " + Number(App.S.lastLat).toFixed(3) + ", " + Number(App.S.lastLng).toFixed(3)
-        : "— Tap toggle to detect your location 📍";
+        : (gpsOn ? "📍 GPS enabled — tap toggle to refresh location" : "— Tap toggle to detect your location 📍");
     }
+    // Do NOT auto-request geolocation on app load — only when the user taps the GPS toggle.
   }
 
   // Live previews for stats inputs
@@ -8690,6 +9038,7 @@ window.addEventListener("load", function () {
   }
 });
 
+
 // ═══════════════════════════════════════════════════════
 
 // ── NKC/GMS: detect if a verse is a "prose block" (narrative, not a stotram verse)
@@ -8832,14 +9181,6 @@ function showLyrics(id) {
   }
 
   _currentStotramId = id;
-  // Premium-theme hook: mark overlay + card with the stotram id so CSS
-  // can apply the extraordinary HCJ / RKS skins (see style-stotram.css).
-  try {
-    var _lmoEl = document.getElementById("lmo");
-    if (_lmoEl) _lmoEl.setAttribute("data-stotram-id", id);
-    var _lmCard = document.querySelector(".lm-water-card");
-    if (_lmCard) _lmCard.setAttribute("data-stotram-id", id);
-  } catch (_) {}
   // Inherit the global translation preference set on the list screen
   _translationVisible = TRANSLATION_IDS.includes(id)
     ? _globalTranslationPref
@@ -9159,7 +9500,7 @@ function _initSwipeHandler() {
   // Remove any previous swipe listeners
   card._swipeCleanup && card._swipeCleanup();
 
-  // HCJ side-swipe enabled — _renderVerse() keeps the audio player in sync via _hcjOnVerseChange().
+  if (_currentStotramId === "hcj") return; // HCJ uses its own audio player arrows
 
   let startX = 0,
     startY = 0,
@@ -9201,9 +9542,6 @@ function closeLyrics() {
   var lmo = document.getElementById("lmo");
   lmo.classList.remove("show");
   lmo.removeAttribute("data-bg");
-  lmo.removeAttribute("data-stotram-id");
-  var _lmCard2 = document.querySelector(".lm-water-card");
-  if (_lmCard2) _lmCard2.removeAttribute("data-stotram-id");
   var card = document.querySelector(".lm-water-card");
   if (card) card.removeAttribute("data-theme");
   /* Clean up HCJ player window listeners before destroying audio */
@@ -9935,6 +10273,8 @@ function saveSadhanaStartDate(val) {
     App.S.sadhanaStart = val;
     App.save();
     fbDebouncedPush();
+    const disp = document.getElementById("msSadhanaStartDisp");
+    if (disp) disp.textContent = _fmtDateFriendly(val);
     updateSadhanaSince();
     renderLakhGati();
   }
@@ -9951,6 +10291,8 @@ function loadSadhanaStartDate() {
   }
   const input = document.getElementById("msSadhanaStart");
   if (saved && input) input.value = saved;
+  const disp = document.getElementById("msSadhanaStartDisp");
+  if (disp) disp.textContent = _fmtDateFriendly(saved);
   updateSadhanaSince();
 }
 
@@ -9965,10 +10307,9 @@ function updateSadhanaSince() {
     el.textContent = "Set your journey start date above ☝️";
     return;
   }
-  const start = new Date(saved);
-  const now = new Date();
-  const diff = now.getTime() - start.getTime();
-  const days = Math.floor(diff / 86400000);
+  const start = _gpsParseDate(saved);
+  const todayLocal = _gpsLocalToday();
+  const days = Math.round((todayLocal - start) / 86400000) + 1; // +1: start day = Day 1
   const years = Math.floor(days / 365);
   const remDays = days % 365;
   const months = Math.floor(remDays / 30);
@@ -10106,6 +10447,8 @@ function renderHistory() {
   }
 
   detail.style.display = "none";
+  const drillPanel = document.getElementById("histDeityDrill");
+  if (drillPanel) { drillPanel.style.display = "none"; drillPanel.innerHTML = ""; }
   const dates = _histGetDates(from, to);
   const ms = App.S.ms || 108;
   const isGaudiya = App.S.gaudiyaMode || false;
@@ -10221,8 +10564,8 @@ function renderHistory() {
     activeDays +
     " active day" +
     (activeDays > 1 ? "s" : "") +
-    " in range · tap a row for details";
-  wrap.style.display = "block";
+    " in range · tap a card below to view dates";
+  wrap.style.display = "none";
 
   // Totals row
   const totRadhaM = Math.floor(totRadha / ms);
@@ -10232,13 +10575,14 @@ function renderHistory() {
   const grandTotal = totTimeSec + totTimeSec28;
   const fmtN = (n) => n.toLocaleString();
   const rangeLbl = window._histActiveLabel || "Custom";
-  const statCard = (cls, icon, label, mainNum, mainUnit, sub, time) => `
-    <div class="pt-card ${cls}">
+  const statCard = (cls, icon, label, mainNum, mainUnit, sub, time, deityKey) => `
+    <div class="pt-card ${cls} pt-card-tap" onclick="showHistDeityDates('${deityKey}')" role="button" tabindex="0" style="cursor:pointer">
       <div class="pt-card-icon">${icon}</div>
       <div class="pt-card-label">${label}</div>
       <div class="pt-card-main"><span class="pt-num">${fmtN(mainNum)}</span><span class="pt-unit">${mainUnit}</span></div>
       <div class="pt-card-sub">${sub}</div>
       <div class="pt-card-time">⏱ ${time}</div>
+      <div class="pt-card-chev">›</div>
     </div>`;
 
   totDiv.style.display = "block";
@@ -10250,7 +10594,7 @@ function renderHistory() {
     totDiv.innerHTML = `
       <div class="pt-head"><span class="pt-head-icon">📊</span><span class="pt-head-title">Period Totals</span><span class="pt-head-range">(${rangeLbl})</span><span class="pt-head-tag">Gaudiya</span></div>
       <div class="pt-grid pt-grid-1">
-        ${statCard("pt-hk", "🪈", _hkPTLabel, totHKM, totHKM === 1 ? "mala" : "malas", fmtN(totHK) + " names", _histFmtSec(window._ptHKSec || 0))}
+        ${statCard("pt-hk", "🪈", _hkPTLabel, totHKM, totHKM === 1 ? "mala" : "malas", fmtN(totHK) + " names", _histFmtSec(window._ptHKSec || 0), "hk")}
       </div>
       <div class="pt-total"><span class="pt-total-label">Total Time</span><span class="pt-total-val">${_histFmtSec(grandTotal)}</span></div>
     `;
@@ -10258,13 +10602,120 @@ function renderHistory() {
     totDiv.innerHTML = `
       <div class="pt-head"><span class="pt-head-icon">📊</span><span class="pt-head-title">Period Totals</span><span class="pt-head-range">(${rangeLbl})</span></div>
       <div class="pt-grid pt-grid-3">
-        ${statCard("pt-radha", "📿", "Radha Jap", totRadhaM, totRadhaM === 1 ? "mala" : "malas", fmtN(totRadha) + " names", _histFmtSec(window._ptRadhaSec || 0))}
-        ${statCard("pt-rv", "🕉️", "RV Jap", totRVM, totRVM === 1 ? "mala" : "malas", fmtN(totRV) + " names", _histFmtSec(window._ptRVSec || 0))}
-        ${statCard("pt-28", "🪷", "28 Names", totCyc28, totCyc28 === 1 ? "cycle" : "cycles", fmtN(tot28taps) + " taps", _histFmtSec(totTimeSec28))}
+        ${statCard("pt-radha", "📿", "Radha Jap", totRadhaM, totRadhaM === 1 ? "mala" : "malas", fmtN(totRadha) + " names", _histFmtSec(window._ptRadhaSec || 0), "radha")}
+        ${statCard("pt-rv", "🕉️", "RV Jap", totRVM, totRVM === 1 ? "mala" : "malas", fmtN(totRV) + " names", _histFmtSec(window._ptRVSec || 0), "rv")}
+        ${statCard("pt-28", "🪷", "28 Names", totCyc28, totCyc28 === 1 ? "cycle" : "cycles", fmtN(tot28taps) + " taps", _histFmtSec(totTimeSec28), "28")}
       </div>
       <div class="pt-total"><span class="pt-total-label">Total Time</span><span class="pt-total-val">${_histFmtSec(grandTotal)}</span></div>
     `;
   }
+}
+
+// ── Period Totals drill-down: show date-wise rows for a single deity ──
+function showHistDeityDates(deityKey) {
+  const drill = document.getElementById("histDeityDrill");
+  const wrap  = document.getElementById("histTableWrap");
+  const sumLine = document.getElementById("histSummaryLine");
+  if (!drill) return;
+
+  const from = document.getElementById("histFrom").value;
+  const to   = document.getElementById("histTo").value;
+  if (!from || !to) return;
+
+  const dates  = _histGetDates(from, to);
+  const ms     = App.S.ms || 108;
+  const fmtN   = (n) => n.toLocaleString();
+  const isGaudiya = App.S.gaudiyaMode || false;
+
+  // Config per deity
+  const cfg = {
+    radha: { label: "Radha Jap",    cls: "pt-radha", icon: "📿",  color: "var(--gold)",  histKey: "history",   timerKey: "timerHistory",   unit: (m) => m === 1 ? "mala" : "malas",  toMain: (v) => Math.floor(v / ms), toSub: (v) => fmtN(v) + " names" },
+    rv:    { label: "RV Jap",       cls: "pt-rv",    icon: "🕉️",  color: "var(--a2)",    histKey: "historyRV", timerKey: "timerHistoryRV", unit: (m) => m === 1 ? "mala" : "malas",  toMain: (v) => Math.floor(v / ms), toSub: (v) => fmtN(v) + " names" },
+    "28":  { label: "28 Names",     cls: "pt-28",    icon: "🪷",  color: "var(--green)", histKey: "h28",       timerKey: "timer28History", unit: (c) => c === 1 ? "cycle" : "cycles", toMain: (v) => Math.floor(v / 28), toSub: (v) => fmtN(v) + " taps"  },
+    hk:    { label: "हरे कृष्ण",   cls: "pt-hk",    icon: "🪈",  color: "#6DB8FF",      histKey: "historyHK", timerKey: "timerHistoryHK", unit: (m) => m === 1 ? "mala" : "malas",  toMain: (v) => Math.floor(v / ms), toSub: (v) => fmtN(v) + " names" },
+  };
+
+  const c = cfg[deityKey];
+  if (!c) return;
+
+  const hist  = App.S[c.histKey]  || {};
+  const tHist = App.S[c.timerKey] || {};
+
+  // Build rows — only active days
+  const rows = [];
+  let totVal = 0, totSec = 0;
+  dates.forEach((tk) => {
+    const val = hist[tk] || 0;
+    const sec = tHist[tk] || 0;
+    if (val === 0) return;
+    totVal += val; totSec += sec;
+    rows.push({ tk, val, sec });
+  });
+
+  // Hide the Period Totals card — drill-down replaces it in the same space
+  const totDiv = document.getElementById("histTotals");
+  if (totDiv) totDiv.style.display = "none";
+
+  // Hide the flat history table — drill-down replaces it
+  if (wrap) wrap.style.display = "none";
+  sumLine.textContent = "";
+
+  if (rows.length === 0) {
+    drill.style.display = "block";
+    drill.className = "hist-totals-card";
+    drill.innerHTML = `
+        <button class="hist-back-btn" onclick="closeHistDeityDrill()">‹ Period Totals</button>
+        <div style="text-align:center;color:var(--td);font-size:12px;padding:16px 0">No ${c.label} recorded in this period.</div>`;
+    return;
+  }
+
+  const totMain = c.toMain(totVal);
+  const rowsHtml = rows.map(({ tk, val, sec }) => {
+    const main = c.toMain(val);
+    return `
+      <div class="hdd-row" onclick="showHistDay('${tk}')">
+        <div class="hdd-date">${_histFmtDate(tk)}</div>
+        <div class="hdd-main" style="color:${c.color}">
+          <span class="hdd-num">${fmtN(main)}</span>
+          <span class="hdd-unit">${c.unit(main)}</span>
+        </div>
+        <div class="hdd-sub">${c.toSub(val)}</div>
+        <div class="hdd-time">⏱ ${_histFmtSec(sec)}</div>
+        <div class="hdd-chev">›</div>
+      </div>`;
+  }).join("");
+
+  drill.style.display = "block";
+  drill.className = "hist-totals-card";
+  drill.innerHTML = `
+      <div class="pt-head">
+        <button class="hist-back-btn" style="margin:0" onclick="closeHistDeityDrill()">‹ Back</button>
+        <span class="pt-head-icon" style="margin-left:8px">${c.icon}</span>
+        <span class="pt-head-title" style="color:${c.color}">${c.label}</span>
+        <span class="pt-head-range">(${window._histActiveLabel || "Custom"})</span>
+      </div>
+      <div class="hdd-summary">
+        <span class="hdd-sum-num" style="color:${c.color}">${fmtN(totMain)}</span>
+        <span class="hdd-sum-unit">${c.unit(totMain)}</span>
+        <span class="hdd-sum-sub">${c.toSub(totVal)}</span>
+        <span class="hdd-sum-time">⏱ ${_histFmtSec(totSec)}</span>
+      </div>
+      <div class="hdd-list">${rowsHtml}</div>`;
+  drill.scrollIntoView({ behavior: "smooth", block: "nearest" });
+}
+
+function closeHistDeityDrill() {
+  const drill = document.getElementById("histDeityDrill");
+  const wrap  = document.getElementById("histTableWrap");
+  const totDiv = document.getElementById("histTotals");
+  const sumLine = document.getElementById("histSummaryLine");
+  if (drill) { drill.style.display = "none"; drill.innerHTML = ""; drill.className = ""; }
+  // Restore Period Totals card
+  if (totDiv) totDiv.style.display = "block";
+  // Keep the flat table hidden — drill via Period Totals cards only
+  if (wrap) wrap.style.display = "none";
+  const _activeDays = document.querySelectorAll("#histTableBody tr").length;
+  if (sumLine) sumLine.textContent = _activeDays + " active day" + (_activeDays !== 1 ? "s" : "") + " in range · tap a card above to view dates";
 }
 
 function showHistDay(tk) {
@@ -10379,16 +10830,40 @@ function showHistSet(set) {
   const slot = document.getElementById("histSetDetail");
   if (!slot) return;
 
-  const log = App.S.activityLog || [];
   const tkPrefix = tk.slice(0, 10);
 
+  // Build a unified entry list for this date:
+  //   1) in-memory activityLog (live + recent)
+  //   2) lifetime archive entries from IDB for this exact day
+  // De-duplicated by ts+t so older malas don't disappear once they roll
+  // out of the 2000-entry in-memory cap.
+  const _inMem = (App.S.activityLog || []).filter(
+    (e) => _ldk(new Date(e.ts)) === tkPrefix,
+  );
+  const _renderWith = (log) => _renderHistSetInner(set, tk, isToday, log, slot);
+
+  // Render immediately with what we have, then upgrade from archive.
+  _renderWith(_inMem);
+  App.dbGet("activityLogArchive", tk)
+    .then((archived) => {
+      if (!Array.isArray(archived) || archived.length === 0) return;
+      const seen = new Set(_inMem.map((e) => e.ts + "|" + e.t));
+      const merged = _inMem.concat(
+        archived.filter((e) => !seen.has(e.ts + "|" + e.t)),
+      );
+      merged.sort((a, b) => (a.ts || 0) - (b.ts || 0));
+      _renderWith(merged);
+    })
+    .catch(() => {});
+}
+
+function _renderHistSetInner(set, tk, isToday, log, slot) {
   let inner = "";
   const backBtn = `<button class="hist-back-btn" onclick="document.getElementById('histSetDetail').innerHTML=''">‹ Back to Day Totals</button>`;
 
   if (set === "radha") {
     const radhaEntries = log.filter(
-      (e) =>
-        e.t === "mala" && e.mode !== "rv" && _ldk(new Date(e.ts)) === tkPrefix,
+      (e) => e.t === "mala" && e.mode !== "rv" && e.mode !== "hk",
     );
     inner += backBtn;
     if (radhaEntries.length > 0) {
@@ -10407,10 +10882,7 @@ function showHistSet(set) {
       inner += `<div style="font-size:11px;color:var(--td);text-align:center;padding:10px 0">Per-mala detail not available for this date<br><span style="font-size:10px">(activity log only keeps recent sessions)</span></div>`;
     }
   } else if (set === "rv") {
-    const rvEntries = log.filter(
-      (e) =>
-        e.t === "mala" && e.mode === "rv" && _ldk(new Date(e.ts)) === tkPrefix,
-    );
+    const rvEntries = log.filter((e) => e.t === "mala" && e.mode === "rv");
     inner += backBtn;
     if (rvEntries.length > 0) {
       inner += _histMalaTable("🔵 RV Jap — Per Mala", rvEntries, "var(--a2)");
@@ -10424,9 +10896,7 @@ function showHistSet(set) {
       inner += `<div style="font-size:11px;color:var(--td);text-align:center;padding:10px 0">Per-mala detail not available for this date</div>`;
     }
   } else if (set === "28") {
-    const cycleEntries = log.filter(
-      (e) => e.t === "28cycle" && _ldk(new Date(e.ts)) === tkPrefix,
-    );
+    const cycleEntries = log.filter((e) => e.t === "28cycle");
     inner += backBtn;
     if (cycleEntries.length > 0) {
       inner += _hist28CycleTable(cycleEntries);
@@ -10434,10 +10904,7 @@ function showHistSet(set) {
       inner += `<div style="font-size:11px;color:var(--td);text-align:center;padding:10px 0">Per-cycle detail not available for this date</div>`;
     }
   } else if (set === "hk") {
-    const hkEntries = log.filter(
-      (e) =>
-        e.t === "mala" && e.mode === "hk" && _ldk(new Date(e.ts)) === tkPrefix,
-    );
+    const hkEntries = log.filter((e) => e.t === "mala" && e.mode === "hk");
     const _hkSetLang = App.S.hkLang || "hi";
     const _hkSetLabel =
       _hkSetLang === "bn"
@@ -11078,291 +11545,340 @@ function _fmtDateDMY(dateStr) {
   }
 })();
 
-
 // ═══════════════════════════════════════════════════════
-// AUTO LOCAL BACKUP — hourly + nightly (00:00) snapshots
-// • Stored in IndexedDB so the Service Worker can also write
-//   them via the Periodic Background Sync API when the app is
-//   closed (Android Chrome only — falls back to in-app timer
-//   on every other platform, which is good enough because the
-//   app gets reopened daily).
-// • Hourly snapshot OVERWRITES the previous hourly file.
-// • Midnight snapshot keeps the date+time in the filename so
-//   you get one new file every night.
+// LEADERBOARD MODULE
 // ═══════════════════════════════════════════════════════
-(function () {
-  if (typeof window === "undefined") return;
-  var DB_NAME = "RadhaJapDB";
-  var STORE   = "backups";
-  var HOURLY_KEY = "auto-hourly";
-  var MIDNIGHT_PREFIX = "auto-midnight-";
-  var LATEST_SNAPSHOT_KEY = "latest-snapshot";
 
-  // ── tiny IDB helper that opens the *same* DB used by App,
-  // upgrading to add the `backups` store if missing. ──
-  function openBackupDB() {
-    return new Promise(function (res, rej) {
-      // Bump to v5 so the new `backups` object store is created.
-      var req = indexedDB.open(DB_NAME, 5);
-      req.onupgradeneeded = function (e) {
-        var db = e.target.result;
-        if (!db.objectStoreNames.contains("state"))               db.createObjectStore("state");
-        if (!db.objectStoreNames.contains("history"))             db.createObjectStore("history");
-        if (!db.objectStoreNames.contains("h28"))                 db.createObjectStore("h28");
-        if (!db.objectStoreNames.contains("timerHistory"))        db.createObjectStore("timerHistory");
-        if (!db.objectStoreNames.contains("timer28History"))      db.createObjectStore("timer28History");
-        if (!db.objectStoreNames.contains("malaLog"))             db.createObjectStore("malaLog");
-        if (!db.objectStoreNames.contains("activityLogArchive"))  db.createObjectStore("activityLogArchive");
-        if (!db.objectStoreNames.contains(STORE))                 db.createObjectStore(STORE);
-      };
-      req.onsuccess = function (e) { res(e.target.result); };
-      req.onerror   = function () { rej(req.error); };
-    });
-  }
-  function idbPut(key, value) {
-    return openBackupDB().then(function (db) {
-      return new Promise(function (res) {
-        var tx = db.transaction(STORE, "readwrite");
-        tx.objectStore(STORE).put(value, key);
-        tx.oncomplete = function () { res(true); };
-        tx.onerror    = function () { res(false); };
-      });
-    });
-  }
-  function idbGet(key) {
-    return openBackupDB().then(function (db) {
-      return new Promise(function (res) {
-        var tx = db.transaction(STORE, "readonly");
-        var r = tx.objectStore(STORE).get(key);
-        r.onsuccess = function () { res(r.result || null); };
-        r.onerror   = function () { res(null); };
-      });
-    });
-  }
-  function idbKeys() {
-    return openBackupDB().then(function (db) {
-      return new Promise(function (res) {
-        var tx = db.transaction(STORE, "readonly");
-        var r = tx.objectStore(STORE).getAllKeys();
-        r.onsuccess = function () { res(r.result || []); };
-        r.onerror   = function () { res([]); };
-      });
-    });
-  }
+window._lbPeriod = 'alltime';
+window._lbUnsubscribe = null;
 
-  function ts() {
-    var d = new Date();
-    var pad = function (n) { return n < 10 ? "0" + n : "" + n; };
-    return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()) +
-           "_" + pad(d.getHours()) + "-" + pad(d.getMinutes());
+/** Get the date key prefix for the current period filter */
+function _lbGetPeriodKeys(period) {
+  const now = new Date();
+  const keys = [];
+  if (period === 'alltime') return null; // null = use totalJap field (no date filter)
+  if (period === 'month') {
+    const y = now.getFullYear(), m = now.getMonth();
+    const days = new Date(y, m + 1, 0).getDate();
+    for (let d = 1; d <= days; d++) {
+      const dd = String(d).padStart(2,'0');
+      const mm = String(m + 1).padStart(2,'0');
+      keys.push(`${y}-${mm}-${dd}`);
+    }
+    return keys;
   }
-  function dateStr(d) {
-    d = d || new Date();
-    var pad = function (n) { return n < 10 ? "0" + n : "" + n; };
-    return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate());
+  if (period === 'week') {
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(now);
+      d.setDate(d.getDate() - i);
+      const y = d.getFullYear();
+      const m = String(d.getMonth()+1).padStart(2,'0');
+      const dd = String(d.getDate()).padStart(2,'0');
+      keys.push(`${y}-${m}-${dd}`);
+    }
+    return keys;
   }
+  return null;
+}
 
-  // ── Build a backup payload using the same shape as exportAllData ──
-  function buildBackup() {
-    if (!window.App || !App.S) return null;
-    return {
-      _version: 3,
-      _exported: new Date().toISOString(),
-      _auto: true,
-      history: App.S.history || {},
-      h28: App.S.h28 || {},
-      timerHistory: App.S.timerHistory || {},
-      timer28History: App.S.timer28History || {},
-      stotrams: App.S.stotrams || {},
-      brahma: App.S.brahma || {},
-      customSt: App.S.customSt || [],
-      sankalpas: App.S.sankalpas || [],
-      occasions: App.S.occasions || {},
-      ms: App.S.ms || 108,
-      dt: App.S.dt || 0,
-      lt: App.S.lt || 0,
-      nameJapDeduct: App.S.nameJapDeduct || 0,
-      cfg: App.S.cfg || {},
-      malaLog: App.S.malaLog || [],
-      malaLogDate: App.S.tk,
-      brahmacharya_start_date: App.S.brahmacharya_start_date || "",
-      japMode: App.S.japMode || "radha",
-      historyRV: App.S.historyRV || {},
-      timerHistoryRV: App.S.timerHistoryRV || {},
-      dtRV: App.S.dtRV || 0,
-      ltRV: App.S.ltRV || 0,
-      nameJapDeductRV: App.S.nameJapDeductRV || 0,
-      malaLogRV: App.S.malaLogRV || [],
-      historyHK: App.S.historyHK || {},
-      timerHistoryHK: App.S.timerHistoryHK || {},
-      dtHK: App.S.dtHK || 0,
-      nameJapDeductHK: App.S.nameJapDeductHK || 0,
-      malaLogHK: App.S.malaLogHK || [],
-      gaudiyaMode: App.S.gaudiyaMode || false
-    };
-  }
+/** Format large jap counts with K/L abbreviations */
+function _lbFmtJap(n) {
+  if (!n) return '0';
+  if (n >= 10000000) return (n/10000000).toFixed(1).replace(/\.0$/,'') + ' Cr';
+  if (n >= 100000)   return (n/100000).toFixed(1).replace(/\.0$/,'')  + ' L';
+  if (n >= 1000)     return (n/1000).toFixed(1).replace(/\.0$/,'')    + 'K';
+  return n.toLocaleString('en-IN');
+}
 
-  // Mirror the freshest snapshot into IDB on every App.save() so the
-  // service worker (which can't read localStorage / window.App) can
-  // still write a real backup when the app is closed.
-  function installSaveMirror() {
-    if (!window.App || typeof App.save !== "function" || App._autoBackupHooked) return;
-    App._autoBackupHooked = true;
-    var _origSave = App.save.bind(App);
-    App.save = async function () {
-      var r = await _origSave();
-      try {
-        var snap = buildBackup();
-        if (snap) await idbPut(LATEST_SNAPSHOT_KEY, { savedAt: Date.now(), data: snap });
-      } catch (_) {}
-      return r;
-    };
-  }
+/** Load leaderboard from Firestore and render it */
+async function loadLeaderboard(period) {
+  window._lbPeriod = period || 'alltime';
 
-  async function writeHourly() {
-    var snap = buildBackup(); if (!snap) return false;
-    await idbPut(HOURLY_KEY, { savedAt: Date.now(), filename: "radha-naam-jap-hourly.json", data: snap });
-    return true;
-  }
-  async function writeMidnight() {
-    var snap = buildBackup(); if (!snap) return false;
-    var key = MIDNIGHT_PREFIX + ts();
-    await idbPut(key, { savedAt: Date.now(), filename: "radha-naam-jap-" + ts() + ".json", data: snap });
-    return true;
-  }
+  // Unsubscribe any previous listener
+  if (window._lbUnsubscribe) { try { window._lbUnsubscribe(); } catch(_) {} }
 
-  function downloadJSON(filename, obj) {
-    try {
-      var blob = new Blob([JSON.stringify(obj, null, 2)], { type: "application/json" });
-      var url  = URL.createObjectURL(blob);
-      var a = document.createElement("a");
-      a.href = url; a.download = filename; a.rel = "noopener"; a.style.display = "none";
-      document.body.appendChild(a); a.click();
-      setTimeout(function () { URL.revokeObjectURL(url); a.remove(); }, 1500);
-      return true;
-    } catch (e) { return false; }
-  }
+  const list = document.getElementById('lbList');
+  const empty = document.getElementById('lbEmpty');
+  const signInPrompt = document.getElementById('lbSigninPrompt');
+  const optinBanner = document.getElementById('lbOptinBanner');
+  const myRankCard = document.getElementById('lbMyRank');
 
-  // ── Foreground scheduler — fires when the app is open ──
-  var _hourlyTimer = null;
-  var _midnightTimer = null;
-  function scheduleNext() {
-    clearTimeout(_hourlyTimer); clearTimeout(_midnightTimer);
-    var now = new Date();
-    // Next top of the hour
-    var nextHr = new Date(now); nextHr.setHours(now.getHours() + 1, 0, 5, 0);
-    _hourlyTimer = setTimeout(function () { writeHourly().finally(scheduleNext); }, nextHr - now);
-    // Next midnight
-    var nextMid = new Date(now); nextMid.setHours(24, 0, 10, 0);
-    _midnightTimer = setTimeout(function () { writeMidnight(); }, nextMid - now);
-  }
+  // Hide/show states
+  if (empty) empty.style.display = 'none';
+  if (signInPrompt) signInPrompt.style.display = 'none';
+  if (myRankCard) myRankCard.style.display = 'none';
 
-  // ── Register Periodic Background Sync with the service worker ──
-  async function registerPeriodicSync() {
-    if (!("serviceWorker" in navigator)) return { ok: false, reason: "no-sw" };
-    try {
-      var reg = await navigator.serviceWorker.ready;
-      if (!("periodicSync" in reg)) return { ok: false, reason: "unsupported" };
-      var status = await navigator.permissions.query({ name: "periodic-background-sync" });
-      if (status.state !== "granted") return { ok: false, reason: "no-permission" };
-      // Hourly tag
-      await reg.periodicSync.register("auto-backup-hourly",   { minInterval: 60 * 60 * 1000 });
-      // Daily tag (browser decides the exact moment — usually overnight)
-      await reg.periodicSync.register("auto-backup-midnight", { minInterval: 24 * 60 * 60 * 1000 });
-      return { ok: true };
-    } catch (e) {
-      return { ok: false, reason: (e && e.message) || "error" };
+  // Show shimmer
+  if (list) {
+    list.innerHTML = '';
+    for (let i = 0; i < 5; i++) {
+      const sh = document.createElement('div');
+      sh.className = 'lb-shimmer';
+      list.appendChild(sh);
     }
   }
 
-  // ── Public API ──
-  window.AutoBackup = {
-    init: function () {
-      installSaveMirror();
-      // Write an immediate snapshot so users always have something to download
-      setTimeout(function () { writeHourly(); }, 4000);
-      scheduleNext();
-      // Re-arm the scheduler whenever the tab regains focus (handles laptop sleep)
-      document.addEventListener("visibilitychange", function () {
-        if (document.visibilityState === "visible") {
-          writeHourly();
-          scheduleNext();
-        }
-      });
-      registerPeriodicSync(); // best-effort; quiet failures on iOS/desktop
-    },
-    requestPeriodicSync: registerPeriodicSync,
-    runHourlyNow:   writeHourly,
-    runMidnightNow: writeMidnight,
+  // Must be signed in
+  if (!fbUser || !fbDb) {
+    if (list) list.innerHTML = '';
+    if (signInPrompt) signInPrompt.style.display = 'block';
+    if (optinBanner) optinBanner.style.display = 'none';
+    return;
+  }
 
-    downloadHourly: async function () {
-      var rec = await idbGet(HOURLY_KEY);
-      if (!rec) { if (window.toast) toast("No hourly backup yet ⏳"); return false; }
-      downloadJSON(rec.filename || "radha-naam-jap-hourly.json", rec.data);
-      if (window.toast) toast("Hourly backup downloaded 🙏");
-      return true;
-    },
-    downloadLatestMidnight: async function () {
-      var keys = (await idbKeys()).filter(function (k) { return String(k).indexOf(MIDNIGHT_PREFIX) === 0; }).sort();
-      if (!keys.length) { if (window.toast) toast("No midnight backup yet 🌙"); return false; }
-      var rec = await idbGet(keys[keys.length - 1]);
-      if (!rec) return false;
-      downloadJSON(rec.filename || ("radha-naam-jap-" + ts() + ".json"), rec.data);
-      if (window.toast) toast("Midnight backup downloaded 🙏");
-      return true;
-    },
-    listMidnights: async function () {
-      var keys = (await idbKeys()).filter(function (k) { return String(k).indexOf(MIDNIGHT_PREFIX) === 0; }).sort();
-      var rows = [];
-      for (var i = keys.length - 1; i >= 0 && rows.length < 30; i--) {
-        var r = await idbGet(keys[i]);
-        if (r) rows.push({ key: keys[i], filename: r.filename, savedAt: r.savedAt });
-      }
-      return rows;
-    },
-    downloadByKey: async function (key) {
-      var rec = await idbGet(key);
-      if (!rec) return false;
-      return downloadJSON(rec.filename || (key + ".json"), rec.data);
-    },
-    status: async function () {
-      var hourly = await idbGet(HOURLY_KEY);
-      var keys = (await idbKeys()).filter(function (k) { return String(k).indexOf(MIDNIGHT_PREFIX) === 0; }).sort();
-      var latestMid = keys.length ? await idbGet(keys[keys.length - 1]) : null;
-      return {
-        hourly:   hourly   ? { savedAt: hourly.savedAt, filename: hourly.filename } : null,
-        midnight: latestMid ? { savedAt: latestMid.savedAt, filename: latestMid.filename, count: keys.length } : { count: 0 }
-      };
-    },
-    refreshStatusUI: async function () {
-      var el = document.getElementById("autoBackupStatus");
-      if (!el) return;
-      var s = await this.status();
-      var fmt = function (t) { return t ? new Date(t).toLocaleString() : "—"; };
-      el.innerHTML =
-        '<div style="display:flex;justify-content:space-between;gap:8px">' +
-          '<span>⏱ Hourly</span><b>' + fmt(s.hourly && s.hourly.savedAt) + '</b>' +
-        '</div>' +
-        '<div style="display:flex;justify-content:space-between;gap:8px;margin-top:4px">' +
-          '<span>🌙 Nightly</span><b>' + fmt(s.midnight && s.midnight.savedAt) +
-          ' <span style="opacity:.65">(' + (s.midnight && s.midnight.count || 0) + ' kept)</span></b>' +
-        '</div>';
+  // Show opt-in banner if not opted in
+  const optedIn = App.S.lbOptIn || false;
+  if (optinBanner) optinBanner.style.display = optedIn ? 'none' : 'flex';
+
+  // Populate settings UI
+  populateLbSettingsUI();
+
+  try {
+    // Real-time snapshot of leaderboard collection
+    window._lbUnsubscribe = fbDb.collection('leaderboard')
+      .where('optIn', '==', true)
+      .limit(100)
+      .onSnapshot(function(snap) {
+        const docs = [];
+        snap.forEach(function(doc) {
+          const d = doc.data();
+          d._uid = doc.id;
+          docs.push(d);
+        });
+        renderLeaderboard(docs, window._lbPeriod);
+      }, function(err) {
+        console.warn('Leaderboard snapshot error:', err.message);
+        if (list) list.innerHTML = '<div class="lb-empty"><div style="font-size:40px;margin-bottom:12px">⚠️</div><div style="font-size:13px;color:var(--rl)">Could not load leaderboard</div></div>';
+      });
+  } catch(e) {
+    console.warn('loadLeaderboard error:', e.message);
+  }
+}
+
+/** Render leaderboard entries given raw Firestore docs */
+function renderLeaderboard(docs, period) {
+  const list = document.getElementById('lbList');
+  const empty = document.getElementById('lbEmpty');
+  const myRankCard = document.getElementById('lbMyRank');
+  const myRankNum = document.getElementById('lbMyRankNum');
+  const myRankJap = document.getElementById('lbMyRankJap');
+  if (!list) return;
+
+  // Compute score for each doc based on period
+  const periodKeys = _lbGetPeriodKeys(period);
+  const scored = docs.map(function(d) {
+    let score = 0;
+    if (!periodKeys) {
+      // All time — use stored totalJap
+      score = (d.totalJap || 0);
+    } else {
+      // Sum history for this period
+      const hist   = d.history || {};
+      const histRV = d.historyRV || {};
+      const histHK = d.historyHK || {};
+      periodKeys.forEach(function(k) {
+        score += (hist[k] || 0) + (histRV[k] || 0) + (histHK[k] || 0);
+      });
     }
+    return { ...d, score };
+  });
+
+  // Sort descending, filter out zero scores
+  const filtered = scored
+    .filter(function(d) { return d.score > 0; })
+    .sort(function(a, b) { return b.score - a.score; })
+    .slice(0, 50);
+
+  if (!filtered.length) {
+    list.innerHTML = '';
+    if (empty) empty.style.display = 'block';
+    if (myRankCard) myRankCard.style.display = 'none';
+    return;
+  }
+  if (empty) empty.style.display = 'none';
+
+  // Find current user's rank
+  const myUid = fbUser && fbUser.uid;
+  let myRank = -1;
+  let myScore = 0;
+  filtered.forEach(function(d, idx) {
+    if (d._uid === myUid) { myRank = idx + 1; myScore = d.score; }
+  });
+
+  // Update my-rank card
+  if (myRank > 0 && App.S.lbOptIn) {
+    if (myRankCard) myRankCard.style.display = 'flex';
+    if (myRankNum) myRankNum.textContent = '#' + myRank;
+    if (myRankJap) myRankJap.textContent = _lbFmtJap(myScore) + ' jap';
+  } else {
+    if (myRankCard) myRankCard.style.display = 'none';
+  }
+
+  // Build HTML
+  const medals = ['🥇','🥈','🥉'];
+  const html = filtered.map(function(d, idx) {
+    const rank = idx + 1;
+    const isMe = (d._uid === myUid);
+    const isTop3 = rank <= 3;
+    const medal = rank <= 3 ? medals[rank-1] : null;
+    const badgeClass = rank === 1 ? 'lb-badge-1' : rank === 2 ? 'lb-badge-2' : rank === 3 ? 'lb-badge-3' : 'lb-badge-n';
+    const badgeContent = medal ? medal : rank;
+    const rowClass = 'lb-row' + (isMe ? ' lb-row-me' : '') + (isTop3 ? ' lb-row-top3' : '');
+    const nameClass = 'lb-name' + (isMe ? ' lb-name-me' : '');
+    const meMark = isMe ? ' ✦ You' : '';
+    const name = (d.displayName || 'Anonymous Devotee').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    const malas = Math.floor(d.score / (App.S.ms || 108));
+    const meta = _lbFmtJap(d.score) + ' jap · ' + malas.toLocaleString('en-IN') + ' malas' + (d.streak > 0 ? ' · 🔥' + d.streak + 'd' : '');
+    return `<div class="${rowClass}">
+      <div class="lb-badge ${badgeClass}">${badgeContent}</div>
+      <div class="lb-info">
+        <div class="${nameClass}">${name}${meMark}</div>
+        <div class="lb-meta">${meta}</div>
+      </div>
+      <div class="lb-count">
+        <div class="lb-count-num">${_lbFmtJap(d.score)}</div>
+        <div class="lb-count-lbl">jap</div>
+      </div>
+    </div>`;
+  }).join('');
+
+  list.innerHTML = html;
+}
+
+/** Switch leaderboard period tab */
+function lbSwitchPeriod(period) {
+  window._lbPeriod = period;
+  ['alltime','month','week'].forEach(function(p) {
+    const btn = document.getElementById('lbTab' + p.charAt(0).toUpperCase() + p.slice(1));
+    if (btn) btn.classList.toggle('active', p === period);
+  });
+  // Re-render with the same snapshot data (avoid extra Firestore read)
+  // If there's no snapshot loaded yet, do a full load
+  loadLeaderboard(period);
+}
+
+/** Push current user's data to the leaderboard collection */
+async function pushLeaderboard() {
+  if (!fbUser || !fbDb) return;
+  if (!App.S.lbOptIn) {
+    // If opted out, remove the entry
+    try {
+      await fbDb.collection('leaderboard').doc(fbUser.uid).delete();
+    } catch(_) {}
+    return;
+  }
+
+  // Compute lifetime totals
+  const hist   = App.S.history   || {};
+  const histRV = App.S.historyRV || {};
+  const histHK = App.S.historyHK || {};
+  const totalRadha = Object.values(hist).reduce((a,b)=>a+b,0);
+  const totalRV    = Object.values(histRV).reduce((a,b)=>a+b,0);
+  const totalHK    = Object.values(histHK).reduce((a,b)=>a+b,0);
+  const totalJap   = Math.max(0, totalRadha + totalRV + totalHK - (App.S.nameJapDeduct||0) - (App.S.nameJapDeductRV||0) - (App.S.nameJapDeductHK||0));
+
+  // Build display name
+  let displayName = (App.S.lbDisplayName || '').trim();
+  if (!displayName && fbUser) {
+    displayName = (fbUser.displayName || (fbUser.email || '').split('@')[0] || 'Anonymous Devotee').slice(0,30);
+  }
+  if (!displayName) displayName = 'Anonymous Devotee';
+
+  // Compute streak from App.S (reuse existing streak logic)
+  let streak = 0;
+  try {
+    const tk = App.S.tk;
+    const allHist = {};
+    Object.keys({...hist,...histRV,...histHK}).forEach(function(k) {
+      allHist[k] = (hist[k]||0)+(histRV[k]||0)+(histHK[k]||0);
+    });
+    const today = new Date(tk+'T00:00:00');
+    let d = new Date(today);
+    while(true) {
+      const key = d.toISOString().slice(0,10);
+      const dayJap = allHist[key] || 0;
+      const target = App.S.dt || App.S.dtRV || App.S.dtHK || 0;
+      if (dayJap <= 0 || (target > 0 && dayJap < target)) break;
+      streak++;
+      d.setDate(d.getDate()-1);
+      if (streak > 3650) break;
+    }
+  } catch(_) {}
+
+  const payload = {
+    displayName,
+    totalJap,
+    totalMalas: Math.floor(totalJap / (App.S.ms || 108)),
+    streak,
+    optIn: true,
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+    // Store per-day histories so month/week filtering works
+    history:   hist,
+    historyRV: histRV,
+    historyHK: histHK,
   };
 
-  // Boot once the App object is ready. App.init isn't promise-based here,
-  // so we just wait for App.S to appear.
-  function boot() {
-    if (window.App && App.S) {
-      window.AutoBackup.init();
-    } else {
-      setTimeout(boot, 600);
-    }
+  try {
+    await fbDb.collection('leaderboard').doc(fbUser.uid).set(payload);
+  } catch(e) {
+    console.warn('pushLeaderboard error:', e.message);
   }
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", boot);
-  } else {
-    boot();
-  }
-})();
+}
 
+/** Toggle leaderboard opt-in from Settings */
+async function toggleLbOptIn() {
+  if (!fbUser) {
+    toast('Please sign in to join the leaderboard');
+    return;
+  }
+  App.S.lbOptIn = !App.S.lbOptIn;
+  populateLbSettingsUI();
+  App.save();
+  if (App.S.lbOptIn) {
+    toast('🏆 Joined the leaderboard!');
+    await pushLeaderboard();
+  } else {
+    toast('Removed from leaderboard');
+    await pushLeaderboard(); // will delete the doc
+  }
+  // Refresh if the leaderboard view is currently visible
+  const vlb = document.getElementById('vlb');
+  if (vlb && vlb.classList.contains('active')) {
+    loadLeaderboard(window._lbPeriod || 'alltime');
+  }
+}
+
+/** Save display name from Settings */
+async function saveLbName() {
+  const inp = document.getElementById('lbNameIn');
+  const fb  = document.getElementById('lbNameFeedback');
+  if (!inp) return;
+  const name = inp.value.trim().slice(0, 30);
+  if (!name) {
+    if (fb) { fb.textContent = 'Please enter a name'; fb.style.color = 'var(--rl)'; }
+    return;
+  }
+  App.S.lbDisplayName = name;
+  App.save();
+  if (fb) {
+    fb.textContent = '✓ Saved!';
+    fb.style.color = 'var(--green)';
+    setTimeout(function() { if(fb) fb.textContent = ''; }, 2500);
+  }
+  if (App.S.lbOptIn) {
+    await pushLeaderboard();
+  }
+  toast('Display name saved 🙏');
+}
+
+/** Sync Settings UI with current App.S leaderboard state */
+function populateLbSettingsUI() {
+  const tg  = document.getElementById('tgLbOptIn');
+  const inp = document.getElementById('lbNameIn');
+  if (tg)  tg.classList.toggle('on', !!App.S.lbOptIn);
+  if (inp && !inp.value) inp.value = App.S.lbDisplayName || '';
+
+  // Opt-in banner in leaderboard view
+  const banner = document.getElementById('lbOptinBanner');
+  if (banner) banner.style.display = (App.S.lbOptIn ? 'none' : 'flex');
+}

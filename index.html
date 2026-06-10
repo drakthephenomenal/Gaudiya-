@@ -152,6 +152,10 @@
     Stats
   </button>
 
+  <button class="nb" id="navLb" onclick="sv('vlb',this);loadLeaderboard(window._lbPeriod||'alltime')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 21h8M12 17v4M17 3H7l-2 7h14l-2-7z"/><path d="M5 10c0 4 3.5 7 7 7s7-3 7-7"/></svg>
+    Ranks
+  </button>
   <button class="nb" onclick="sv('vset',this)">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
     Settings
@@ -249,6 +253,10 @@
   </div>
   <div class="tzr">
     <div class="tz" id="tz" style="border-radius:18px;" aria-label="Tap to chant Radha Naam" role="button" tabindex="0" ontouchstart="App.ht(event)" onmousedown="App.ht(event)">
+      <img class="rv-wm" src="./radha-vallabh.png" alt="Sri Radha Vallabh Laal Ju" aria-hidden="true" draggable="false">
+      <img class="hitju-wm" src="./hitju-maharaj.png" alt="Sri Hit Ju Maharaj" aria-hidden="true" draggable="false">
+      <img class="gurudev-wm" src="./gurudev.png" alt="Gurudev" aria-hidden="true" draggable="false">
+      <img class="cm-wm" src="./sri-chaitanya-mahaprabhu.png" alt="Sri Chaitanya Mahaprabhu" aria-hidden="true" draggable="false">
       <div class="mf" id="mf">
         <div class="mf-line1">Radha Ballabh</div>
         <div class="mf-line2">Sri Harivansh</div>
@@ -439,6 +447,7 @@
   <div style="padding:8px 14px 6px;display:flex;align-items:center;gap:10px;justify-content:center;">
     <label style="font-size:11px;color:var(--gold);letter-spacing:1px;font-weight:600;">🛡️ Brahmacharya Start Date</label>
     <input type="date" id="brahmaStartInput" style="background:rgba(0,0,0,0.4);border:1px solid rgba(255,215,0,0.3);border-radius:9px;padding:6px 12px;color:var(--gold);font-size:13px;font-family:'Inter',sans-serif;outline:none;" onchange="confirmBrahmaStartChange(this.value)">
+    <span id="brahmaStartDisp" style="font-size:13px;color:var(--gold);font-weight:600;margin-left:4px;"></span>
   </div>
 
   <!-- Brahmacharya Status Bar -->
@@ -581,6 +590,7 @@
   <div class="ms-sadhana-bar">
     <label>🙏 Journey Start:</label>
     <input type="date" id="msSadhanaStart" onchange="saveSadhanaStartDate(this.value);renderMilestonesTab();">
+    <span id="msSadhanaStartDisp" style="font-size:13px;color:var(--gold);font-weight:600;margin-left:4px;"></span>
   </div>
   <div class="ms-sadhana-since" id="msSadhanaSince"></div>
   <div id="msContent"></div>
@@ -749,6 +759,9 @@
 
       <!-- Period Totals — moved here, directly under the date-range buttons -->
       <div id="histTotals" class="hist-totals-card" style="display:none"></div>
+
+      <!-- Deity date-wise drill-down — shown when a Period Total card is tapped -->
+      <div id="histDeityDrill" style="display:none;margin-top:0"></div>
 
       <div id="histSummaryLine" style="font-size:11px;color:var(--td);text-align:center;margin-bottom:8px;min-height:16px"></div>
 
@@ -977,6 +990,68 @@
   </div>
 </div>
 
+<!-- LEADERBOARD VIEW -->
+<div class="view" id="vlb">
+  <!-- Hero Banner -->
+  <div class="lb-hero">
+    <div class="lb-hero-glow"></div>
+    <div class="lb-hero-trophy">🏆</div>
+    <div class="lb-hero-title">Devotee Leaderboard</div>
+    <div class="lb-hero-sub">Jap · Seva · Community</div>
+  </div>
+
+  <!-- Opt-in banner (shown only when not opted in and signed in) -->
+  <div class="lb-optin-banner" id="lbOptinBanner" style="display:none">
+    <div class="lb-optin-icon">🙏</div>
+    <div class="lb-optin-text">
+      <div class="lb-optin-title">Join the Community Board</div>
+      <div class="lb-optin-desc">Share your jap count with devotees. Enable in <b>Settings → Leaderboard</b>.</div>
+    </div>
+    <button class="lb-optin-btn" onclick="sv('vset', document.querySelector('.nb:last-child')); setTimeout(()=>{document.getElementById('lbSettingCard').scrollIntoView({behavior:'smooth'})},300)">Enable ›</button>
+  </div>
+
+  <!-- Period Tabs -->
+  <div class="lb-tabs" id="lbTabs">
+    <button class="lb-tab active" id="lbTabAlltime" onclick="lbSwitchPeriod('alltime')">🌟 All Time</button>
+    <button class="lb-tab" id="lbTabMonth" onclick="lbSwitchPeriod('month')">📅 This Month</button>
+    <button class="lb-tab" id="lbTabWeek" onclick="lbSwitchPeriod('week')">⚡ This Week</button>
+  </div>
+
+  <!-- Your rank card (shown when opted in and ranked) -->
+  <div class="lb-my-rank" id="lbMyRank" style="display:none">
+    <div class="lb-my-rank-label">Your Rank</div>
+    <div class="lb-my-rank-num" id="lbMyRankNum">#—</div>
+    <div class="lb-my-rank-jap" id="lbMyRankJap">— jap</div>
+  </div>
+
+  <!-- Leaderboard list -->
+  <div class="lb-list-wrap">
+    <div class="lb-list" id="lbList">
+      <!-- Shimmer placeholders while loading -->
+      <div class="lb-shimmer"></div>
+      <div class="lb-shimmer"></div>
+      <div class="lb-shimmer"></div>
+      <div class="lb-shimmer"></div>
+      <div class="lb-shimmer"></div>
+    </div>
+    <div class="lb-empty" id="lbEmpty" style="display:none">
+      <div style="font-size:48px;margin-bottom:12px">🪷</div>
+      <div style="font-size:14px;color:var(--gold);margin-bottom:6px">No devotees yet</div>
+      <div style="font-size:12px;color:var(--td)">Be the first to join the community leaderboard!</div>
+    </div>
+    <div class="lb-signin-prompt" id="lbSigninPrompt" style="display:none">
+      <div style="font-size:40px;margin-bottom:12px">☁️</div>
+      <div style="font-size:14px;color:var(--a2);margin-bottom:6px">Sign in to see the leaderboard</div>
+      <div style="font-size:12px;color:var(--td)">Cloud sync is required to participate in community rankings.</div>
+    </div>
+  </div>
+
+  <!-- Refresh button -->
+  <div style="display:flex;justify-content:center;padding:10px 0 16px">
+    <button id="lbRefreshBtn" onclick="loadLeaderboard(window._lbPeriod||'alltime')" style="background:rgba(255,215,0,0.08);border:1px solid rgba(255,215,0,0.3);border-radius:20px;color:var(--gold);font-size:12px;font-weight:600;padding:8px 22px;cursor:pointer;font-family:'Inter',sans-serif;letter-spacing:0.5px;transition:all 0.2s">↻ Refresh</button>
+  </div>
+</div>
+
 <!-- SETTINGS VIEW — includes Targets + Cloud Sync + Preferences + Backup -->
 
 <div class="view" id="vset">
@@ -1007,6 +1082,68 @@
         <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="none" stroke="#F7A81B" stroke-width="2"/><text x="12" y="16" text-anchor="middle" fill="#F7A81B" font-size="12" font-weight="bold" font-family="sans-serif">Z</text></svg>
         Sign in with Zoho
       </button>
+
+      <!-- PHONE / OTP SIGN-IN -->
+      <div style="margin-top:14px;padding-top:14px;border-top:1px solid rgba(255,255,255,0.08)">
+        <div style="font-size:11px;color:var(--td);text-align:center;margin-bottom:8px;letter-spacing:1px;text-transform:uppercase">or use Phone number</div>
+        <div style="font-size:11px;color:var(--gold);text-align:left;margin-bottom:10px;padding:8px 10px;border-radius:8px;background:rgba(255,215,0,0.08);border:1px solid rgba(255,215,0,0.18);line-height:1.55">
+          Enter your number with country code (e.g. <b>+919876543210</b>). OTP comes by SMS; on Android it may also appear above your keyboard—tap that code or check your Messages/SMS inbox.
+        </div>
+        <input type="tel" id="fbPhoneIn" class="fb-email-input" placeholder="+91 98765 43210" autocomplete="tel">
+        <div id="fbPhoneSendRow" style="display:flex;gap:8px">
+          <button id="fbPhoneSendBtn" onclick="fbSendPhoneOtp()" style="flex:1;padding:9px;border-radius:10px;border:1px solid rgba(74,144,226,0.4);background:rgba(74,144,226,0.15);color:var(--a2);font-size:12px;font-weight:600;cursor:pointer;font-family:Inter,sans-serif">Send OTP</button>
+        </div>
+        <div id="fbOtpRow" style="display:none;margin-top:10px">
+          <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="6" id="fbOtpIn" class="fb-email-input" placeholder="Enter 6-digit OTP" autocomplete="one-time-code">
+          <div style="display:flex;gap:8px">
+            <button onclick="fbVerifyPhoneOtp()" style="flex:1;padding:9px;border-radius:10px;border:1px solid rgba(46,204,113,0.4);background:rgba(46,204,113,0.12);color:#7ee2a8;font-size:12px;font-weight:600;cursor:pointer;font-family:Inter,sans-serif">Verify & Sign In</button>
+            <button onclick="fbResetPhoneOtp()" style="padding:9px 12px;border-radius:10px;border:1px solid rgba(255,255,255,0.18);background:transparent;color:var(--td);font-size:12px;font-weight:500;cursor:pointer;font-family:Inter,sans-serif">Cancel</button>
+          </div>
+          <button onclick="fbSendPhoneOtp(true)" style="width:100%;margin-top:6px;padding:6px;border-radius:8px;border:none;background:transparent;color:var(--td);font-size:11px;cursor:pointer;font-family:Inter,sans-serif;text-decoration:underline">Resend OTP</button>
+        </div>
+        <!-- Firebase phone verification runs invisibly; keep the badge from covering bottom navigation. -->
+        <style>#fbRecaptchaContainer{position:absolute!important;left:-9999px!important;top:auto!important;width:1px!important;height:1px!important;overflow:hidden!important}.grecaptcha-badge{visibility:hidden!important;pointer-events:none!important}</style>
+        <div id="fbRecaptchaContainer" aria-hidden="true"></div>
+      </div>
+
+
+
+      <!-- EMAIL / PASSWORD SIGN-IN -->
+      <style>
+        .fb-email-input{width:100%;padding:10px 12px;border-radius:10px;border:1px solid rgba(255,255,255,0.18);background:#1a1f3a !important;color:#fff !important;font-size:13px;font-family:Inter,sans-serif;margin-bottom:8px;box-sizing:border-box;color-scheme:dark;-webkit-text-fill-color:#fff;outline:none;height:auto;backdrop-filter:none}
+        .fb-email-input::placeholder{color:rgba(255,255,255,0.45)}
+        .fb-email-input:focus{border-color:rgba(74,144,226,0.6)}
+        .fb-email-input:-webkit-autofill,.fb-email-input:-webkit-autofill:hover,.fb-email-input:-webkit-autofill:focus{-webkit-text-fill-color:#fff !important;-webkit-box-shadow:0 0 0 1000px #1a1f3a inset !important;box-shadow:0 0 0 1000px #1a1f3a inset !important;caret-color:#fff;transition:background-color 9999s ease-in-out 0s}
+      </style>
+      <div style="margin-top:14px;padding-top:14px;border-top:1px solid rgba(255,255,255,0.08);background:transparent;height:auto">
+        <div style="font-size:11px;color:var(--td);text-align:center;margin-bottom:8px;letter-spacing:1px;text-transform:uppercase">or use Email</div>
+        <div style="font-size:11.5px;color:var(--gold);text-align:left;margin-bottom:10px;padding:10px 12px;border-radius:10px;background:rgba(255,215,0,0.08);border:1px solid rgba(255,215,0,0.18);line-height:1.6">
+          <div style="text-align:center;font-weight:600;margin-bottom:6px;color:#ffd97a">📧 Use any email provider</div>
+          <div style="font-size:10.5px;color:var(--tl);opacity:.9;margin-bottom:8px;text-align:center">
+            Gmail, Outlook / Hotmail, Yahoo Mail, AOL Mail, Apple iCloud Mail,
+            Proton Mail, Tuta Mail, Mailfence, StartMail, Microsoft 365, Fastmail,
+            Zoho Mail — any working address works.
+          </div>
+          <div style="border-top:1px dashed rgba(255,215,0,0.2);padding-top:8px;margin-top:6px">
+            <b>🆕 New here? Create an account:</b>
+            <ol style="margin:4px 0 6px 18px;padding:0;font-size:11px;color:var(--tl);line-height:1.55">
+              <li>Type your <b>email</b> and <b>any password</b> (min 6 characters — it does <b>not</b> have to be your real email password).</li>
+              <li>Tap <b>Create Account</b>.</li>
+              <li>Open your inbox and tap the <b>verification link</b> we send. <i>If you don't see it within a minute, check your Spam / Promotions / Junk folder.</i></li>
+              <li>Come back here and tap <b>Sign In</b>.</li>
+            </ol>
+            <b>🔁 Already have an account?</b> Just enter your email + password and tap <b>Sign In</b>. After your first verification, future sign-ins <u>do not</u> require another confirmation email.
+          </div>
+        </div>
+        <input type="email" id="fbEmailIn" class="fb-email-input" placeholder="Email address" autocomplete="email">
+        <input type="password" id="fbPassIn" class="fb-email-input" placeholder="Password (min 6 chars)" autocomplete="current-password" style="margin-bottom:10px">
+        <div style="display:flex;gap:8px">
+          <button onclick="fbSignInEmail()" style="flex:1;padding:9px;border-radius:10px;border:1px solid rgba(74,144,226,0.4);background:rgba(74,144,226,0.15);color:var(--a2);font-size:12px;font-weight:600;cursor:pointer;font-family:Inter,sans-serif">Sign In</button>
+          <button onclick="fbSignUpEmail()" style="flex:1;padding:9px;border-radius:10px;border:1px solid rgba(46,204,113,0.4);background:rgba(46,204,113,0.12);color:#7ee2a8;font-size:12px;font-weight:600;cursor:pointer;font-family:Inter,sans-serif">Create Account</button>
+        </div>
+        <button onclick="fbResetEmail()" style="width:100%;margin-top:8px;padding:6px;border-radius:8px;border:none;background:transparent;color:var(--td);font-size:11px;cursor:pointer;font-family:Inter,sans-serif;text-decoration:underline">Forgot password?</button>
+      </div>
+
       <div id="fbErr" style="font-size:12px;color:var(--red);margin-top:6px;text-align:center"></div>
     </div>
     <div id="fbLoggedIn" style="display:none">
@@ -1034,31 +1171,6 @@
       <input type="file" id="restoreFileIn" accept=".json" style="display:none" onchange="importAllData(this)">
     </label>
     <div id="restoreStatus" style="font-size:12px;margin-top:8px;text-align:center;color:var(--green);min-height:18px"></div>
-
-    <!-- ── AUTO BACKUP (hourly + nightly) ─────────────────────────── -->
-    <div class="auto-backup-block" style="margin-top:18px;padding-top:14px;border-top:1px dashed rgba(255,215,0,0.18)">
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
-        <span style="font-size:18px">🌙</span>
-        <b style="font-size:13px;letter-spacing:.4px">Automatic Daily Backup</b>
-      </div>
-      <p style="font-size:11px;color:var(--td);margin:0 0 10px;line-height:1.55">
-        Two snapshots are saved on your device every day:<br>
-        • One every hour (overwrites the previous hour)<br>
-        • One every night at midnight (kept with date &amp; time in the filename)<br>
-        On Android Chrome (installed app) backups also run in the background while the app is closed.
-      </p>
-      <div id="autoBackupStatus" style="font-size:11px;background:rgba(255,215,0,0.06);border:1px solid rgba(255,215,0,0.18);border-radius:10px;padding:8px 10px;margin-bottom:10px;color:var(--td)">
-        <div style="opacity:.7">Loading status…</div>
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-        <button class="pb" style="padding:9px 6px;font-size:11px" onclick="AutoBackup.downloadHourly().then(()=>AutoBackup.refreshStatusUI())">⏱ Download Hourly</button>
-        <button class="pb" style="padding:9px 6px;font-size:11px" onclick="AutoBackup.downloadLatestMidnight().then(()=>AutoBackup.refreshStatusUI())">🌙 Download Last Night</button>
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px">
-        <button class="pb" style="padding:8px 6px;font-size:11px;opacity:.85" onclick="AutoBackup.runHourlyNow().then(()=>AutoBackup.refreshStatusUI())">↻ Snapshot Now</button>
-        <button class="pb" style="padding:8px 6px;font-size:11px;opacity:.85" onclick="AutoBackup.requestPeriodicSync().then(r=>toast(r.ok?'Background backup enabled 🙏':'Open the installed app on Android Chrome to enable.'))">📲 Enable Background</button>
-      </div>
-    </div>
   </div>
   <!-- GAUDIYA / ISKCON MODE — large aesthetic switch -->
   <div class="sc gaudiya-mode-card" id="gaudiyaModeCard">
@@ -1167,15 +1279,48 @@
   <div class="sc">
     <h3>🔔 Preferences</h3>
     <div class="sr">
-      <div><label>Bell Sound</label><div class="sub">Bell plays after completing a mala</div></div>
+      <div><label>Completion Sound</label><div class="sub">Plays after completing a mala</div></div>
       <div class="tg on" id="tgSnd" onclick="tgs('sound')"></div>
+    </div>
+
+    <div class="sr" style="align-items:center">
+      <div><label>Sound Type</label><div class="sub">Choose between bell chime or Panchojanno Shankya</div></div>
+      <select id="soundTypeSel" onchange="setSoundType(this.value)" style="padding:7px 10px;border-radius:10px;border:1px solid rgba(74,144,226,0.35);background:rgba(74,144,226,0.10);color:var(--a2);font-size:12px;font-family:Inter,sans-serif;cursor:pointer">
+        <option value="bell">🔔 Bell Chime</option>
+        <option value="shankya">🐚 Panchojanno Shankya</option>
+      </select>
     </div>
 
     <!-- Mahamantra Language toggle moved to its own card below Gaudiya -->
     <span id="hkLangLabel" style="display:none">Hindi</span>
-    <button onclick="testSound()" style="padding:7px 14px;border-radius:20px;border:1px solid rgba(74,144,226,0.3);background:rgba(74,144,226,0.12);color:var(--a2);font-size:12px;cursor:pointer;font-family:Inter,sans-serif;margin-top:6px">🔔 Test Bell</button>
+    <button onclick="testSound()" style="padding:7px 14px;border-radius:20px;border:1px solid rgba(74,144,226,0.3);background:rgba(74,144,226,0.12);color:var(--a2);font-size:12px;cursor:pointer;font-family:Inter,sans-serif;margin-top:6px">🔔 Test Sound</button>
   </div>
 
+
+  <!-- LEADERBOARD SETTINGS -->
+  <div class="sc" id="lbSettingCard" style="background:rgba(255,215,0,0.04);border-color:rgba(255,215,0,0.25)">
+    <h3>🏆 Community Leaderboard</h3>
+    <p style="font-size:12px;color:var(--td);margin-bottom:14px">Share your jap count on the community leaderboard. Your display name and total jap count become visible to all signed-in users.</p>
+
+    <!-- Opt-in toggle -->
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid rgba(255,215,0,0.12);margin-bottom:12px">
+      <div>
+        <div style="font-size:13px;color:var(--tl);font-weight:500">Join Leaderboard</div>
+        <div style="font-size:11px;color:var(--td);margin-top:2px">Show my jap count publicly</div>
+      </div>
+      <div class="tg" id="tgLbOptIn" onclick="toggleLbOptIn()"></div>
+    </div>
+
+    <!-- Display name -->
+    <div id="lbNameRow">
+      <div style="font-size:11px;color:var(--gold);letter-spacing:1px;text-transform:uppercase;font-weight:600;margin-bottom:7px">Display Name</div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <input type="text" id="lbNameIn" maxlength="30" placeholder="Radha Das / Devotee name…" style="flex:1;background:rgba(0,0,0,0.35);border:1px solid rgba(255,215,0,0.3);border-radius:10px;padding:9px 12px;color:var(--tl);font-size:13px;font-family:'Inter',sans-serif;outline:none">
+        <button onclick="saveLbName()" style="padding:9px 14px;border-radius:10px;border:none;background:linear-gradient(135deg,rgba(255,215,0,0.4),rgba(255,180,0,0.25));color:var(--gold);font-size:12px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;white-space:nowrap">💾 Save</button>
+      </div>
+      <div id="lbNameFeedback" style="font-size:11px;margin-top:5px;color:var(--green);min-height:16px"></div>
+    </div>
+  </div>
 
   <!-- SHARE APP -->
   <div class="sc" style="background:rgba(255,215,0,0.03);border-color:rgba(255,215,0,0.18)">
@@ -1253,21 +1398,5 @@
     <script src="./panchangData.js?v=117"></script>
     <script src="./stotrams.js?v=115"></script>
     <script src="./app.js?v=118"></script>
-  
-<script>
-  // Keep the auto-backup status panel fresh whenever Settings becomes visible
-  (function(){
-    function refresh(){ if(window.AutoBackup && AutoBackup.refreshStatusUI) AutoBackup.refreshStatusUI(); }
-    document.addEventListener('DOMContentLoaded', function(){
-      setTimeout(refresh, 1500);
-      // Re-render whenever the user navigates to the settings tab
-      document.addEventListener('click', function(e){
-        var t = e.target && e.target.closest ? e.target.closest('[data-nav="settings"], [onclick*="settings"]') : null;
-        if (t) setTimeout(refresh, 200);
-      });
-      setInterval(refresh, 60 * 1000);
-    });
-  })();
-</script>
-</body>
+  </body>
 </html>

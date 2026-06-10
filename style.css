@@ -704,53 +704,141 @@ button.n28-gold-btn-danger,
 .mdb.cf{background:linear-gradient(135deg,var(--rose),#8B0000);color:white;}
 .mdb.ca{background:rgba(255,255,255,0.06);color:var(--td);}
 
-/* Google Sign-In button — premium glossy */
+/* Google Sign-In button - premium glossy */
 .google-btn{
   position:relative;width:100%;padding:14px;border-radius:14px;
-  border:1px solid rgba(255,255,255,0.22);
-  background:linear-gradient(180deg,rgba(255,255,255,0.14) 0%,rgba(255,255,255,0.06) 100%);
-  color:var(--tl);font-size:14px;font-weight:600;
+  border:1px solid rgba(66,133,244,0.4);
+  background:linear-gradient(180deg,rgba(66,133,244,0.18) 0%,rgba(66,133,244,0.06) 100%);
+  color:#aaccff;font-size:14px;font-weight:700;
   cursor:pointer;font-family:'Inter',sans-serif;display:flex;align-items:center;justify-content:center;gap:10px;
   margin-bottom:11px;
   box-shadow:
-    inset 0 1px 0 rgba(255,255,255,0.28),
-    inset 0 -1px 0 rgba(0,0,0,0.35),
+    inset 0 1px 0 rgba(66,133,244,0.3),
+    inset 0 -2px 6px rgba(0,0,0,0.4),
     0 4px 18px rgba(0,0,0,0.45),
-    0 0 0 1px rgba(255,255,255,0.06);
-  transition:all 0.2s;overflow:hidden;isolation:isolate;letter-spacing:0.3px;}
+    0 0 12px rgba(66,133,244,0.15);
+  transition:all 0.25s cubic-bezier(0.4, 0, 0.2, 1);overflow:hidden;isolation:isolate;letter-spacing:0.3px;}
 .google-btn::before{content:'';position:absolute;inset:0;border-radius:inherit;
-  background:linear-gradient(180deg,rgba(255,255,255,0.18) 0%,transparent 45%);pointer-events:none;}
+  background:linear-gradient(180deg,rgba(255,255,255,0.12) 0%,transparent 45%);pointer-events:none;}
 .google-btn::after{content:'';position:absolute;left:-60%;top:0;height:100%;width:50%;
-  background:linear-gradient(110deg,transparent,rgba(255,255,255,0.14),transparent);
-  transform:skewX(-18deg);transition:left 0.55s ease;pointer-events:none;}
+  background:linear-gradient(110deg,transparent,rgba(255,255,255,0.2),transparent);
+  transform:skewX(-18deg);transition:left 0.6s ease;pointer-events:none;}
 .google-btn:hover::after{left:120%;}
-.google-btn:hover{border-color:rgba(255,255,255,0.36);filter:brightness(1.12);}
-.google-btn:active{transform:translateY(1px) scale(0.992);box-shadow:inset 0 2px 6px rgba(0,0,0,0.5);}
-.google-btn svg{width:20px;height:20px;flex-shrink:0;filter:drop-shadow(0 0 4px rgba(255,255,255,0.15));}
+.google-btn:hover{border-color:rgba(66,133,244,0.7);box-shadow:0 0 20px rgba(66,133,244,0.3);transform:translateY(-1px);}
+.google-btn:active{transform:translateY(1px) scale(0.99);box-shadow:inset 0 2px 8px rgba(0,0,0,0.6);}
+.google-btn svg{width:20px;height:20px;flex-shrink:0;filter:drop-shadow(0 0 6px rgba(255,255,255,0.2));}
 
-/* Zoho Sign-In button — premium amber glossy */
+/* Zoho Sign-In button - premium amber glossy */
 .zoho-btn{
   position:relative;width:100%;padding:14px;border-radius:14px;
-  border:1px solid rgba(247,168,27,0.45);
-  background:linear-gradient(180deg,rgba(247,168,27,0.18) 0%,rgba(180,100,0,0.10) 100%);
-  color:#F7C55A;font-size:14px;font-weight:600;
+  border:1px solid rgba(247,168,27,0.5);
+  background:linear-gradient(180deg,rgba(247,168,27,0.2) 0%,rgba(180,100,0,0.1) 100%);
+  color:#F7C55A;font-size:14px;font-weight:700;
   cursor:pointer;font-family:'Inter',sans-serif;display:flex;align-items:center;justify-content:center;gap:10px;
   margin-bottom:11px;
   box-shadow:
-    inset 0 1px 0 rgba(255,210,80,0.28),
-    inset 0 -1px 0 rgba(0,0,0,0.40),
+    inset 0 1px 0 rgba(255,210,80,0.35),
+    inset 0 -2px 6px rgba(0,0,0,0.4),
     0 4px 18px rgba(0,0,0,0.45),
-    0 2px 12px rgba(247,168,27,0.18);
-  transition:all 0.2s;overflow:hidden;isolation:isolate;letter-spacing:0.3px;}
+    0 0 12px rgba(247,168,27,0.15);
+  transition:all 0.25s cubic-bezier(0.4, 0, 0.2, 1);overflow:hidden;isolation:isolate;letter-spacing:0.3px;}
 .zoho-btn::before{content:'';position:absolute;inset:0;border-radius:inherit;
-  background:linear-gradient(180deg,rgba(255,210,80,0.20) 0%,transparent 45%);pointer-events:none;}
+  background:linear-gradient(180deg,rgba(255,210,80,0.12) 0%,transparent 45%);pointer-events:none;}
 .zoho-btn::after{content:'';position:absolute;left:-60%;top:0;height:100%;width:50%;
-  background:linear-gradient(110deg,transparent,rgba(255,210,80,0.18),transparent);
-  transform:skewX(-18deg);transition:left 0.55s ease;pointer-events:none;}
+  background:linear-gradient(110deg,transparent,rgba(255,210,80,0.2),transparent);
+  transform:skewX(-18deg);transition:left 0.6s ease;pointer-events:none;}
 .zoho-btn:hover::after{left:120%;}
-.zoho-btn:hover{border-color:rgba(247,168,27,0.70);filter:brightness(1.12);}
-.zoho-btn:active{transform:translateY(1px) scale(0.992);box-shadow:inset 0 2px 6px rgba(0,0,0,0.5);}
-.zoho-btn svg{width:20px;height:20px;flex-shrink:0;filter:drop-shadow(0 0 5px rgba(247,168,27,0.5));}
+.zoho-btn:hover{border-color:rgba(247,168,27,0.8);box-shadow:0 0 20px rgba(247,168,27,0.3);transform:translateY(-1px);}
+.zoho-btn:active{transform:translateY(1px) scale(0.99);box-shadow:inset 0 2px 8px rgba(0,0,0,0.6);}
+.zoho-btn svg{width:20px;height:20px;flex-shrink:0;filter:drop-shadow(0 0 6px rgba(255,215,0,0.2));}
+
+/* Premium Action Buttons (Phone/Signout) */
+.premium-btn {
+  position:relative;flex:1;padding:12px;border-radius:12px;
+  border:1px solid rgba(74,144,226,0.5);
+  background:linear-gradient(180deg,rgba(74,144,226,0.25) 0%,rgba(74,144,226,0.1) 100%);
+  color:#82c3ff;font-size:13px;font-weight:700;
+  cursor:pointer;font-family:'Inter',sans-serif;
+  box-shadow:
+    inset 0 1px 0 rgba(74,144,226,0.35),
+    inset 0 -2px 6px rgba(0,0,0,0.3),
+    0 4px 18px rgba(0,0,0,0.35);
+  transition:all 0.25s cubic-bezier(0.4, 0, 0.2, 1);overflow:hidden;isolation:isolate;letter-spacing:0.3px;
+}
+.premium-btn::before{content:'';position:absolute;inset:0;border-radius:inherit;
+  background:linear-gradient(180deg,rgba(255,255,255,0.1) 0%,transparent 45%);pointer-events:none;}
+.premium-btn::after{content:'';position:absolute;left:-60%;top:0;height:100%;width:50%;
+  background:linear-gradient(110deg,transparent,rgba(255,255,255,0.15),transparent);
+  transform:skewX(-18deg);transition:left 0.6s ease;pointer-events:none;}
+.premium-btn:hover::after{left:120%;}
+.premium-btn:hover{border-color:rgba(74,144,226,0.8);box-shadow:0 0 16px rgba(74,144,226,0.4);transform:translateY(-1px);}
+.premium-btn:active{transform:translateY(1px) scale(0.98);box-shadow:inset 0 2px 6px rgba(0,0,0,0.5);}
+
+.premium-btn.green {
+  border-color:rgba(46,204,113,0.5);
+  background:linear-gradient(180deg,rgba(46,204,113,0.25) 0%,rgba(46,204,113,0.1) 100%);
+  color:#7ee2a8;
+  box-shadow:
+    inset 0 1px 0 rgba(46,204,113,0.35),
+    inset 0 -2px 6px rgba(0,0,0,0.3),
+    0 4px 18px rgba(0,0,0,0.35);
+}
+.premium-btn.green:hover{border-color:rgba(46,204,113,0.8);box-shadow:0 0 16px rgba(46,204,113,0.4);}
+
+.premium-btn.red {
+  border-color:rgba(255,82,82,0.5);
+  background:linear-gradient(180deg,rgba(255,82,82,0.25) 0%,rgba(255,82,82,0.1) 100%);
+  color:#ff9e9e;
+  box-shadow:
+    inset 0 1px 0 rgba(255,82,82,0.35),
+    inset 0 -2px 6px rgba(0,0,0,0.3),
+    0 4px 18px rgba(0,0,0,0.35);
+}
+.premium-btn.red:hover{border-color:rgba(255,82,82,0.8);box-shadow:0 0 16px rgba(255,82,82,0.4);}
+
+/* ═══════════════════════════════════════════════════════
+   PHOTO CUSTOMIZATION UI
+   ═══════════════════════════════════════════════════════ */
+.photo-settings-card {
+  background:linear-gradient(160deg,rgba(255,255,255,0.04),rgba(10,8,25,0.7));
+  border:1px solid rgba(255,255,255,0.12);
+  padding:16px; border-radius:18px; margin-bottom:14px;
+  box-shadow:0 4px 20px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.06);
+}
+.photo-settings-title { font-size:14px; font-weight:700; color:var(--a2); margin-bottom:6px; letter-spacing:0.5px; }
+.photo-row { border-top:1px dashed rgba(255,255,255,0.1); padding-top:12px; margin-top:12px; }
+.photo-row:first-of-type { border-top:none; padding-top:0; margin-top:6px; }
+.photo-row-label { font-size:12px; font-weight:600; color:var(--gold); margin-bottom:8px; }
+
+.photo-thumb-strip {
+  display:flex; gap:10px; overflow-x:auto; padding-bottom:8px;
+  scrollbar-width:none; -ms-overflow-style:none;
+}
+.photo-thumb-strip::-webkit-scrollbar { display:none; }
+.photo-thumb {
+  width:60px; height:60px; border-radius:10px; object-fit:cover;
+  border:2px solid rgba(255,255,255,0.15); cursor:pointer; flex-shrink:0;
+  transition:all 0.2s; opacity:0.6; filter:grayscale(30%);
+}
+.photo-thumb:hover { opacity:0.8; transform:scale(1.05); }
+.photo-thumb.selected {
+  border-color:var(--gold); opacity:1; filter:grayscale(0%);
+  box-shadow:0 0 12px rgba(255,215,0,0.4); transform:scale(1.05);
+}
+
+.photo-upload-btn, .photo-reset-btn {
+  flex:1; padding:8px; border-radius:8px; font-size:11px; font-weight:600; cursor:pointer;
+  text-align:center; transition:all 0.2s; font-family:'Inter',sans-serif;
+}
+.photo-upload-btn {
+  background:rgba(74,144,226,0.15); border:1px solid rgba(74,144,226,0.4); color:#82c3ff;
+}
+.photo-upload-btn:hover { background:rgba(74,144,226,0.25); box-shadow:0 0 10px rgba(74,144,226,0.3); }
+.photo-upload-btn.active { background:rgba(46,204,113,0.2); border-color:rgba(46,204,113,0.5); color:#7ee2a8; }
+.photo-reset-btn {
+  background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.15); color:var(--td);
+}
+.photo-reset-btn:hover { background:rgba(255,255,255,0.1); color:#fff; }
 
 /* Auto-sync status pill */
 .sync-pill{display:inline-flex;align-items:center;gap:6px;background:rgba(46,204,113,0.1);

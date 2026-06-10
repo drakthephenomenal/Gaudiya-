@@ -83,6 +83,9 @@ const App = {
     hkLang: "hi",
     lbOptIn: false,        // leaderboard opt-in
     lbDisplayName: "",     // leaderboard display name
+    bgRadhaVallabh: 1,
+    bgHitju: 1,
+    bgGurudev: 1,
   },
   lmcRV: 0,
   lmcHK: 0,
@@ -1859,6 +1862,7 @@ function sv(id, btn) {
 // Safe to call anytime (no-ops when elements aren't present yet).
 // Called when navigating to Settings AND after every cloud pull / sign-in.
 function populateSettingsUI() {
+  if (typeof renderPhotoPickers === 'function') renderPhotoPickers();
   const ms = App.S.ms || 108;
   // Radha Daily
   const dtIn = document.getElementById("dtIn");
@@ -1913,6 +1917,16 @@ function populateSettingsUI() {
   } catch (_e) {}
   // Leaderboard settings
   try { populateLbSettingsUI(); } catch (_e) {}
+  // Background Photos settings
+  try {
+    const inBgRV = document.getElementById("inBgRadhaVallabh");
+    if (inBgRV) inBgRV.value = App.S.bgRadhaVallabh || 1;
+    const inBgHJ = document.getElementById("inBgHitju");
+    if (inBgHJ) inBgHJ.value = App.S.bgHitju || 1;
+    const inBgGD = document.getElementById("inBgGurudev");
+    if (inBgGD) inBgGD.value = App.S.bgGurudev || 1;
+    if (typeof applyBgPhotos === 'function') applyBgPhotos();
+  } catch (_e) {}
 }
 
 // ── Settings ──
@@ -4754,7 +4768,7 @@ function fbInit() {
         document.getElementById("fbLoggedOut").style.display = "none";
         document.getElementById("fbLoggedIn").style.display = "block";
         document.getElementById("fbUserEmail").textContent =
-          user.email || user.displayName || "Google User";
+          user.phoneNumber || user.email || user.displayName || "Devotee";
         setSyncPill("syncing", "Loading from cloud…");
         // ── ALWAYS pull from Firebase first on every login/refresh ──
         // fbMigrate() does a direct .get() (not just onSnapshot) so it is
@@ -5056,15 +5070,19 @@ function _fbHideRecaptchaBadge() {
 
 function _fbReadPhone() {
   const el = document.getElementById("fbPhoneIn");
+  const codeEl = document.getElementById("fbPhoneCountry");
+  const code = codeEl ? codeEl.value : "+91";
   let v = (el && el.value || "").trim().replace(/[\s\-()]/g, "");
-  return v;
+  if (!v) return "";
+  if (v.startsWith('+')) return v;
+  return code + v;
 }
 
 function fbSendPhoneOtp(isResend) {
   if (!fbInit()) { toast("Firebase not ready. Check your connection."); return; }
   const phone = _fbReadPhone();
   if (!phone || !/^\+[1-9]\d{6,14}$/.test(phone)) {
-    _fbEmailErr("Enter phone with country code, e.g. +919876543210");
+    _fbEmailErr("Enter phone number (e.g. 9876543210)");
     return;
   }
   const verifier = _fbEnsureRecaptcha();
@@ -5327,6 +5345,9 @@ async function fbPushFull() {
     milestones: App.S.milestones || { reached: {}, lastChecked: 0 },
     lbOptIn: App.S.lbOptIn || false,
     lbDisplayName: App.S.lbDisplayName || "",
+    bgRadhaVallabh: App.S.bgRadhaVallabh || 1,
+    bgHitju: App.S.bgHitju || 1,
+    bgGurudev: App.S.bgGurudev || 1,
     lastSync: firebase.firestore.FieldValue.serverTimestamp(),
     deviceId: fbDeviceId,
   };
@@ -5485,9 +5506,12 @@ function fbApplyRemote(d) {
     const inp = document.getElementById("msSadhanaStart");
     if (inp) inp.value = d.sadhanaStart;
   }
-  // Leaderboard settings
+  // Leaderboard & Photo settings
   if (d.lbOptIn !== undefined) App.S.lbOptIn = d.lbOptIn;
   if (d.lbDisplayName !== undefined) App.S.lbDisplayName = d.lbDisplayName;
+  if (d.bgRadhaVallabh !== undefined) App.S.bgRadhaVallabh = d.bgRadhaVallabh;
+  if (d.bgHitju !== undefined) App.S.bgHitju = d.bgHitju;
+  if (d.bgGurudev !== undefined) App.S.bgGurudev = d.bgGurudev;
 
   // Old saves wrote both startDate AND endDate to occasions. Remove the endDate entry
 
@@ -11882,3 +11906,178 @@ function populateLbSettingsUI() {
   const banner = document.getElementById('lbOptinBanner');
   if (banner) banner.style.display = (App.S.lbOptIn ? 'none' : 'flex');
 }
+
+// ═══════════════════════════════════════════════════════
+// BACKGROUND PHOTO CUSTOMIZATION (Visual Picker + Upload)
+// ═══════════════════════════════════════════════════════
+
+// 1. Initialize dedicated Photos Database to prevent localStorage bloating
+const PhotosDB = {
+  db: null,
+  async init() {
+    if (this.db) return;
+    return new Promise((res, rej) => {
+      const req = indexedDB.open("RadhaJapPhotosDB", 1);
+      req.onupgradeneeded = e => {
+        const db = e.target.result;
+        if (!db.objectStoreNames.contains("photos")) db.createObjectStore("photos");
+      };
+      req.onsuccess = e => { this.db = e.target.result; res(); };
+      req.onerror = () => rej(req.error);
+    });
+  },
+  async get(key) {
+    await this.init();
+    return new Promise(res => {
+      const req = this.db.transaction("photos", "readonly").objectStore("photos").get(key);
+      req.onsuccess = () => res(req.result || null);
+      req.onerror = () => res(null);
+    });
+  },
+  async put(key, dataUrl) {
+    await this.init();
+    return new Promise(res => {
+      const tx = this.db.transaction("photos", "readwrite");
+      tx.objectStore("photos").put(dataUrl, key);
+      tx.oncomplete = res;
+    });
+  },
+  async del(key) {
+    await this.init();
+    return new Promise(res => {
+      const tx = this.db.transaction("photos", "readwrite");
+      tx.objectStore("photos").delete(key);
+      tx.oncomplete = res;
+    });
+  }
+};
+
+const PHOTO_CONFIG = {
+  rv: { id: 'bgRadhaVallabh', stateKey: 'bgRadhaVallabh', folder: 'radha_vallabh', maxNum: 5 },
+  hitju: { id: 'bgHitju', stateKey: 'bgHitju', folder: 'hitju_maharaj', maxNum: 5 },
+  gurudev: { id: 'bgGurudev', stateKey: 'bgGurudev', folder: 'gurudev', maxNum: 5 }
+};
+
+window.renderPhotoPickers = async function() {
+  for (const [key, conf] of Object.entries(PHOTO_CONFIG)) {
+    const stripId = key === 'rv' ? 'photoStripRV' : key === 'hitju' ? 'photoStripHitju' : 'photoStripGurudev';
+    const strip = document.getElementById(stripId);
+    if (!strip) continue;
+    strip.innerHTML = '';
+    
+    let currentVal = App.S[conf.stateKey] || 1;
+    
+    // Add default repo photos
+    for (let i = 1; i <= conf.maxNum; i++) {
+      const img = document.createElement('img');
+      img.className = `photo-thumb ${currentVal === i ? 'selected' : ''}`;
+      img.src = `./${conf.folder}/${i}.jpg`;
+      // If JPG fails, try PNG. If both fail, hide it entirely so missing files don't show broken icons.
+      img.onerror = () => {
+        if (img.src.endsWith('.jpg')) {
+          img.src = `./${conf.folder}/${i}.png`;
+        } else {
+          img.style.display = 'none';
+        }
+      };
+      img.onclick = () => selectRepoPhoto(key, i);
+      strip.appendChild(img);
+    }
+    
+    // If a custom photo is selected, append it as the selected thumbnail
+    if (currentVal === 'custom') {
+      const customData = await PhotosDB.get(key);
+      if (customData) {
+        const img = document.createElement('img');
+        img.className = 'photo-thumb selected';
+        img.src = customData;
+        strip.appendChild(img);
+      }
+    }
+  }
+};
+
+window.selectRepoPhoto = function(key, num) {
+  const conf = PHOTO_CONFIG[key];
+  App.S[conf.stateKey] = num;
+  App.save();
+  renderPhotoPickers();
+  applyBgPhotos();
+};
+
+window.uploadCustomPhoto = function(key, inputElement) {
+  const file = inputElement.files[0];
+  if (!file) return;
+  
+  // Validate file size (prevent huge memory issues, limit to ~5MB)
+  if (file.size > 5 * 1024 * 1024) {
+    if(typeof toast === 'function') toast("File too large. Please select an image under 5MB.");
+    return;
+  }
+  
+  const reader = new FileReader();
+  reader.onload = async (e) => {
+    const dataUrl = e.target.result;
+    await PhotosDB.put(key, dataUrl);
+    const conf = PHOTO_CONFIG[key];
+    App.S[conf.stateKey] = 'custom';
+    App.save();
+    renderPhotoPickers();
+    applyBgPhotos();
+    if(typeof toast === 'function') toast("Custom photo saved! 🙏");
+  };
+  reader.readAsDataURL(file);
+};
+
+window.resetPhoto = async function(key) {
+  await PhotosDB.del(key);
+  selectRepoPhoto(key, 1);
+  if(typeof toast === 'function') toast("Reset to default photo");
+};
+
+window.applyBgPhotos = async function() {
+  for (const [key, conf] of Object.entries(PHOTO_CONFIG)) {
+    const el = document.getElementById(conf.id);
+    if (!el) continue;
+    
+    let val = App.S[conf.stateKey] || 1;
+    
+    if (val === 'custom') {
+      const customData = await PhotosDB.get(key);
+      if (customData) {
+        el.src = customData;
+      } else {
+        val = 1; // Fallback if IDB entry is missing
+      }
+    }
+    
+    if (val !== 'custom') {
+      const jpgSrc = `./${conf.folder}/${val}.jpg`;
+      const pngSrc = `./${conf.folder}/${val}.png`;
+      const temp = new Image();
+      temp.onload = () => { el.src = jpgSrc; };
+      temp.onerror = () => { el.src = pngSrc; };
+      temp.src = jpgSrc;
+    }
+  }
+};
+
+// ═══════════════════════════════════════════════════════
+// MOTION BLUR ON SCROLL
+// ═══════════════════════════════════════════════════════
+let scrollBlurTimer = null;
+let lastScrollTop = 0;
+document.querySelectorAll('.view').forEach(view => {
+  view.addEventListener('scroll', (e) => {
+    const st = view.scrollTop;
+    const diff = Math.abs(st - lastScrollTop);
+    lastScrollTop = st;
+    if (diff > 10) { // Only blur on fast scrolls
+      view.style.filter = `blur(${Math.min(diff / 10, 3)}px)`;
+      clearTimeout(scrollBlurTimer);
+      scrollBlurTimer = setTimeout(() => {
+        view.style.filter = 'none';
+      }, 50);
+    }
+  }, { passive: true });
+});

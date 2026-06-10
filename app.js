@@ -12040,18 +12040,29 @@ window.applyBgPhotos = async function() {
     const el = document.getElementById(conf.id);
     if (!el) continue;
     
-    let val = App.S[conf.stateKey] || 1;
+    let val = App.S[conf.stateKey];
+    if (val === undefined) val = 1;
+    
+    // Blank Mode
+    if (val === 0 || val === '0') {
+      el.style.display = 'none';
+      continue;
+    } else {
+      el.style.display = '';
+    }
     
     if (val === 'custom') {
       const customData = await PhotosDB.get(key);
       if (customData) {
         el.src = customData;
+        el.classList.add('custom-bg');
       } else {
         val = 1; // Fallback if IDB entry is missing
       }
     }
     
-    if (val !== 'custom') {
+    if (val !== 'custom' && val !== 0) {
+      el.classList.remove('custom-bg');
       const jpgSrc = `./${conf.folder}/${val}.jpg`;
       const pngSrc = `./${conf.folder}/${val}.png`;
       const temp = new Image();

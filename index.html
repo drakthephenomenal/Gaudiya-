@@ -1069,8 +1069,28 @@
     </div>
   </div>
 
+  <!-- GAUDIYA / ISKCON MODE - large aesthetic switch -->
+  <div class="sc gaudiya-mode-card" id="gaudiyaModeCard">
+    <div class="gmc-top">
+      <div class="gmc-icon">🪷</div>
+      <div class="gmc-text">
+        <div class="gmc-title">Gaudiya / ISKCON</div>
+        <div class="gmc-desc">Mahamantra (Hare Krishna) mode - Stats &amp; History show HK data only. Hides Radha / RV / 28 Names.</div>
+      </div>
+    </div>
+    <div class="gmc-switch-wrap" onclick="tgs('gaudiyaMode')">
+      <div class="gmc-switch" id="gmcSwitch">
+        <div class="gmc-switch-track" id="gmcTrack">
+          <div class="gmc-switch-thumb" id="gmcThumb"></div>
+          <div class="gmc-switch-label-off">OFF</div>
+          <div class="gmc-switch-label-on">ON</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- PHOTO CUSTOMIZATION SETTINGS -->
-  <div class="sc photo-settings-card">
+  <div class="sc photo-settings-card non-gaudiya-setting">
     <div class="photo-settings-title">🖼️ Jap Display Photos</div>
     <div style="font-size:10px;color:rgba(255,255,255,0.4);line-height:1.4;margin-bottom:14px;">
       Choose which photos appear on the Jap screen. Pick from the repository collection or upload your own.
@@ -1086,6 +1106,7 @@
           <input type="file" accept="image/*" style="display:none" onchange="uploadCustomPhoto('rv', this)">
         </label>
         <button class="photo-reset-btn" onclick="resetPhoto('rv')">↩ Default</button>
+        <button class="photo-reset-btn" style="color:#ff5252; flex:0.7" onclick="selectRepoPhoto('rv', 0)">❌ Blank</button>
       </div>
     </div>
 
@@ -1099,6 +1120,7 @@
           <input type="file" accept="image/*" style="display:none" onchange="uploadCustomPhoto('hitju', this)">
         </label>
         <button class="photo-reset-btn" onclick="resetPhoto('hitju')">↩ Default</button>
+        <button class="photo-reset-btn" style="color:#ff5252; flex:0.7" onclick="selectRepoPhoto('hitju', 0)">❌ Blank</button>
       </div>
     </div>
 
@@ -1112,6 +1134,7 @@
           <input type="file" accept="image/*" style="display:none" onchange="uploadCustomPhoto('gurudev', this)">
         </label>
         <button class="photo-reset-btn" onclick="resetPhoto('gurudev')">↩ Default</button>
+        <button class="photo-reset-btn" style="color:#ff5252; flex:0.7" onclick="selectRepoPhoto('gurudev', 0)">❌ Blank</button>
       </div>
     </div>
   </div>
@@ -1138,9 +1161,9 @@
         </div>
         <div style="display:flex;gap:6px;margin-bottom:8px">
           <select id="fbPhoneCountry" class="fb-email-input" style="flex:0 0 80px;padding:10px 6px;margin-bottom:0">
-            <option value="+91">🇮🇳 +91</option>
-            <option value="+1">🇺🇸 +1</option>
+            <option value="+1">🇺🇸/🇨🇦 +1</option>
             <option value="+44">🇬🇧 +44</option>
+            <option value="+91">🇮🇳 +91</option>
             <option value="+61">🇦🇺 +61</option>
             <option value="+971">🇦🇪 +971</option>
             <option value="+880">🇧🇩 +880</option>
@@ -1148,8 +1171,83 @@
             <option value="+92">🇵🇰 +92</option>
             <option value="+65">🇸🇬 +65</option>
             <option value="+60">🇲🇾 +60</option>
+            <option value="+94">🇱🇰 +94</option>
+            <option value="+27">🇿🇦 +27</option>
+            <option value="+254">🇰🇪 +254</option>
+            <option value="+234">🇳🇬 +234</option>
+            <option value="+20">🇪🇬 +20</option>
+            <option value="+33">🇫🇷 +33</option>
+            <option value="+49">🇩🇪 +49</option>
+            <option value="+39">🇮🇹 +39</option>
+            <option value="+34">🇪🇸 +34</option>
+            <option value="+7">🇷🇺/🇰🇿 +7</option>
+            <option value="+81">🇯🇵 +81</option>
+            <option value="+82">🇰🇷 +82</option>
+            <option value="+86">🇨🇳 +86</option>
+            <option value="+62">🇮🇩 +62</option>
+            <option value="+63">🇵🇭 +63</option>
+            <option value="+66">🇹🇭 +66</option>
+            <option value="+84">🇻🇳 +84</option>
+            <option value="+55">🇧🇷 +55</option>
+            <option value="+52">🇲🇽 +52</option>
+            <option value="+54">🇦🇷 +54</option>
+            <option value="+56">🇨🇱 +56</option>
+            <option value="+57">🇨🇴 +57</option>
+            <option value="+51">🇵🇪 +51</option>
+            <option value="+58">🇻🇪 +58</option>
+            <option value="+31">🇳🇱 +31</option>
+            <option value="+32">🇧🇪 +32</option>
+            <option value="+41">🇨🇭 +41</option>
+            <option value="+43">🇦🇹 +43</option>
+            <option value="+46">🇸🇪 +46</option>
+            <option value="+47">🇳🇴 +47</option>
+            <option value="+45">🇩🇰 +45</option>
+            <option value="+358">🇫🇮 +358</option>
+            <option value="+48">🇵🇱 +48</option>
+            <option value="+420">🇨🇿 +420</option>
+            <option value="+36">🇭🇺 +36</option>
+            <option value="+40">🇷🇴 +40</option>
+            <option value="+30">🇬🇷 +30</option>
+            <option value="+351">🇵🇹 +351</option>
+            <option value="+353">🇮🇪 +353</option>
+            <option value="+64">🇳🇿 +64</option>
+            <option value="+966">🇸🇦 +966</option>
+            <option value="+974">🇶🇦 +974</option>
+            <option value="+965">🇰🇼 +965</option>
+            <option value="+968">🇴🇲 +968</option>
+            <option value="+973">🇧🇭 +973</option>
+            <option value="+962">🇯🇴 +962</option>
+            <option value="+961">🇱🇧 +961</option>
+            <option value="+98">🇮🇷 +98</option>
+            <option value="+90">🇹🇷 +90</option>
+            <option value="+972">🇮🇱 +972</option>
+            <option value="+212">🇲🇦 +212</option>
+            <option value="+213">🇩🇿 +213</option>
+            <option value="+216">🇹🇳 +216</option>
+            <option value="+233">🇬🇭 +233</option>
+            <option value="+255">🇹🇿 +255</option>
+            <option value="+256">🇺🇬 +256</option>
+            <option value="+260">🇿🇲 +260</option>
+            <option value="+263">🇿🇼 +263</option>
+            <option value="+225">🇨🇮 +225</option>
+            <option value="+221">🇸🇳 +221</option>
+            <option value="+237">🇨🇲 +237</option>
+            <option value="+244">🇦🇴 +244</option>
+            <option value="+258">🇲🇿 +258</option>
+            <option value="+261">🇲🇬 +261</option>
+            <option value="+230">🇲🇺 +230</option>
+            <option value="+248">🇸🇨 +248</option>
+            <option value="+852">🇭🇰 +852</option>
+            <option value="+886">🇹🇼 +886</option>
+            <option value="+853">🇲🇴 +853</option>
+            <option value="+976">🇲🇳 +976</option>
+            <option value="+995">🇬🇪 +995</option>
+            <option value="+374">🇦🇲 +374</option>
+            <option value="+357">🇨🇾 +357</option>
+            <option value="+356">🇲🇹 +356</option>
+            <option value="+354">🇮🇸 +354</option>
           </select>
-          <input type="tel" id="fbPhoneIn" class="fb-email-input" placeholder="98765 43210" autocomplete="tel" style="flex:1;margin-bottom:0">
+          <input type="tel" id="fbPhoneIn" class="fb-email-input" placeholder="" autocomplete="tel" style="flex:1;margin-bottom:0">
         </div>
         <div id="fbPhoneSendRow" style="display:flex;gap:8px">
           <button id="fbPhoneSendBtn" onclick="fbSendPhoneOtp()" class="premium-btn">Send OTP</button>

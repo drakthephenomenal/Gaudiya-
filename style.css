@@ -827,18 +827,29 @@ button.n28-gold-btn-danger,
 }
 
 .photo-upload-btn, .photo-reset-btn {
-  flex:1; padding:8px; border-radius:8px; font-size:11px; font-weight:600; cursor:pointer;
-  text-align:center; transition:all 0.2s; font-family:'Inter',sans-serif;
+  flex:1; padding:8px; border-radius:10px; font-size:11px; font-weight:700; cursor:pointer;
+  text-align:center; transition:all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); font-family:'Inter',sans-serif;
+  border: 1px solid rgba(109,184,255,0.25);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.05);
 }
 .photo-upload-btn {
-  background:rgba(74,144,226,0.15); border:1px solid rgba(74,144,226,0.4); color:#82c3ff;
+  background: linear-gradient(135deg, rgba(74,144,226,0.15), rgba(74,144,226,0.05));
+  color:#82c3ff;
 }
-.photo-upload-btn:hover { background:rgba(74,144,226,0.25); box-shadow:0 0 10px rgba(74,144,226,0.3); }
-.photo-upload-btn.active { background:rgba(46,204,113,0.2); border-color:rgba(46,204,113,0.5); color:#7ee2a8; }
+.photo-upload-btn:hover { background:linear-gradient(135deg, rgba(74,144,226,0.25), rgba(74,144,226,0.15)); box-shadow:0 0 16px rgba(74,144,226,0.3); }
+.photo-upload-btn.active, .photo-reset-btn.active {
+  background: linear-gradient(135deg, rgba(255,215,0,0.2), rgba(255,180,0,0.05));
+  border-color: rgba(255,215,0,0.6);
+  color: #FFD700;
+  text-shadow: 0 0 8px rgba(255,215,0,0.5);
+  box-shadow: 0 0 16px rgba(255,215,0,0.3), inset 0 1px 0 rgba(255,255,255,0.15);
+  transform: translateY(-1px);
+}
 .photo-reset-btn {
-  background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.15); color:var(--td);
+  background: linear-gradient(135deg, rgba(255,255,255,0.05), rgba(255,255,255,0.01));
+  color:var(--td);
 }
-.photo-reset-btn:hover { background:rgba(255,255,255,0.1); color:#fff; }
+.photo-reset-btn:hover { background:linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.05)); color:#fff; }
 
 /* Auto-sync status pill */
 .sync-pill{display:inline-flex;align-items:center;gap:6px;background:rgba(46,204,113,0.1);
@@ -2570,7 +2581,7 @@ body.hk-bn #hkLangBtnHi{opacity:0.55;}
 /* Gurudev — bottom-right, sits just below RV's bottom edge */
 .tz .gurudev-wm{
   position:absolute;
-  bottom: clamp(34px, 6.2vh, 78px);
+  bottom: clamp(14px, 3vh, 50px);
   right:10px;
   width:var(--side-w); height:auto;
   opacity:.5;

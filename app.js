@@ -11583,6 +11583,12 @@ function _lbGetPeriodKeys(period) {
   const now = new Date();
   const keys = [];
   if (period === 'alltime') return null; // null = use totalJap field (no date filter)
+  if (period === 'today') {
+    if (window.App && window.App.S && window.App.S.tk) {
+      return [window.App.S.tk];
+    }
+    return [now.toISOString().slice(0,10)];
+  }
   if (period === 'month') {
     const y = now.getFullYear(), m = now.getMonth();
     const days = new Date(y, m + 1, 0).getDate();
@@ -11795,7 +11801,7 @@ function renderLeaderboard(docs, period) {
 /** Switch leaderboard period tab */
 function lbSwitchPeriod(period) {
   window._lbPeriod = period;
-  ['alltime','month','week'].forEach(function(p) {
+  ['alltime','month','week','today'].forEach(function(p) {
     const btn = document.getElementById('lbTab' + p.charAt(0).toUpperCase() + p.slice(1));
     if (btn) btn.classList.toggle('active', p === period);
   });

@@ -827,6 +827,8 @@ const App = {
     this.save();
     // Animate mala duration on timer display
     this.flashMalaDuration(malaDuration);
+    // ✨ MALA GLOW FLASH: briefly reveal all deity images fully with intense glow
+    if (typeof triggerMalaGlowFlash === 'function') triggerMalaGlowFlash();
   },
 
   flashMalaDuration(sec) {
@@ -11695,14 +11697,26 @@ function renderLeaderboard(docs, period) {
     if (!periodKeys) {
       // All time — use stored totalJap
       score = (d.totalJap || 0);
+      const sr = Object.values(d.history || {}).reduce((a,b)=>a+b,0);
+      const srv = Object.values(d.historyRV || {}).reduce((a,b)=>a+b,0);
+      const shk = Object.values(d.historyHK || {}).reduce((a,b)=>a+b,0);
+      const s28 = Object.values(d.history28 || {}).reduce((a,b)=>a+b,0);
+      d._breakdown = { r: sr, rv: srv, hk: shk, n28: s28 };
     } else {
       // Sum history for this period
       const hist   = d.history || {};
       const histRV = d.historyRV || {};
       const histHK = d.historyHK || {};
+      const hist28 = d.history28 || {};
+      let sr = 0, srv = 0, shk = 0, s28 = 0;
       periodKeys.forEach(function(k) {
-        score += (hist[k] || 0) + (histRV[k] || 0) + (histHK[k] || 0);
+        sr += (hist[k] || 0);
+        srv += (histRV[k] || 0);
+        shk += (histHK[k] || 0);
+        s28 += (hist28[k] || 0);
       });
+      score += sr + srv + shk + s28;
+      d._breakdown = { r: sr, rv: srv, hk: shk, n28: s28 };
     }
     return { ...d, score };
   });
@@ -11742,7 +11756,7 @@ function renderLeaderboard(docs, period) {
   const medals = ['🥇','🥈','🥉'];
   const html = filtered.map(function(d, idx) {
     const rank = idx + 1;
-    const isMe = (d._uid === myUid);
+        const isMe = (d._uid === myUid);
     const isTop3 = rank <= 3;
     const medal = rank <= 3 ? medals[rank-1] : null;
     const badgeClass = rank === 1 ? 'lb-badge-1' : rank === 2 ? 'lb-badge-2' : rank === 3 ? 'lb-badge-3' : 'lb-badge-n';
@@ -11752,7 +11766,16 @@ function renderLeaderboard(docs, period) {
     const meMark = isMe ? ' ✦ You' : '';
     const name = (d.displayName || 'Anonymous Devotee').replace(/</g,'&lt;').replace(/>/g,'&gt;');
     const malas = Math.floor(d.score / (App.S.ms || 108));
-    const meta = _lbFmtJap(d.score) + ' jap · ' + malas.toLocaleString('en-IN') + ' malas' + (d.streak > 0 ? ' · 🔥' + d.streak + 'd' : '');
+    
+    let b = d._breakdown || { r:0, rv:0, hk:0, n28:0 };
+    let bdStr = [];
+    if (b.r > 0) bdStr.push('R: ' + _lbFmtJap(b.r));
+    if (b.rv > 0) bdStr.push('RV: ' + _lbFmtJap(b.rv));
+    if (b.n28 > 0) bdStr.push('28N: ' + _lbFmtJap(b.n28));
+    if (b.hk > 0) bdStr.push('HK: ' + _lbFmtJap(b.hk));
+    const breakdown = bdStr.length > 0 ? ' (' + bdStr.join(' | ') + ')' : '';
+    
+    const meta = _lbFmtJap(d.score) + ' jap' + breakdown + ' · ' + malas.toLocaleString('en-IN') + ' malas' + (d.streak > 0 ? ' · 🔥' + d.streak + 'd' : '');
     return `<div class="${rowClass}">
       <div class="lb-badge ${badgeClass}">${badgeContent}</div>
       <div class="lb-info">
@@ -11840,6 +11863,11 @@ async function pushLeaderboard() {
     history:   hist,
     historyRV: histRV,
     historyHK: histHK,
+    history28: App.S.h28 || {},
+    // Push total timer seconds for leaderboard display
+    timerSeconds: Object.values(App.S.timerHistory || {}).reduce((a,b)=>a+b,0) +
+                  Object.values(App.S.timerHistoryRV || {}).reduce((a,b)=>a+b,0) +
+                  Object.values(App.S.timerHistoryHK || {}).reduce((a,b)=>a+b,0),
   };
 
   try {
@@ -11953,9 +11981,9 @@ const PhotosDB = {
 };
 
 const PHOTO_CONFIG = {
-  rv: { id: 'bgRadhaVallabh', stateKey: 'bgRadhaVallabh', folder: 'radha_vallabh', maxNum: 5 },
-  hitju: { id: 'bgHitju', stateKey: 'bgHitju', folder: 'hitju_maharaj', maxNum: 5 },
-  gurudev: { id: 'bgGurudev', stateKey: 'bgGurudev', folder: 'gurudev', maxNum: 5 }
+  rv:     { id: 'bgRadhaVallabh', stateKey: 'bgRadhaVallabh', folder: 'radha_vallabh',  maxNum: 9, fallback: 'Radha-Vallabh.png' },
+  hitju:  { id: 'bgHitju',        stateKey: 'bgHitju',        folder: 'hitju_maharaj',  maxNum: 9, fallback: 'hitju-maharaj.png' },
+  gurudev:{ id: 'bgGurudev',      stateKey: 'bgGurudev',      folder: 'gurudev',        maxNum: 9, fallback: 'gurudev.png' }
 };
 
 window.renderPhotoPickers = async function() {
@@ -11984,16 +12012,38 @@ window.renderPhotoPickers = async function() {
       strip.appendChild(img);
     }
     
-    // If a custom photo is selected, append it as the selected thumbnail
-    if (currentVal === 'custom') {
-      const customData = await PhotosDB.get(key);
-      if (customData) {
-        const img = document.createElement('img');
-        img.className = 'photo-thumb selected';
-        img.src = customData;
-        strip.appendChild(img);
-      }
+    // If a custom photo is in IDB, append it as a thumbnail always
+    const customData = await PhotosDB.get(key);
+    if (customData) {
+      const img = document.createElement('img');
+      img.className = `photo-thumb ${currentVal === 'custom' ? 'selected' : ''}`;
+      img.src = customData;
+      img.onclick = () => {
+        App.S[conf.stateKey] = 'custom';
+        App.save();
+        renderPhotoPickers();
+        applyBgPhotos();
+      };
+      strip.appendChild(img);
     }
+    
+    // Update active state of buttons below the strip
+    setTimeout(() => {
+      const row = strip.parentElement;
+      if (!row) return;
+      const btns = row.querySelectorAll('.photo-reset-btn, .photo-upload-btn');
+      btns.forEach(b => b.classList.remove('active'));
+      if (currentVal === 0 || currentVal === '0') {
+        const blankBtn = Array.from(btns).find(b => b.textContent.includes('Blank'));
+        if (blankBtn) blankBtn.classList.add('active');
+      } else if (currentVal === 'custom') {
+        const uploadBtn = Array.from(btns).find(b => b.textContent.includes('Upload'));
+        if (uploadBtn) uploadBtn.classList.add('active');
+      } else {
+        const defBtn = Array.from(btns).find(b => b.textContent.includes('Default'));
+        if (defBtn) defBtn.classList.add('active');
+      }
+    }, 10);
   }
 };
 
@@ -12030,7 +12080,7 @@ window.uploadCustomPhoto = function(key, inputElement) {
 };
 
 window.resetPhoto = async function(key) {
-  await PhotosDB.del(key);
+  // We no longer delete the custom photo from IDB, just switch away from it
   selectRepoPhoto(key, 1);
   if(typeof toast === 'function') toast("Reset to default photo");
 };
@@ -12065,12 +12115,33 @@ window.applyBgPhotos = async function() {
       el.classList.remove('custom-bg');
       const jpgSrc = `./${conf.folder}/${val}.jpg`;
       const pngSrc = `./${conf.folder}/${val}.png`;
+      const fallbackSrc = `./${conf.fallback || (conf.folder + '/1.png')}`;
       const temp = new Image();
       temp.onload = () => { el.src = jpgSrc; };
-      temp.onerror = () => { el.src = pngSrc; };
+      temp.onerror = () => {
+        const temp2 = new Image();
+        temp2.onload = () => { el.src = pngSrc; };
+        temp2.onerror = () => { el.src = fallbackSrc; }; // Final fallback to root file
+        temp2.src = pngSrc;
+      };
       temp.src = jpgSrc;
     }
   }
+};
+
+// ✨ MALA GLOW FLASH — all deity images briefly show fully with huge glow, synced
+window.triggerMalaGlowFlash = function() {
+  const ids = ['bgRadhaVallabh', 'bgHitju', 'bgGurudev'];
+  ids.forEach(id => {
+    const el = document.getElementById(id);
+    if (!el || el.style.display === 'none') return;
+    // 1. Remove the watery mask + grey filter instantly
+    el.classList.add('mala-glow-flash');
+    // 2. After 2.4s, remove the flash class to restore normal state
+    setTimeout(() => {
+      el.classList.remove('mala-glow-flash');
+    }, 2400);
+  });
 };
 
 // ═══════════════════════════════════════════════════════

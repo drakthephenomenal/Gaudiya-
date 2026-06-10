@@ -2534,8 +2534,26 @@ body.hk-bn #hkLangBtnHi{opacity:0.55;}
   -webkit-mask-image: radial-gradient(ellipse at center, rgba(0,0,0,1) 45%, rgba(0,0,0,0) 75%);
   mask-image: radial-gradient(ellipse at center, rgba(0,0,0,1) 45%, rgba(0,0,0,0) 75%);
   mix-blend-mode: screen;
-  opacity: 0.8 !important; /* overrides default 0.55 opacity to stand out inside the mask */
+  opacity: 0.8 !important;
   filter: drop-shadow(0 0 22px rgba(245,209,122,0.4)) !important;
+}
+
+/* ✨ MALA GLOW FLASH — all images surge to full brightness on mala completion */
+@keyframes malaGlowPulse {
+  0%   { opacity:0.55; filter:drop-shadow(0 0 22px rgba(245,209,122,0.4)); mask-image:none; -webkit-mask-image:none; }
+  15%  { opacity:1;    filter:drop-shadow(0 0 60px rgba(255,220,80,1)) drop-shadow(0 0 30px rgba(255,180,0,0.9)); }
+  50%  { opacity:1;    filter:drop-shadow(0 0 80px rgba(255,240,100,1)) drop-shadow(0 0 40px rgba(255,200,0,1)); }
+  85%  { opacity:0.9;  filter:drop-shadow(0 0 50px rgba(245,209,122,0.8)); }
+  100% { opacity:0.55; filter:drop-shadow(0 0 22px rgba(245,209,122,0.4)); mask-image:none; -webkit-mask-image:none; }
+}
+.tz img.mala-glow-flash {
+  animation: malaGlowPulse 2.4s ease-in-out forwards !important;
+  /* Override watery mask to show full image */
+  -webkit-mask-image: none !important;
+  mask-image: none !important;
+  mix-blend-mode: screen !important;
+  z-index: 3 !important;
+  transition: none !important;
 }
 
 /* Hit Ju Maharaj — bottom-left, anchored to RV's bottom edge */

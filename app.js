@@ -10418,6 +10418,118 @@ function _histSetActive(btn) {
   }
 }
 
+function showHistDay(tk, filterMode) {
+  const detail = document.getElementById("histDayDetail");
+  const title = document.getElementById("histDayTitle");
+  const content = document.getElementById("histDayContent");
+
+  const ms = App.S.ms || 108;
+  const isGaudiya = App.S.gaudiyaMode || false;
+  const _hkDayLang = App.S.hkLang || "hi";
+  const _hkDayLabel = _hkDayLang === "bn" ? "হরে কৃষ্ণ মহামন্ত্র" : "हरे कृष्ण महामंत्र";
+
+  // Map deityKey names to showHistSet set values
+  const deityToSet = { radha: 'radha', rv: 'rv', '28': '28', hk: 'hk' };
+  const autoSet = filterMode ? deityToSet[filterMode] : null;
+
+  // If we have a specific mode filter AND that mode has data, go straight to per-mala detail
+  if (autoSet) {
+    const radha = App.S.history[tk] || 0;
+    const rv = (App.S.historyRV || {})[tk] || 0;
+    const hk = (App.S.historyHK || {})[tk] || 0;
+    const taps28 = (App.S.h28 || {})[tk] || 0;
+    const hasData = autoSet === 'radha' ? radha > 0
+                  : autoSet === 'rv'    ? rv > 0
+                  : autoSet === 'hk'    ? hk > 0
+                  : taps28 > 0;
+
+    // Build a minimal title showing date + mode
+    const modeLabel = autoSet === 'radha' ? '🌸 Radha Jap'
+                    : autoSet === 'rv'    ? '🌼 Radha Vallabh'
+                    : autoSet === '28'   ? '🪷 28 Names'
+                    : _hkDayLabel;
+    title.textContent = _histFmtDate(tk) + ' — ' + modeLabel;
+    detail.style.display = "block";
+    detail.scrollIntoView({ behavior: "smooth", block: "nearest" });
+
+    // Stash context then immediately show per-mala set detail
+    window._histDayCtx = { tk, isToday: tk === App.S.tk };
+
+    if (!hasData) {
+      content.innerHTML = `<div style="text-align:center;color:var(--td);padding:24px;font-size:13px">
+        No ${modeLabel} recorded on this day.</div>`;
+      return;
+    }
+
+    // Show the per-mala list directly — no card grid needed
+    content.innerHTML = '<div id="histSetDetail" style="margin-top:4px"></div>';
+    showHistSet(autoSet);
+    return;
+  }
+
+  // Default: no filter mode — show all types grid
+  title.textContent = _histFmtDate(tk);
+  detail.style.display = "block";
+  detail.scrollIntoView({ behavior: "smooth", block: "nearest" });
+
+  const radha = App.S.history[tk] || 0;
+  const rv = App.S.historyRV[tk] || 0;
+  const hk = App.S.historyHK[tk] || 0;
+  const taps28 = App.S.h28[tk] || 0;
+  const tSecR = App.S.timerHistory[tk] || 0;
+  const tSecRV = App.S.timerHistoryRV[tk] || 0;
+  const tSecHK = App.S.timerHistoryHK[tk] || 0;
+  const t28Sec = App.S.timer28History[tk] || 0;
+
+  const radhaM = Math.floor(radha / ms);
+  const rvM = Math.floor(rv / ms);
+  const hkM = Math.floor(hk / ms);
+  const cyc28 = Math.floor(taps28 / 28);
+  const grand = isGaudiya ? tSecHK : tSecR + tSecRV + t28Sec;
+  const fmtN = (n) => n.toLocaleString();
+
+  // Stash data for the per-set drill-down
+  window._histDayCtx = { tk, isToday: tk === App.S.tk };
+
+  // Build clickable per-set cards (premium style, same as Period Totals)
+  const card = (cls, set, label, mainNum, mainUnit, sub, time, enabled) => `
+    <div class="pt-card ${cls}${enabled ? " pt-card-tap" : " pt-card-dim"}"
+         ${enabled ? `onclick="showHistSet('${set}')"` : ""}
+         role="${enabled ? "button" : ""}" tabindex="${enabled ? "0" : "-1"}">
+      <div class="pt-card-label">${label}</div>
+      <div class="pt-card-main"><span class="pt-num">${fmtN(mainNum)}</span><span class="pt-unit">${mainUnit}</span></div>
+      <div class="pt-card-sub">${sub}</div>
+      <div class="pt-card-time">⏱ ${time}</div>
+      ${enabled ? '<div class="pt-card-chev">›</div>' : ""}
+    </div>`;
+
+  let html = "";
+  html += `<div class="pt-head" style="margin-top:2px"><span class="pt-head-icon">📊</span><span class="pt-head-title">Day Totals</span><span class="pt-head-hint">tap a set for per-mala detail</span></div>`;
+
+  if (isGaudiya) {
+    html += `<div class="pt-grid pt-grid-1">`;
+    html += card(
+      "pt-hk", "hk", _hkDayLabel,
+      hkM, hkM === 1 ? "mala" : "malas",
+      fmtN(hk) + " names", _histFmtSec(tSecHK), hk > 0,
+    );
+    html += `</div>`;
+  } else {
+    html += `<div class="pt-grid pt-grid-3">`;
+    html += card("pt-radha", "radha", "Radha Jap", radhaM, radhaM === 1 ? "mala" : "malas", fmtN(radha) + " names", _histFmtSec(tSecR), radha > 0);
+    html += card("pt-rv",    "rv",    "RV Jap",    rvM,    rvM === 1    ? "mala" : "malas", fmtN(rv)    + " names", _histFmtSec(tSecRV), rv > 0);
+    html += card("pt-28",   "28",    "28 Names",  cyc28,  cyc28 === 1  ? "cycle" : "cycles", fmtN(taps28) + " taps", _histFmtSec(t28Sec), taps28 > 0);
+    html += card("pt-hk",   "hk",    _hkDayLabel, hkM,    hkM === 1    ? "mala" : "malas", fmtN(hk)    + " names", _histFmtSec(tSecHK), hk > 0);
+    html += `</div>`;
+  }
+  html += `<div class="pt-total"><span class="pt-total-label">Total Time</span><span class="pt-total-val">${_histFmtSec(grand)}</span></div>`;
+
+  // Drill-down slot (populated by showHistSet)
+  html += `<div id="histSetDetail" style="margin-top:14px"></div>`;
+
+  content.innerHTML = html;
+}
+
 function histPreset(days, btn) {
   const to = new Date();
   const from = new Date();
@@ -10699,7 +10811,7 @@ function showHistDeityDates(deityKey) {
   const rowsHtml = rows.map(({ tk, val, sec }) => {
     const main = c.toMain(val);
     return `
-      <div class="hdd-row" onclick="showHistDay('${tk}')">
+      <div class="hdd-row" onclick="showHistDay('${tk}', '${deityKey}')">
         <div class="hdd-date">${_histFmtDate(tk)}</div>
         <div class="hdd-main" style="color:${c.color}">
           <span class="hdd-num">${fmtN(main)}</span>
@@ -10744,110 +10856,6 @@ function closeHistDeityDrill() {
   if (sumLine) sumLine.textContent = _activeDays + " active day" + (_activeDays !== 1 ? "s" : "") + " in range · tap a card above to view dates";
 }
 
-function showHistDay(tk) {
-  const detail = document.getElementById("histDayDetail");
-  const title = document.getElementById("histDayTitle");
-  const content = document.getElementById("histDayContent");
-
-  title.textContent = _histFmtDate(tk);
-  detail.style.display = "block";
-  detail.scrollIntoView({ behavior: "smooth", block: "nearest" });
-
-  const ms = App.S.ms || 108;
-  const isGaudiya = App.S.gaudiyaMode || false;
-  const radha = App.S.history[tk] || 0;
-  const rv = App.S.historyRV[tk] || 0;
-  const hk = App.S.historyHK[tk] || 0;
-  const taps28 = App.S.h28[tk] || 0;
-  const tSecR = App.S.timerHistory[tk] || 0;
-  const tSecRV = App.S.timerHistoryRV[tk] || 0;
-  const tSecHK = App.S.timerHistoryHK[tk] || 0;
-  const t28Sec = App.S.timer28History[tk] || 0;
-
-  const radhaM = Math.floor(radha / ms);
-  const rvM = Math.floor(rv / ms);
-  const hkM = Math.floor(hk / ms);
-  const cyc28 = Math.floor(taps28 / 28);
-  const grand = isGaudiya ? tSecHK : tSecR + tSecRV + t28Sec;
-  const fmtN = (n) => n.toLocaleString();
-
-  // Full localized HK name
-  const _hkDayLang = App.S.hkLang || "hi";
-  const _hkDayLabel =
-    _hkDayLang === "bn" ? "হরে কৃষ্ণ মহামন্ত্র" : "हरे कृष्ण महामंत्र";
-
-  // Stash data for the per-set drill-down
-  window._histDayCtx = { tk, isToday: tk === App.S.tk };
-
-  // Build clickable per-set cards (premium style, same as Period Totals)
-  const card = (cls, set, label, mainNum, mainUnit, sub, time, enabled) => `
-    <div class="pt-card ${cls}${enabled ? " pt-card-tap" : " pt-card-dim"}"
-         ${enabled ? `onclick="showHistSet('${set}')"` : ""}
-         role="${enabled ? "button" : ""}" tabindex="${enabled ? "0" : "-1"}">
-      <div class="pt-card-label">${label}</div>
-      <div class="pt-card-main"><span class="pt-num">${fmtN(mainNum)}</span><span class="pt-unit">${mainUnit}</span></div>
-      <div class="pt-card-sub">${sub}</div>
-      <div class="pt-card-time">⏱ ${time}</div>
-      ${enabled ? '<div class="pt-card-chev">›</div>' : ""}
-    </div>`;
-
-  let html = "";
-  html += `<div class="pt-head" style="margin-top:2px"><span class="pt-head-icon">📊</span><span class="pt-head-title">Day Totals</span><span class="pt-head-hint">tap a set for per-mala detail</span></div>`;
-
-  if (isGaudiya) {
-    html += `<div class="pt-grid pt-grid-1">`;
-    html += card(
-      "pt-hk",
-      "hk",
-      _hkDayLabel,
-      hkM,
-      hkM === 1 ? "mala" : "malas",
-      fmtN(hk) + " names",
-      _histFmtSec(tSecHK),
-      hk > 0,
-    );
-    html += `</div>`;
-  } else {
-    html += `<div class="pt-grid pt-grid-3">`;
-    html += card(
-      "pt-radha",
-      "radha",
-      "Radha Jap",
-      radhaM,
-      radhaM === 1 ? "mala" : "malas",
-      fmtN(radha) + " names",
-      _histFmtSec(tSecR),
-      radha > 0,
-    );
-    html += card(
-      "pt-rv",
-      "rv",
-      "RV Jap",
-      rvM,
-      rvM === 1 ? "mala" : "malas",
-      fmtN(rv) + " names",
-      _histFmtSec(tSecRV),
-      rv > 0,
-    );
-    html += card(
-      "pt-28",
-      "28",
-      "28 Names",
-      cyc28,
-      cyc28 === 1 ? "cycle" : "cycles",
-      fmtN(taps28) + " taps",
-      _histFmtSec(t28Sec),
-      taps28 > 0,
-    );
-    html += `</div>`;
-  }
-  html += `<div class="pt-total"><span class="pt-total-label">Total Time</span><span class="pt-total-val">${_histFmtSec(grand)}</span></div>`;
-
-  // Drill-down slot (populated by showHistSet)
-  html += `<div id="histSetDetail" style="margin-top:14px"></div>`;
-
-  content.innerHTML = html;
-}
 
 function showHistSet(set) {
   const ctx = window._histDayCtx;
@@ -11700,9 +11708,11 @@ function renderLeaderboard(docs, period) {
   const periodKeys = _lbGetPeriodKeys(period);
   const scored = docs.map(function(d) {
     let score = 0;
+    let timeScore = 0;
     if (!periodKeys) {
       // All time — use stored totalJap
       score = (d.totalJap || 0);
+      timeScore = (d.timerSeconds || 0);
       const sr = Object.values(d.history || {}).reduce((a,b)=>a+b,0);
       const srv = Object.values(d.historyRV || {}).reduce((a,b)=>a+b,0);
       const shk = Object.values(d.historyHK || {}).reduce((a,b)=>a+b,0);
@@ -11715,16 +11725,26 @@ function renderLeaderboard(docs, period) {
       const histHK = d.historyHK || {};
       const hist28 = d.history28 || {};
       let sr = 0, srv = 0, shk = 0, s28 = 0;
+      let tr = 0, trv = 0, thk = 0, t28 = 0;
+      const tHist = d.timerHistory || {};
+      const tHistRV = d.timerHistoryRV || {};
+      const tHistHK = d.timerHistoryHK || {};
+      const tHist28 = d.timer28History || {};
       periodKeys.forEach(function(k) {
         sr += (hist[k] || 0);
         srv += (histRV[k] || 0);
         shk += (histHK[k] || 0);
         s28 += (hist28[k] || 0);
+        tr += (tHist[k] || 0);
+        trv += (tHistRV[k] || 0);
+        thk += (tHistHK[k] || 0);
+        t28 += (tHist28[k] || 0);
       });
       score += sr + srv + shk + s28;
+      timeScore += tr + trv + thk + t28;
       d._breakdown = { r: sr, rv: srv, hk: shk, n28: s28 };
     }
-    return { ...d, score };
+    return { ...d, score, timeScore };
   });
 
   // Sort descending, filter out zero scores
@@ -11781,7 +11801,8 @@ function renderLeaderboard(docs, period) {
     if (b.hk > 0) bdStr.push('HK: ' + _lbFmtJap(b.hk));
     const breakdown = bdStr.length > 0 ? ' (' + bdStr.join(' | ') + ')' : '';
     
-    const meta = _lbFmtJap(d.score) + ' jap' + breakdown + ' · ' + malas.toLocaleString('en-IN') + ' malas' + (d.streak > 0 ? ' · 🔥' + d.streak + 'd' : '');
+    const timeDisplay = d.timeScore > 0 ? ' · ⏱ ' + _histFmtSec(d.timeScore) : '';
+    const meta = _lbFmtJap(d.score) + ' jap' + breakdown + timeDisplay + ' · ' + malas.toLocaleString('en-IN') + ' malas' + (d.streak > 0 ? ' · 🔥' + d.streak + 'd' : '');
     return `<div class="${rowClass}">
       <div class="lb-badge ${badgeClass}">${badgeContent}</div>
       <div class="lb-info">
@@ -11873,7 +11894,12 @@ async function pushLeaderboard() {
     // Push total timer seconds for leaderboard display
     timerSeconds: Object.values(App.S.timerHistory || {}).reduce((a,b)=>a+b,0) +
                   Object.values(App.S.timerHistoryRV || {}).reduce((a,b)=>a+b,0) +
-                  Object.values(App.S.timerHistoryHK || {}).reduce((a,b)=>a+b,0),
+                  Object.values(App.S.timerHistoryHK || {}).reduce((a,b)=>a+b,0) +
+                  Object.values(App.S.timer28History || {}).reduce((a,b)=>a+b,0),
+    timerHistory:   App.S.timerHistory || {},
+    timerHistoryRV: App.S.timerHistoryRV || {},
+    timerHistoryHK: App.S.timerHistoryHK || {},
+    timer28History: App.S.timer28History || {},
   };
 
   try {

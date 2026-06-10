@@ -1121,55 +1121,6 @@
     </div>
   </div>
 
-  <!-- PHOTO CUSTOMIZATION SETTINGS -->
-  <div class="sc photo-settings-card non-gaudiya-setting">
-    <div class="photo-settings-title">🖼️ Jap Display Photos</div>
-    <div style="font-size:10px;color:rgba(255,255,255,0.4);line-height:1.4;margin-bottom:14px;">
-      Choose which photos appear on the Jap screen. Pick from the repository collection or upload your own.
-    </div>
-
-    <!-- Radha Vallabh -->
-    <div class="photo-row">
-      <div class="photo-row-label">🙏 Radha Vallabh</div>
-      <div class="photo-thumb-strip" id="photoStripRV"></div>
-      <div style="display:flex;gap:8px;margin-top:6px;">
-        <label class="photo-upload-btn">
-          📷 Upload Custom
-          <input type="file" accept="image/*" style="display:none" onchange="uploadCustomPhoto('rv', this)">
-        </label>
-        <button class="photo-reset-btn" onclick="resetPhoto('rv')">↩ Default</button>
-        <button class="photo-reset-btn" style="color:var(--a2); flex:0.7" onclick="selectRepoPhoto('rv', 0)">Blank</button>
-      </div>
-    </div>
-
-    <!-- Hitju Maharaj -->
-    <div class="photo-row">
-      <div class="photo-row-label">🙏 Hitju Maharaj</div>
-      <div class="photo-thumb-strip" id="photoStripHitju"></div>
-      <div style="display:flex;gap:8px;margin-top:6px;">
-        <label class="photo-upload-btn">
-          📷 Upload Custom
-          <input type="file" accept="image/*" style="display:none" onchange="uploadCustomPhoto('hitju', this)">
-        </label>
-        <button class="photo-reset-btn" onclick="resetPhoto('hitju')">↩ Default</button>
-        <button class="photo-reset-btn" style="color:var(--a2); flex:0.7" onclick="selectRepoPhoto('hitju', 0)">Blank</button>
-      </div>
-    </div>
-
-    <!-- Gurudev -->
-    <div class="photo-row">
-      <div class="photo-row-label">🙏 Gurudev</div>
-      <div class="photo-thumb-strip" id="photoStripGurudev"></div>
-      <div style="display:flex;gap:8px;margin-top:6px;">
-        <label class="photo-upload-btn">
-          📷 Upload Custom
-          <input type="file" accept="image/*" style="display:none" onchange="uploadCustomPhoto('gurudev', this)">
-        </label>
-        <button class="photo-reset-btn" onclick="resetPhoto('gurudev')">↩ Default</button>
-        <button class="photo-reset-btn" style="color:var(--a2); flex:0.7" onclick="selectRepoPhoto('gurudev', 0)">Blank</button>
-      </div>
-    </div>
-  </div>
 
   <!-- SINGLE SIGN-IN WITH GOOGLE -->
   <div class="sc" id="fbCard">
@@ -1463,6 +1414,56 @@
         <button onclick="saveLbName()" style="padding:9px 16px;border-radius:10px;border:1px solid rgba(255,215,0,0.5);background:linear-gradient(135deg,rgba(255,215,0,0.15),rgba(255,180,0,0.05));color:#FFD700;font-size:12px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;white-space:nowrap;box-shadow:0 4px 12px rgba(255,215,0,0.2),inset 0 1px 0 rgba(255,255,255,0.1);transition:all 0.3s ease;text-shadow:0 0 8px rgba(255,215,0,0.4);">✨ Save</button>
       </div>
       <div id="lbNameFeedback" style="font-size:11px;margin-top:5px;color:var(--green);min-height:16px"></div>
+    </div>
+  </div>
+
+  <!-- PHOTO CUSTOMIZATION SETTINGS -->
+  <div class="sc photo-settings-card non-gaudiya-setting">
+    <div class="photo-settings-title">🖼️ Jap Display Photos</div>
+    <div style="font-size:10px;color:rgba(255,255,255,0.4);line-height:1.4;margin-bottom:14px;">
+      Choose which photos appear on the Jap screen. Pick from the repository collection or upload your own.
+    </div>
+
+    <!-- Radha Vallabh -->
+    <div class="photo-row">
+      <div class="photo-row-label">🙏 Radha Vallabh</div>
+      <div class="photo-thumb-strip" id="photoStripRV"></div>
+      <div style="display:flex;gap:8px;margin-top:6px;">
+        <label class="photo-upload-btn">
+          📷 Upload Custom
+          <input type="file" accept="image/*" style="display:none" onchange="uploadCustomPhoto('rv', this)">
+        </label>
+        <button class="photo-reset-btn" onclick="resetPhoto('rv')">↩ Default</button>
+        <button class="photo-reset-btn" style="color:var(--a2); flex:0.7" onclick="selectRepoPhoto('rv', 0)">Blank</button>
+      </div>
+    </div>
+
+    <!-- Hitju Maharaj -->
+    <div class="photo-row">
+      <div class="photo-row-label">🙏 Hitju Maharaj</div>
+      <div class="photo-thumb-strip" id="photoStripHitju"></div>
+      <div style="display:flex;gap:8px;margin-top:6px;">
+        <label class="photo-upload-btn">
+          📷 Upload Custom
+          <input type="file" accept="image/*" style="display:none" onchange="uploadCustomPhoto('hitju', this)">
+        </label>
+        <button class="photo-reset-btn" onclick="resetPhoto('hitju')">↩ Default</button>
+        <button class="photo-reset-btn" style="color:var(--a2); flex:0.7" onclick="selectRepoPhoto('hitju', 0)">Blank</button>
+      </div>
+    </div>
+
+    <!-- Gurudev -->
+    <div class="photo-row">
+      <div class="photo-row-label">🙏 Gurudev</div>
+      <div class="photo-thumb-strip" id="photoStripGurudev"></div>
+      <div style="display:flex;gap:8px;margin-top:6px;">
+        <label class="photo-upload-btn">
+          📷 Upload Custom
+          <input type="file" accept="image/*" style="display:none" onchange="uploadCustomPhoto('gurudev', this)">
+        </label>
+        <button class="photo-reset-btn" onclick="resetPhoto('gurudev')">↩ Default</button>
+        <button class="photo-reset-btn" style="color:var(--a2); flex:0.7" onclick="selectRepoPhoto('gurudev', 0)">Blank</button>
+      </div>
     </div>
   </div>
 

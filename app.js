@@ -759,7 +759,7 @@ const App = {
     }
     // Completion sound (bell chime or Panchojanno Shankya)
     if (this.S.cfg.sound) playMalaSound();
-    // Triple long vibration synced with bell
+    // Triple long vibration synced with bell (only if vibration enabled in settings)
     this.vib([200, 80, 200, 80, 300]);
     // ── ARIA live region: announce mala completion to screen readers ──
     const _announcer = document.getElementById("japAnnounce");
@@ -998,13 +998,13 @@ const App = {
     this._n28SavedSecs = 0;
     this._n28Paused = true;
     this._upd28PauseBtn();
-    // Show frozen cycle value; n28TotalTimer shows unified Jap timer
+    // Show frozen cycle value; n28TotalTimer shows unified Today's Jap Time
     const fmt = (s) =>
       Math.floor(s / 60) + ":" + (s % 60 < 10 ? "0" : "") + (s % 60);
     const ce = document.getElementById("n28CycleTimer");
-    const te = document.getElementById("n28TotalTimer");
     if (ce) ce.textContent = fmt(this._n28PausedCycleSec);
-    if (te) te.textContent = this.fmtTime(this.timerSeconds);
+    this.updateTimerToday();
+
   },
 
   // ── Resume the 28 Names timers ──
@@ -1104,10 +1104,10 @@ const App = {
     this._n28PausedCycleSec = 0;
     this._n28PausedTotalSec = 0;
     const ce = document.getElementById("n28CycleTimer");
-    const te = document.getElementById("n28TotalTimer");
     if (ce) ce.textContent = "0:00";
-    // Show unified Jap timer (same as main Jap tab)
-    if (te) te.textContent = this.fmtTime(this.timerSeconds);
+    // Show unified Today's Jap Time
+    this.updateTimerToday();
+
     const mf28 = document.getElementById("mf28");
     if (mf28) mf28.classList.remove("show");
     this._upd28PauseBtn();
@@ -1146,7 +1146,9 @@ const App = {
     this._arm28AutoPause();
     if (this.S.h28[this.S.tk] % 28 === 0) cycleDone28();
     u28();
+    try { flyRadhaCoin(); } catch(_) {}
   },
+
 
   undo28() {
     if ((this.S.h28[this.S.tk] || 0) > 0) {
@@ -1211,16 +1213,49 @@ function playSynthBell() {
 // Panchojanno Shankya — plays the bundled MP3
 const SHANKYA_URL = "./Panchojanno%20Shankya.mp3";
 let _shankyaAudio = null;
+let _shankyaLoaded = false;
+function _buildShankyaAudio() {
+  _shankyaAudio = new Audio(SHANKYA_URL);
+  _shankyaAudio.preload = "auto";
+  _shankyaLoaded = false;
+  _shankyaAudio.addEventListener("canplaythrough", function() { _shankyaLoaded = true; }, { once: true });
+  _shankyaAudio.addEventListener("error", function() {
+    // On load error, reset so next call retries
+    _shankyaAudio = null;
+    _shankyaLoaded = false;
+  }, { once: true });
+  _shankyaAudio.load();
+}
+// Pre-load on startup
+try { _buildShankyaAudio(); } catch(e) {}
+
 function playShankya() {
   try {
-    if (!_shankyaAudio) {
-      _shankyaAudio = new Audio(SHANKYA_URL);
-      _shankyaAudio.preload = "auto";
+    // If audio object is missing or errored, rebuild it
+    if (!_shankyaAudio) _buildShankyaAudio();
+    // If audio is in an error/ended state, reset src to force reload
+    if (_shankyaAudio.error) {
+      _shankyaAudio = null;
+      _buildShankyaAudio();
+      // Attempt to play after a short reload delay
+      setTimeout(function() {
+        if (_shankyaAudio) {
+          const p2 = _shankyaAudio.play();
+          if (p2 && typeof p2.catch === "function") p2.catch(function(){});
+        }
+      }, 300);
+      return;
     }
     _shankyaAudio.currentTime = 0;
     const p = _shankyaAudio.play();
-    if (p && typeof p.catch === "function") p.catch(() => {});
-  } catch (e) {}
+    if (p && typeof p.catch === "function") p.catch(function(err) {
+      // Autoplay blocked or decode error — reset and try once more
+      _shankyaAudio = null;
+      _buildShankyaAudio();
+    });
+  } catch (e) {
+    _shankyaAudio = null;
+  }
 }
 
 // Decide which completion sound to play based on user preference
@@ -1442,8 +1477,9 @@ document.addEventListener(
 
 // Stats timer tick
 setInterval(() => {
-  if (App.timerRunning) App.updateTimerToday();
+  App.updateTimerToday();
 }, 1000);
+
 // 28 Names stats panel live tick — refreshes time while timer is running
 setInterval(() => {
   if (App._n28TimerInterval) refresh28StatsIfOpen();
@@ -1475,6 +1511,12 @@ setInterval(() => {
     App.lmcHK = 0;
     App.save();
     fbDebouncedPush();
+    // Push leaderboard immediately on date rollover so "Today" tab resets to 0 for all viewers
+    if (typeof pushLeaderboard === 'function') {
+      pushLeaderboard().then(() => {
+        localStorage.setItem('rjap_lastLbPushDate', newTk);
+      }).catch(() => {});
+    }
     App.ua();
     uStats();
   }
@@ -1922,11 +1964,11 @@ function populateSettingsUI() {
   // Background Photos settings
   try {
     const inBgRV = document.getElementById("inBgRadhaVallabh");
-    if (inBgRV) inBgRV.value = App.S.bgRadhaVallabh || 1;
+    if (inBgRV) inBgRV.value = App.S.bgRadhaVallabh ?? 1;
     const inBgHJ = document.getElementById("inBgHitju");
-    if (inBgHJ) inBgHJ.value = App.S.bgHitju || 1;
+    if (inBgHJ) inBgHJ.value = App.S.bgHitju ?? 1;
     const inBgGD = document.getElementById("inBgGurudev");
-    if (inBgGD) inBgGD.value = App.S.bgGurudev || 1;
+    if (inBgGD) inBgGD.value = App.S.bgGurudev ?? 1;
     if (typeof applyBgPhotos === 'function') applyBgPhotos();
   } catch (_e) {}
 }
@@ -2110,7 +2152,7 @@ function tgs(k) {
   }
 
   App.S.cfg[k] = !App.S.cfg[k];
-  const m = { sound: "tgSnd" };
+  const m = { sound: "tgSnd", vib: "tgVib" };
   const el = m[k] ? document.getElementById(m[k]) : null;
   if (el) App.S.cfg[k] ? el.classList.add("on") : el.classList.remove("on");
   App.save();
@@ -4008,8 +4050,8 @@ function spawnDivineCelebration() {
     setTimeout(() => el.remove(), 3500);
   }
 
-  // Sacred vibration pattern for milestone
-  if (navigator.vibrate) {
+  // Sacred vibration pattern for milestone (only if vibration enabled)
+  if ((window.App && window.App.S && window.App.S.cfg && window.App.S.cfg.vib) && navigator.vibrate) {
     try {
       navigator.vibrate([100, 50, 100, 50, 200, 100, 300]);
     } catch (e) {}
@@ -4782,8 +4824,16 @@ function fbInit() {
           await fbSyncServerTime();
           // Direct cloud pull — overwrites local cache with authoritative Firebase data
           await fbAutoSync();
-          // Load global stotrams (inbuilt overrides + global stotrams for all users)
-          loadGlobalStotrams();
+
+          if (isDeveloper()) {
+            const devOptionsPanel = document.getElementById("devOptionsPanel");
+            if (devOptionsPanel) devOptionsPanel.style.display = "block";
+          } else {
+            const devOptionsPanel = document.getElementById("devOptionsPanel");
+            if (devOptionsPanel) devOptionsPanel.style.display = "none";
+          }
+          watchNewFeedback(); // Dev-only: real-time badge for new user feedback
+          watchMyFeedback(); // All users: show developer replies + popup notification
         });
       } else {
         document.getElementById("fbLoggedOut").style.display = "block";
@@ -5347,9 +5397,9 @@ async function fbPushFull() {
     milestones: App.S.milestones || { reached: {}, lastChecked: 0 },
     lbOptIn: App.S.lbOptIn || false,
     lbDisplayName: App.S.lbDisplayName || "",
-    bgRadhaVallabh: App.S.bgRadhaVallabh || 1,
-    bgHitju: App.S.bgHitju || 1,
-    bgGurudev: App.S.bgGurudev || 1,
+    bgRadhaVallabh: App.S.bgRadhaVallabh ?? 1,
+    bgHitju: App.S.bgHitju ?? 1,
+    bgGurudev: App.S.bgGurudev ?? 1,
     lastSync: firebase.firestore.FieldValue.serverTimestamp(),
     deviceId: fbDeviceId,
   };
@@ -5939,11 +5989,10 @@ function _update28ProgressBar(todJaps) {
   const bar  = document.getElementById("n28ProgressBar");
   const lbl  = document.getElementById("n28ProgressLabel");
   if (!wrap) return;
-  // Show whenever there's a target OR any activity today (so progress is
-  // visible on every device even if the daily target was only set elsewhere).
-  if (!target && !todJaps) { wrap.style.display = "none"; return; }
-  wrap.style.display = "block";
+  // Always show the bottom bar (it holds the unified Today's Jap Time + cycles label).
+  wrap.style.display = "flex";
   const todCycles = Math.floor(todJaps / 28);
+  const inCycle = todJaps % 28;
   if (target) {
     const pct = Math.min(100, Math.round((todJaps / target) * 100));
     if (bar) {
@@ -5953,18 +6002,19 @@ function _update28ProgressBar(todJaps) {
         : "linear-gradient(90deg,rgba(189,147,249,0.8),rgba(150,80,255,0.9))";
       bar.style.boxShadow = pct >= 100 ? "0 0 10px rgba(46,204,113,0.6)" : "0 0 8px rgba(189,147,249,0.5)";
     }
-    if (lbl) lbl.textContent = todCycles + " / " + targetCycles + " cycles (" + pct + "%)";
   } else {
-    // No target on this device — show progress within the current cycle.
-    const inCycle = todJaps % 28;
-    const pct = Math.round((inCycle / 28) * 100);
+    // No daily target set — show current cycle progress (full bar when a cycle just completed).
+    const num = inCycle === 0 && todCycles > 0 ? 28 : inCycle;
+    const pct = Math.round((num / 28) * 100);
     if (bar) {
       bar.style.width = pct + "%";
       bar.style.background = "linear-gradient(90deg,rgba(189,147,249,0.8),rgba(150,80,255,0.9))";
       bar.style.boxShadow = "0 0 8px rgba(189,147,249,0.5)";
     }
-    if (lbl) lbl.textContent = todCycles + " cycles · " + inCycle + "/28";
   }
+
+  // Always render label as "{cycles} cycles · {N}/28"
+  if (lbl) lbl.textContent = todCycles + " cycle" + (todCycles === 1 ? "" : "s") + " · " + inCycle + "/28";
 }
 
 function u28() {
@@ -6046,11 +6096,9 @@ function u28() {
   }
   render28Dots(pos);
   renderSankalpas();
-  // Show today's accumulated 28-Names time in Total Timer if not currently running
-  if (!App._n28TimerInterval) {
-    const te = document.getElementById("n28TotalTimer");
-    if (te) te.textContent = App.fmtTime(App.timerSeconds);
-  }
+  // Always mirror the unified Today's Jap Time
+  if (typeof App.updateTimerToday === "function") App.updateTimerToday();
+
   App._upd28PauseBtn();
   refresh28StatsIfOpen();
 }
@@ -6180,7 +6228,7 @@ function cycleDone28() {
   } else {
     toast("🌸 Cycle complete! राधे राधे 🙏");
   }
-  if (navigator.vibrate) navigator.vibrate([80, 40, 80, 40, 200]);
+  if ((window.App && window.App.S && window.App.S.cfg && window.App.S.cfg.vib) && navigator.vibrate) navigator.vibrate([80, 40, 80, 40, 200]);
 }
 
 // ── Sankalp ──
@@ -6802,14 +6850,10 @@ function renderSt() {
     document.head.appendChild(styleEl);
   }
 
-  const globalSt = (_globalStotrams || []).map((x) => ({ ...x, global: true }));
   const all = [
     ...STLIST,
-    ...globalSt,
     ...(App.S.customSt || []).map((x) => ({ ...x, custom: true })),
   ];
-  const devBtn = document.getElementById("devStBtn");
-  if (devBtn) devBtn.style.display = isDeveloper() ? "" : "none";
 
   const glowColors = ['#ffd700','#ffaa00','#ff6bff','#00e5ff','#7dff6b','#ff6b6b','#b388ff','#00ffcc','#ffd700','#ff9d00'];
 
@@ -6900,186 +6944,14 @@ function isDeveloper() {
   return DEV_IDS.map((e) => e.toLowerCase()).includes(email);
 }
 
-// Global stotrams stored in Firestore — visible to ALL users
-let _globalStotrams = [];
-let _globalLyricsOverrides = {}; // {stotramId: newLyrics}
-
-async function loadGlobalStotrams() {
-  if (!fbDb) return;
-  try {
-    const snap = await fbDb
-      .collection("global_stotrams")
-      .orderBy("createdAt", "asc")
-      .get();
-    _globalStotrams = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-  } catch (e) {
-    // Collection may not exist yet
-    _globalStotrams = [];
-  }
-  try {
-    const overrides = await fbDb.collection("stotram_overrides").get();
-    _globalLyricsOverrides = {};
-    overrides.docs.forEach((d) => {
-      _globalLyricsOverrides[d.id] = d.data().lyrics || "";
-    });
-  } catch (e) {
-    _globalLyricsOverrides = {};
-  }
-  renderSt();
-}
-
 function getEffectiveLyrics(id) {
-  if (_globalLyricsOverrides[id]) return _globalLyricsOverrides[id];
   return (
     LYRICS[id] ||
     ((App.S.customSt || []).find((x) => x.id === id) || {}).lyrics ||
-    ((_globalStotrams || []).find((x) => x.id === id) || {}).lyrics ||
     ""
   );
 }
 
-async function devSaveInbuiltLyrics(id) {
-  if (!isDeveloper()) {
-    toast("Access denied");
-    return;
-  }
-  const ta = document.getElementById("devLyrEdit-" + id);
-  if (!ta) return;
-  const lyrics = ta.value.trim();
-  if (!lyrics) {
-    toast("Lyrics cannot be empty");
-    return;
-  }
-  try {
-    await fbDb.collection("stotram_overrides").doc(id).set({
-      lyrics,
-      updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
-      updatedBy: fbUser.email,
-    });
-    _globalLyricsOverrides[id] = lyrics;
-    renderSt();
-    toast("✅ Lyrics saved for all users! 🙏");
-  } catch (e) {
-    toast("Error: " + e.message);
-  }
-}
-
-async function devAddGlobalStotram() {
-  if (!isDeveloper()) {
-    toast("Access denied");
-    return;
-  }
-  const name = (document.getElementById("devStName").value || "").trim();
-  const sub = (document.getElementById("devStSub").value || "").trim();
-  const lyrics = (document.getElementById("devStLyrics").value || "").trim();
-  if (!name) {
-    toast("Stotram name required");
-    return;
-  }
-  const id = "gs_" + Date.now();
-  try {
-    await fbDb.collection("global_stotrams").doc(id).set({
-      name,
-      sub,
-      lyrics,
-      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-      createdBy: fbUser.email,
-    });
-    _globalStotrams.push({ id, name, sub, lyrics });
-    document.getElementById("devStName").value = "";
-    document.getElementById("devStSub").value = "";
-    document.getElementById("devStLyrics").value = "";
-    renderSt();
-    renderDevStotramPanel();
-    toast("✅ Global stotram added for all users! 🙏");
-  } catch (e) {
-    toast("Error: " + e.message);
-  }
-}
-
-async function devDeleteGlobalStotram(id) {
-  if (!isDeveloper()) {
-    toast("Access denied");
-    return;
-  }
-  if (!confirm("Delete this global stotram for all users?")) return;
-  try {
-    await fbDb.collection("global_stotrams").doc(id).delete();
-    _globalStotrams = _globalStotrams.filter((s) => s.id !== id);
-    renderSt();
-    renderDevStotramPanel();
-    toast("Deleted.");
-  } catch (e) {
-    toast("Error: " + e.message);
-  }
-}
-
-let _devPanelOpen = false;
-function toggleDevPanel() {
-  _devPanelOpen = !_devPanelOpen;
-  const panel = document.getElementById("devStPanel");
-  if (panel) {
-    panel.style.display = _devPanelOpen ? "block" : "none";
-  }
-  if (_devPanelOpen) renderDevStotramPanel();
-}
-
-function renderDevStotramPanel() {
-  const el = document.getElementById("devStList");
-  if (!el) return;
-  let html = "";
-  // Section 1: Edit inbuilt stotram lyrics
-  html +=
-    '<div style="font-size:12px;color:var(--gold);letter-spacing:1px;margin-bottom:8px;text-transform:uppercase">✏ Edit Inbuilt Stotram Lyrics</div>';
-  STLIST.forEach((st) => {
-    const cur = getEffectiveLyrics(st.id);
-    const hasOverride = !!_globalLyricsOverrides[st.id];
-    html +=
-      '<div style="margin-bottom:10px;border:1px solid rgba(255,215,0,0.2);border-radius:9px;padding:9px">';
-    html +=
-      '<div style="font-size:12px;color:var(--tl);margin-bottom:6px">' +
-      escHtml(st.name) +
-      (hasOverride
-        ? ' <span style="color:var(--green);font-size:10px">● overridden</span>'
-        : "") +
-      "</div>";
-    html +=
-      '<textarea id="devLyrEdit-' +
-      st.id +
-      '" rows="4" style="width:100%;background:rgba(0,0,0,0.3);border:1px solid rgba(255,215,0,0.2);border-radius:7px;padding:7px;color:var(--tl);font-size:12px;font-family:Hind Siliguri,serif;resize:vertical;box-sizing:border-box">' +
-      escHtml(cur) +
-      "</textarea>";
-    html +=
-      "<button onclick=\"devSaveInbuiltLyrics('" +
-      st.id +
-      '\')" style="margin-top:5px;padding:6px 14px;border-radius:7px;border:none;background:linear-gradient(135deg,rgba(255,215,0,0.3),rgba(255,180,0,0.2));color:var(--gold);font-size:12px;cursor:pointer">💾 Save for All Users</button>';
-    html += "</div>";
-  });
-  // Section 2: Global stotrams list
-  if (_globalStotrams.length) {
-    html +=
-      '<div style="font-size:12px;color:var(--gold);letter-spacing:1px;margin:12px 0 8px;text-transform:uppercase">🌍 Global Stotrams Added</div>';
-    _globalStotrams.forEach((st) => {
-      html +=
-        '<div style="display:flex;align-items:center;gap:8px;padding:7px;background:rgba(255,215,0,0.05);border-radius:7px;margin-bottom:6px">';
-      html +=
-        '<div style="flex:1;font-size:12px;color:var(--tl)">' +
-        escHtml(st.name) +
-        (st.sub
-          ? '<br><span style="font-size:10px;color:var(--td)">' +
-            escHtml(st.sub) +
-            "</span>"
-          : "") +
-        "</div>";
-      html +=
-        "<button onclick=\"devDeleteGlobalStotram('" +
-        st.id +
-        '\')" style="padding:4px 10px;border-radius:7px;border:1px solid rgba(232,51,109,0.3);background:rgba(232,51,109,0.08);color:var(--rl);font-size:11px;cursor:pointer">Delete</button>';
-      html += "</div>";
-    });
-  }
-  el.innerHTML = html;
-}
 
 function adjSt(id, d) {
   if (!App.S.stotrams[id]) App.S.stotrams[id] = {};
@@ -8732,6 +8604,8 @@ window.addEventListener("load", async () => {
 
   // Apply settings UI
   if (App.S.cfg.sound) document.getElementById("tgSnd").classList.add("on");
+  const tgVibEl = document.getElementById("tgVib");
+  if (tgVibEl) { App.S.cfg.vib ? tgVibEl.classList.add("on") : tgVibEl.classList.remove("on"); }
 
   // GPS Location toggle — persist across refreshes via localStorage flag.
   // Never auto-request geolocation permission on app load (the user enables it
@@ -8807,6 +8681,22 @@ window.addEventListener("load", async () => {
   App.save();
   fbDebouncedPush();
 
+  // Trigger auto-backup check
+  setTimeout(checkAutoBackup, 2000);
+
+  // Push leaderboard on fresh open so "Today" tab never shows stale yesterday data.
+  // Runs after cloud hydration completes (which happens inside fbInit → fbPull).
+  // A 6-second delay gives fbPull time to finish before we push.
+  setTimeout(() => {
+    const lastLbPushDate = localStorage.getItem('rjap_lastLbPushDate') || '';
+    const todayKey = App.S.tk || App.getTk();
+    if (lastLbPushDate !== todayKey && typeof pushLeaderboard === 'function') {
+      pushLeaderboard().then(() => {
+        localStorage.setItem('rjap_lastLbPushDate', todayKey);
+      }).catch(() => {});
+    }
+  }, 6000);
+
   // Hide loading — guaranteed cleanup
   setTimeout(() => {
     const ls = document.getElementById("ls");
@@ -8816,7 +8706,7 @@ window.addEventListener("load", async () => {
         if (ls.parentNode) ls.parentNode.removeChild(ls);
       }, 900);
     }
-  }, 2800);
+  }, 5000);
 });
 
 // ═══════════════════════════════════════════════════════
@@ -9298,13 +9188,19 @@ function showLyrics(id) {
       mergedVerses.push(v);
     }
   }
+  // Strip colophon final verse (e.g. ॥ ইতি ... সম্পূর্ণম্ ॥) for audio stotrams
+  // so clip count matches exactly
+  if (_AUDIO_STOTRAMS[id] && mergedVerses.length > 0) {
+    const last = mergedVerses[mergedVerses.length - 1];
+    const isColophon = last.trim().startsWith('॥') && last.trim().endsWith('॥') && last.split('\n').length <= 2;
+    if (isColophon) mergedVerses.pop();
+  }
   _verses = mergedVerses;
   _verseIdx = 0;
   _hcjStopAudio();
 
   const allSt = [
     ...STLIST,
-    ...(_globalStotrams || []),
     ...(App.S.customSt || []),
   ];
   const nm = allSt.find((x) => x.id === id);
@@ -9526,7 +9422,7 @@ function _initSwipeHandler() {
   // Remove any previous swipe listeners
   card._swipeCleanup && card._swipeCleanup();
 
-  if (_currentStotramId === "hcj") return; // HCJ uses its own audio player arrows
+  if (_AUDIO_STOTRAMS[_currentStotramId]) return; // audio stotrams use their own player arrows
 
   let startX = 0,
     startY = 0,
@@ -9604,8 +9500,15 @@ var _hcjAudio = null,
 var _hcjRafId = null; // requestAnimationFrame id for progress bar
 var _hcjPlayerCleanup = null; // cleanup fn for window listeners added in _hcjRenderPlayer
 
+// Audio clip path — works for any stotram that has audio clips
+var _AUDIO_STOTRAMS = {
+  hcj: { prefix: "hcj" },
+  bss: { prefix: "bss" }
+};
 function _hcjAudioPath(i) {
-  return "audio/hcj_" + (i + 1) + ".mp3";
+  var cfg = _AUDIO_STOTRAMS[_currentStotramId];
+  var prefix = cfg ? cfg.prefix : "hcj";
+  return "audio/" + prefix + "_" + (i + 1) + ".mp3";
 }
 
 // Format seconds → m:ss
@@ -9750,7 +9653,7 @@ function _hcjSetMode(mode) {
 }
 // Called whenever the displayed verse changes — keep audio in sync.
 function _hcjOnVerseChange(idx) {
-  if (_currentStotramId !== "hcj") return;
+  if (!_AUDIO_STOTRAMS[_currentStotramId]) return;
   if (_hcjPlaying && _hcjAudioIdx !== idx) {
     _hcjPlayVerse(idx);
   }
@@ -9785,7 +9688,8 @@ function _hcjRenderPlayer(idx) {
     _hcjPlayerCleanup = null;
   }
   var navBar = document.getElementById("lmNav");
-  if (_currentStotramId !== "hcj") {
+  var _hasAudioPlayer = !!_AUDIO_STOTRAMS[_currentStotramId];
+  if (!_hasAudioPlayer) {
     if (navBar) navBar.style.display = "";
     var _ci = document.querySelector("#lmo .lm-card-inner");
     if (_ci) _ci.style.bottom = "";
@@ -11592,10 +11496,15 @@ function _lbGetPeriodKeys(period) {
   const keys = [];
   if (period === 'alltime') return null; // null = use totalJap field (no date filter)
   if (period === 'today') {
+    // Always use local date key (App.S.tk) — avoids UTC offset bug for UTC+5:30/+6 users
     if (window.App && window.App.S && window.App.S.tk) {
       return [window.App.S.tk];
     }
-    return [now.toISOString().slice(0,10)];
+    // Fallback: derive local date from device clock (NOT toISOString which is UTC)
+    const y = now.getFullYear();
+    const m = String(now.getMonth()+1).padStart(2,'0');
+    const d = String(now.getDate()).padStart(2,'0');
+    return [y + '-' + m + '-' + d];
   }
   if (period === 'month') {
     const y = now.getFullYear(), m = now.getMonth();
@@ -11790,7 +11699,14 @@ function renderLeaderboard(docs, period) {
     const rowClass = 'lb-row' + (isMe ? ' lb-row-me' : '') + (isTop3 ? ' lb-row-top3' : '');
     const nameClass = 'lb-name' + (isMe ? ' lb-name-me' : '');
     const meMark = isMe ? ' ✦ You' : '';
-    const name = (d.displayName || 'Anonymous Devotee').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    
+    const nowMs = Date.now();
+    let isOnline = false;
+    if (d.lastActive) isOnline = (nowMs - d.lastActive.toDate().getTime()) < 5 * 60 * 1000;
+    else if (d.updatedAt) isOnline = (nowMs - d.updatedAt.toDate().getTime()) < 5 * 60 * 1000;
+    const onlineDot = isOnline ? '<span style="display:inline-block;width:8px;height:8px;background:#4ade80;border-radius:50%;margin-left:6px;box-shadow:0 0 6px rgba(74,222,128,0.6)" title="Online"></span>' : '';
+    
+    const name = (d.displayName || 'Anonymous Devotee').replace(/</g,'&lt;').replace(/>/g,'&gt;') + onlineDot;
     const malas = Math.floor(d.score / (App.S.ms || 108));
     
     let b = d._breakdown || { r:0, rv:0, hk:0, n28:0 };
@@ -11959,17 +11875,24 @@ async function saveLbName() {
 function populateLbSettingsUI() {
   const tg  = document.getElementById('tgLbOptIn');
   const inp = document.getElementById('lbNameIn');
+  const row = document.getElementById('lbNameRow');
   if (tg)  tg.classList.toggle('on', !!App.S.lbOptIn);
   if (inp && !inp.value) inp.value = App.S.lbDisplayName || '';
-
-  // Opt-in banner in leaderboard view
-  const banner = document.getElementById('lbOptinBanner');
-  if (banner) banner.style.display = (App.S.lbOptIn ? 'none' : 'flex');
+  if (row) row.style.display = App.S.lbOptIn ? 'block' : 'none';
 }
 
 // ═══════════════════════════════════════════════════════
 // BACKGROUND PHOTO CUSTOMIZATION (Visual Picker + Upload)
 // ═══════════════════════════════════════════════════════
+
+// Keep online status updated every 3 minutes while app is active
+setInterval(() => {
+  if (App && App.S && App.S.lbOptIn && fbUser && fbDb && !document.hidden) {
+    fbDb.collection('leaderboard').doc(fbUser.uid).update({
+      lastActive: firebase.firestore.FieldValue.serverTimestamp()
+    }).catch(()=>{});
+  }
+}, 3 * 60 * 1000);
 
 // 1. Initialize dedicated Photos Database to prevent localStorage bloating
 const PhotosDB = {
@@ -12025,7 +11948,7 @@ window.renderPhotoPickers = async function() {
     if (!strip) continue;
     strip.innerHTML = '';
     
-    let currentVal = App.S[conf.stateKey] || 1;
+    let currentVal = App.S[conf.stateKey] ?? 1;
     
     // Add default repo photos
     for (let i = 1; i <= conf.maxNum; i++) {
@@ -12090,23 +12013,25 @@ window.renderPhotoPickers = async function() {
       strip.appendChild(wrap);
     }
     
-    // Update active state of buttons below the strip
-    setTimeout(() => {
-      const row = strip.parentElement;
-      if (!row) return;
-      const btns = row.querySelectorAll('.photo-reset-btn, .photo-upload-btn');
-      btns.forEach(b => b.classList.remove('active'));
-      if (currentVal === 0 || currentVal === '0') {
-        const blankBtn = Array.from(btns).find(b => b.textContent.includes('Blank'));
-        if (blankBtn) blankBtn.classList.add('active');
-      } else if (currentVal === 'custom') {
-        const uploadBtn = Array.from(btns).find(b => b.textContent.includes('Upload'));
-        if (uploadBtn) uploadBtn.classList.add('active');
-      } else {
-        const defBtn = Array.from(btns).find(b => b.textContent.includes('Default'));
-        if (defBtn) defBtn.classList.add('active');
-      }
-    }, 10);
+    // Update active state of buttons — IIFE captures currentVal + strip per iteration
+    ((val, s) => {
+      setTimeout(() => {
+        const row = s.parentElement;
+        if (!row) return;
+        const btns = row.querySelectorAll('.photo-reset-btn, .photo-upload-btn');
+        btns.forEach(b => b.classList.remove('active'));
+        if (val === 0 || val === '0') {
+          const blankBtn = Array.from(btns).find(b => b.textContent.trim().includes('Blank'));
+          if (blankBtn) blankBtn.classList.add('active');
+        } else if (val === 'custom') {
+          const uploadBtn = Array.from(btns).find(b => b.textContent.trim().includes('Upload'));
+          if (uploadBtn) uploadBtn.classList.add('active');
+        } else {
+          const defBtn = Array.from(btns).find(b => b.textContent.trim().includes('Default'));
+          if (defBtn) defBtn.classList.add('active');
+        }
+      }, 10);
+    })(currentVal, strip);
   }
 };
 
@@ -12195,34 +12120,575 @@ window.applyBgPhotos = async function() {
 // ✨ MALA GLOW FLASH — all deity images briefly show fully with huge glow, synced
 window.triggerMalaGlowFlash = function() {
   const ids = ['bgRadhaVallabh', 'bgHitju', 'bgGurudev'];
-  ids.forEach(id => {
-    const el = document.getElementById(id);
-    if (!el || el.style.display === 'none') return;
-    // 1. Remove the watery mask + grey filter instantly
-    el.classList.add('mala-glow-flash');
-    // 2. After 2.4s, remove the flash class to restore normal state
-    setTimeout(() => {
-      el.classList.remove('mala-glow-flash');
-    }, 2400);
+  const els = ids.map(id => document.getElementById(id)).filter(el => el && el.style.display !== 'none');
+  if (!els.length) return;
+
+  // Add sustained glow class — stays ON until shankya finishes
+  els.forEach(el => {
+    el.classList.remove('mala-glow-flash');
+    el.classList.add('mala-glow-sustained');
   });
+
+  // Listen for Panchojanno Shankya audio end to remove glow
+  function removeSustainedGlow() {
+    els.forEach(el => {
+      el.classList.remove('mala-glow-sustained');
+    });
+  }
+
+  // Attach to shankya audio onended if available
+  if (typeof _shankyaAudio !== 'undefined' && _shankyaAudio) {
+    const handler = function() {
+      removeSustainedGlow();
+      _shankyaAudio.removeEventListener('ended', handler);
+    };
+    _shankyaAudio.addEventListener('ended', handler);
+    // Safety fallback: if audio doesn't fire ended within 30s, remove anyway
+    setTimeout(() => {
+      removeSustainedGlow();
+      try { _shankyaAudio.removeEventListener('ended', handler); } catch(e){}
+    }, 30000);
+  } else {
+    // No audio: hold glow for 4s fallback
+    setTimeout(removeSustainedGlow, 4000);
+  }
 };
 
-// ═══════════════════════════════════════════════════════
-// MOTION BLUR ON SCROLL
-// ═══════════════════════════════════════════════════════
-let scrollBlurTimer = null;
-let lastScrollTop = 0;
-document.querySelectorAll('.view').forEach(view => {
-  view.addEventListener('scroll', (e) => {
-    const st = view.scrollTop;
-    const diff = Math.abs(st - lastScrollTop);
-    lastScrollTop = st;
-    if (diff > 10) { // Only blur on fast scrolls
-      view.style.filter = `blur(${Math.min(diff / 10, 3)}px)`;
-      clearTimeout(scrollBlurTimer);
-      scrollBlurTimer = setTimeout(() => {
-        view.style.filter = 'none';
-      }, 50);
+// ==========================================
+// NEW FEATURES: AUTO-BACKUP, NOTIFICATIONS, FEEDBACK, VIDEO LINK
+// ==========================================
+
+// 1. Auto Backup on Open
+async function checkAutoBackup() {
+  const lastBackupStr = localStorage.getItem('rjap_lastAutoBackup');
+  let lastBackup = lastBackupStr ? parseInt(lastBackupStr) : 0;
+  
+  const now = new Date();
+  let mostRecentThreshold = new Date(now);
+  mostRecentThreshold.setMinutes(0, 0, 0);
+  if (now.getHours() >= 12) {
+    mostRecentThreshold.setHours(12);
+  } else {
+    mostRecentThreshold.setHours(0);
+  }
+  
+  // Also only run if we have App.S initialized to prevent empty backups
+  if (lastBackup < mostRecentThreshold.getTime() && window.App && App.S) {
+    let backupData = {};
+    for (let i = 0; i < localStorage.length; i++) {
+      let key = localStorage.key(i);
+      backupData[key] = localStorage.getItem(key);
     }
-  }, { passive: true });
+    
+    const blob = new Blob([JSON.stringify(backupData, null, 2)], {type: 'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    
+    const dStr = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0') + '-' + String(now.getDate()).padStart(2,'0');
+    const timeStr = now.getHours() >= 12 ? '12PM' : '12AM';
+    a.download = `RadhaNaamJap_Backup_${dStr}_${timeStr}.json`;
+    
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => {
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }, 1000);
+    
+    localStorage.setItem('rjap_lastAutoBackup', Date.now().toString());
+    toast('Auto Backup Generated! 🙏');
+  }
+}
+
+// 2. Notifications System — removed
+
+// 3. Feedback System
+// ═══════════════════════════════════════════════════════
+// CHAT-BASED FEEDBACK SYSTEM
+// Each user has one thread doc in /feedbacks/{uid}
+// Messages stored in /feedbacks/{uid}/messages subcollection
+// Real-time via onSnapshot — both user and dev see live updates
+// ═══════════════════════════════════════════════════════
+
+// ── Helpers ───────────────────────────────────────────
+function _chatBubble(text, sender, time) {
+  const isUser   = sender === 'user';
+  const isDev    = sender === 'developer';
+  const alignDir = isUser ? 'flex-end' : 'flex-start';
+  const bg       = isUser
+    ? 'rgba(74,144,226,0.22)'
+    : isDev
+      ? 'rgba(46,204,113,0.18)'
+      : 'rgba(255,255,255,0.06)';
+  const border   = isUser
+    ? 'rgba(74,144,226,0.45)'
+    : isDev
+      ? 'rgba(46,204,113,0.4)'
+      : 'rgba(255,255,255,0.1)';
+  const label    = isDev ? '🛠 Developer' : '';
+  const d = document.createElement('div');
+  d.style.cssText = `display:flex;flex-direction:column;align-items:${alignDir};`;
+  d.innerHTML = `
+    ${label ? `<div style="font-size:10px;color:#2ecc71;font-weight:600;margin-bottom:2px;padding:0 4px;">${label}</div>` : ''}
+    <div style="max-width:82%;background:${bg};border:1px solid ${border};border-radius:14px;padding:9px 13px;">
+      <div style="white-space:pre-wrap;word-break:break-word;color:var(--tl);font-size:13px;line-height:1.55;">${escHtml(text)}</div>
+    </div>
+    <div style="font-size:10px;color:rgba(255,255,255,0.28);margin-top:3px;padding:0 4px;">${time}</div>`;
+  return d;
+}
+
+function _scrollToBottom(el) {
+  if (el) el.scrollTop = el.scrollHeight;
+}
+
+function _fmtMsgTime(ts) {
+  if (!ts) return '';
+  const d = ts.toDate ? ts.toDate() : new Date(ts);
+  const now = new Date();
+  const isToday = d.toDateString() === now.toDateString();
+  return isToday
+    ? d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})
+    : d.toLocaleDateString([], {day:'2-digit', month:'short'}) + ' ' +
+      d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+}
+
+// ── USER CHAT ─────────────────────────────────────────
+let _userChatUnsub = null;
+let _userThreadRef = null;
+
+async function _ensureUserThread() {
+  if (!fbUser) return null;
+  const uid = fbUser.uid;
+  // Thread doc lives at /feedbacks/{uid} — stable, uid-keyed
+  const ref = fbDb.collection('feedbacks').doc(uid);
+  const snap = await ref.get();
+  if (!snap.exists) {
+    const userName  = fbUser.displayName || (fbUser.email || '').split('@')[0] || 'Devotee';
+    const userPhone = fbUser.phoneNumber || null;
+    const userEmail = fbUser.email || null;
+    await ref.set({
+      uid,
+      userName,
+      userPhone,
+      userEmail,
+      lastMessage: '',
+      lastAt: firebase.firestore.FieldValue.serverTimestamp(),
+      devRead: false,
+      userRead: true
+    });
+  }
+  return ref;
+}
+
+window.openUserChat = async function() {
+  if (!fbUser) { toast('Please sign in first to use chat.'); return; }
+  const modal = document.getElementById('userChatModal');
+  const msgBox = document.getElementById('userChatMessages');
+  if (!modal || !msgBox) return;
+  modal.style.display = 'flex';
+
+  // Mark thread as userRead
+  _userThreadRef = await _ensureUserThread();
+  if (_userThreadRef) {
+    _userThreadRef.update({ userRead: true }).catch(() => {});
+    // Hide user badge
+    const b = document.getElementById('userChatBadge');
+    if (b) b.style.display = 'none';
+  }
+
+  msgBox.innerHTML = '<div style="text-align:center;color:var(--td);margin-top:30px;font-size:13px;">Loading messages...</div>';
+
+  // Real-time listener on messages subcollection
+  if (_userChatUnsub) { try { _userChatUnsub(); } catch(_) {} }
+  _userChatUnsub = _userThreadRef.collection('messages')
+    .orderBy('createdAt', 'asc')
+    .onSnapshot((snap) => {
+      msgBox.innerHTML = '';
+      if (snap.empty) {
+        msgBox.innerHTML = '<div style="text-align:center;color:rgba(255,255,255,0.3);margin-top:40px;font-size:13px;">No messages yet.<br>Send your first message below! 🙏</div>';
+        return;
+      }
+      snap.forEach(doc => {
+        const d = doc.data();
+        msgBox.appendChild(_chatBubble(d.text || '', d.sender, _fmtMsgTime(d.createdAt)));
+      });
+      _scrollToBottom(msgBox);
+    }, () => {});
+};
+
+window.closeUserChat = function() {
+  const modal = document.getElementById('userChatModal');
+  if (modal) modal.style.display = 'none';
+  if (_userChatUnsub) { try { _userChatUnsub(); } catch(_) {} _userChatUnsub = null; }
+};
+
+window._userChatSend = async function() {
+  const inp = document.getElementById('userChatInput');
+  if (!inp) return;
+  const text = inp.value.trim();
+  if (!text) return;
+  if (!fbUser) { toast('Please sign in first.'); return; }
+  inp.value = '';
+  inp.disabled = true;
+  try {
+    if (!_userThreadRef) _userThreadRef = await _ensureUserThread();
+    await _userThreadRef.collection('messages').add({
+      text,
+      sender: 'user',
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    await _userThreadRef.update({
+      lastMessage: text,
+      lastAt: firebase.firestore.FieldValue.serverTimestamp(),
+      devRead: false,
+      userRead: true
+    });
+  } catch(e) {
+    toast('Error: ' + e.message);
+  } finally {
+    inp.disabled = false;
+    inp.focus();
+  }
+};
+
+// Enter to send (Shift+Enter for newline)
+document.addEventListener('DOMContentLoaded', function() {
+  const inp = document.getElementById('userChatInput');
+  if (inp) inp.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); window._userChatSend(); }
+  });
+  const dinp = document.getElementById('devChatInput');
+  if (dinp) dinp.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); window._devChatSend(); }
+  });
 });
+
+// ── DEVELOPER CHAT PANEL ─────────────────────────────
+let _devChatUnsub = null;
+let _devActiveThreadId = null;
+let _devThreadsUnsub = null;
+
+window.openDevFeedbackPanel = function() {
+  if (!isDeveloper()) return;
+  const modal = document.getElementById('devFeedbackModal');
+  if (!modal) return;
+  modal.style.display = 'flex';
+  _devShowThreadList();
+};
+
+function _devShowThreadList() {
+  const content   = document.getElementById('devFeedbackContent');
+  const chatView  = document.getElementById('devChatView');
+  const titleEl   = document.getElementById('devPanelTitle');
+  const backBtn   = document.getElementById('devPanelBackBtn');
+  if (!content || !chatView) return;
+
+  // Switch to list view
+  content.style.display = '';
+  chatView.style.display = 'none';
+  if (titleEl) titleEl.textContent = 'User Feedback';
+  if (backBtn) backBtn.textContent = '✕ Close';
+
+  // Stop any per-thread listener
+  if (_devChatUnsub) { try { _devChatUnsub(); } catch(_) {} _devChatUnsub = null; }
+  _devActiveThreadId = null;
+
+  // Update badge
+  const badge = document.getElementById('feedbackBadge');
+  if (badge) badge.style.display = 'none';
+
+  content.innerHTML = '<div style="text-align:center;color:var(--td);margin-top:20px;">Loading...</div>';
+
+  // Real-time thread list
+  if (_devThreadsUnsub) { try { _devThreadsUnsub(); } catch(_) {} }
+  _devThreadsUnsub = fbDb.collection('feedbacks')
+    .orderBy('lastAt', 'desc')
+    .limit(50)
+    .onSnapshot((snap) => {
+      if (snap.empty) {
+        content.innerHTML = '<div style="text-align:center;color:var(--td);margin-top:30px;">No feedback yet.</div>';
+        return;
+      }
+      content.innerHTML = '';
+      snap.forEach(doc => {
+        const data = doc.data();
+        const isUnread = data.devRead === false;
+        const name  = escHtml(data.userName || data.userEmail || 'Anonymous');
+        const phone = data.userPhone ? escHtml(data.userPhone) : null;
+        const preview = escHtml((data.lastMessage || '').slice(0, 60));
+        const timeStr = data.lastAt ? _fmtMsgTime(data.lastAt) : '';
+
+        const row = document.createElement('div');
+        row.style.cssText = `display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:12px;
+          border:1.5px solid ${isUnread ? 'rgba(255,210,0,0.55)' : 'rgba(46,204,113,0.18)'};
+          background:${isUnread ? 'rgba(255,210,0,0.04)' : 'rgba(0,0,0,0.25)'};
+          margin-bottom:10px;cursor:pointer;`;
+        row.innerHTML = `
+          <div style="flex:1;min-width:0;">
+            <div style="display:flex;align-items:center;gap:7px;margin-bottom:2px;">
+              ${isUnread ? '<div style="width:8px;height:8px;border-radius:50%;background:#FFD700;flex-shrink:0;"></div>' : ''}
+              <div style="font-size:13px;color:#2ecc71;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${name}</div>
+            </div>
+            ${phone ? `<div style="font-size:10px;color:rgba(255,255,255,0.4);margin-bottom:3px;">📱 ${phone}</div>` : ''}
+            <div style="font-size:12px;color:rgba(255,255,255,0.45);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${preview}</div>
+          </div>
+          <div style="font-size:10px;color:rgba(255,255,255,0.3);flex-shrink:0;text-align:right;">${timeStr}</div>`;
+        row.onclick = () => _devOpenThread(doc.id, data);
+        content.appendChild(row);
+      });
+    }, () => {});
+}
+
+function _devOpenThread(threadId, data) {
+  const content   = document.getElementById('devFeedbackContent');
+  const chatView  = document.getElementById('devChatView');
+  const msgBox    = document.getElementById('devChatMessages');
+  const titleEl   = document.getElementById('devPanelTitle');
+  const backBtn   = document.getElementById('devPanelBackBtn');
+  if (!content || !chatView || !msgBox) return;
+
+  // Stop thread-list listener while in chat view
+  if (_devThreadsUnsub) { try { _devThreadsUnsub(); } catch(_) {} _devThreadsUnsub = null; }
+
+  _devActiveThreadId = threadId;
+  const name = data.userName || data.userEmail || 'Anonymous';
+
+  // Switch to chat view
+  content.style.display = 'none';
+  chatView.style.display = 'flex';
+  if (titleEl) titleEl.textContent = name;
+  if (backBtn) backBtn.textContent = '← Back';
+
+  // Mark as devRead
+  fbDb.collection('feedbacks').doc(threadId).update({ devRead: true }).catch(() => {});
+
+  msgBox.innerHTML = '';
+
+  // Real-time messages
+  if (_devChatUnsub) { try { _devChatUnsub(); } catch(_) {} }
+  _devChatUnsub = fbDb.collection('feedbacks').doc(threadId)
+    .collection('messages')
+    .orderBy('createdAt', 'asc')
+    .onSnapshot((snap) => {
+      msgBox.innerHTML = '';
+      if (snap.empty) {
+        msgBox.innerHTML = '<div style="text-align:center;color:rgba(255,255,255,0.3);margin-top:30px;">No messages yet.</div>';
+        return;
+      }
+      snap.forEach(doc => {
+        const d = doc.data();
+        msgBox.appendChild(_chatBubble(d.text || '', d.sender, _fmtMsgTime(d.createdAt)));
+      });
+      _scrollToBottom(msgBox);
+    }, () => {});
+}
+
+window._devPanelBack = function() {
+  // If in chat view, go back to list; otherwise close modal
+  const chatView = document.getElementById('devChatView');
+  const isInChat = chatView && chatView.style.display !== 'none';
+  if (isInChat) {
+    if (_devChatUnsub) { try { _devChatUnsub(); } catch(_) {} _devChatUnsub = null; }
+    _devShowThreadList();
+  } else {
+    if (_devThreadsUnsub) { try { _devThreadsUnsub(); } catch(_) {} _devThreadsUnsub = null; }
+    const modal = document.getElementById('devFeedbackModal');
+    if (modal) modal.style.display = 'none';
+  }
+};
+
+window._devChatSend = async function() {
+  if (!isDeveloper() || !_devActiveThreadId) return;
+  const inp = document.getElementById('devChatInput');
+  if (!inp) return;
+  const text = inp.value.trim();
+  if (!text) return;
+  inp.value = '';
+  inp.disabled = true;
+  try {
+    const threadRef = fbDb.collection('feedbacks').doc(_devActiveThreadId);
+    await threadRef.collection('messages').add({
+      text,
+      sender: 'developer',
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    await threadRef.update({
+      lastMessage: text,
+      lastAt: firebase.firestore.FieldValue.serverTimestamp(),
+      devRead: true,
+      userRead: false   // mark unread for user
+    });
+  } catch(e) {
+    toast('Error: ' + e.message);
+  } finally {
+    inp.disabled = false;
+    inp.focus();
+  }
+};
+
+// ── NOTIFICATIONS ─────────────────────────────────────
+// Developer: real-time badge + popup on new user messages
+let _feedbackWatcher = null;
+let _feedbackPopupShownFor = null;
+
+function _showFeedbackPopup(data) {
+  let p = document.getElementById('feedbackPopup');
+  if (!p) {
+    p = document.createElement('div');
+    p.id = 'feedbackPopup';
+    p.style.cssText = "position:fixed;top:16px;left:50%;transform:translateX(-50%) translateY(-120%);width:min(360px,92vw);background:linear-gradient(135deg,rgba(46,204,113,0.18),rgba(6,13,31,0.97));border:1px solid rgba(46,204,113,0.5);border-radius:14px;padding:14px 16px;z-index:99999;box-shadow:0 8px 30px rgba(0,0,0,0.5);transition:transform 0.35s ease;cursor:pointer;font-family:Inter,sans-serif;";
+    document.body.appendChild(p);
+    p.onclick = function() {
+      p.style.transform = 'translateX(-50%) translateY(-120%)';
+      window.openDevFeedbackPanel();
+    };
+  }
+  const from    = escHtml(data.userName || data.userEmail || 'Anonymous');
+  const preview = escHtml((data.lastMessage || '').slice(0, 90));
+  p.innerHTML =
+    '<div style="display:flex;align-items:flex-start;gap:10px;">' +
+      '<div style="font-size:22px;">💬</div>' +
+      '<div style="flex:1;min-width:0;">' +
+        '<div style="font-size:12px;font-weight:700;color:#2ecc71;letter-spacing:0.5px;margin-bottom:3px;">New Message</div>' +
+        '<div style="font-size:11px;color:var(--td);margin-bottom:4px;">' + from + '</div>' +
+        '<div style="font-size:13px;color:var(--tl);line-height:1.4;">' + preview + '</div>' +
+      '</div>' +
+    '</div>';
+  requestAnimationFrame(() => { p.style.transform = 'translateX(-50%) translateY(0)'; });
+  clearTimeout(p._hideT);
+  p._hideT = setTimeout(() => { p.style.transform = 'translateX(-50%) translateY(-120%)'; }, 6000);
+}
+
+async function _updateFeedbackBadgeCount() {
+  if (!isDeveloper()) return;
+  const badge = document.getElementById('feedbackBadge');
+  if (!badge) return;
+  try {
+    const snap = await fbDb.collection('feedbacks').where('devRead', '==', false).limit(99).get();
+    const count = snap.size;
+    if (count > 0) {
+      badge.textContent = count > 99 ? '99+' : String(count);
+      badge.style.cssText += ';display:flex;align-items:center;justify-content:center;';
+    } else {
+      badge.style.display = 'none';
+    }
+  } catch(e) {}
+}
+
+function watchNewFeedback() {
+  if (!isDeveloper()) return;
+  if (_feedbackWatcher) { try { _feedbackWatcher(); } catch(_) {} }
+  _updateFeedbackBadgeCount();
+  // Watch for any thread where devRead == false (new message from user)
+  _feedbackWatcher = fbDb.collection('feedbacks')
+    .where('devRead', '==', false)
+    .onSnapshot((snap) => {
+      _updateFeedbackBadgeCount();
+      snap.docChanges().forEach(change => {
+        if (change.type === 'added' || change.type === 'modified') {
+          const data = change.doc.data();
+          const ts   = data.lastAt ? data.lastAt.toMillis() : 0;
+          // Only popup for messages in the last 2 minutes
+          if (ts > Date.now() - 2 * 60 * 1000 && _feedbackPopupShownFor !== change.doc.id + '_' + ts) {
+            _feedbackPopupShownFor = change.doc.id + '_' + ts;
+            _showFeedbackPopup(data);
+          }
+        }
+      });
+    }, () => {});
+}
+
+// User: real-time badge on dev reply (userRead == false)
+let _myFeedbackWatcher = null;
+
+function watchMyFeedback() {
+  if (!fbUser) return;
+  if (_myFeedbackWatcher) { try { _myFeedbackWatcher(); } catch(_) {} }
+  const uid = fbUser.uid;
+  _myFeedbackWatcher = fbDb.collection('feedbacks').doc(uid)
+    .onSnapshot((snap) => {
+      if (!snap.exists) return;
+      const data = snap.data();
+      // Show badge on "Open Chat" button if dev replied and user hasn't read
+      const badge = document.getElementById('userChatBadge');
+      if (badge) {
+        if (data.userRead === false) {
+          badge.textContent = '!';
+          badge.style.display = 'flex';
+          badge.style.alignItems = 'center';
+          badge.style.justifyContent = 'center';
+          // Popup notification for user
+          _showUserReplyPopup(data.lastMessage || '');
+        } else {
+          badge.style.display = 'none';
+        }
+      }
+    }, () => {});
+}
+
+let _replyPopupShownFor = '';
+function _showUserReplyPopup(text) {
+  const key = text.slice(0, 30);
+  if (_replyPopupShownFor === key) return;
+  _replyPopupShownFor = key;
+  let p = document.getElementById('replyPopup');
+  if (!p) {
+    p = document.createElement('div');
+    p.id = 'replyPopup';
+    p.style.cssText = "position:fixed;top:16px;left:50%;transform:translateX(-50%) translateY(-120%);width:min(360px,92vw);background:linear-gradient(135deg,rgba(74,144,226,0.18),rgba(6,13,31,0.97));border:1px solid rgba(74,144,226,0.5);border-radius:14px;padding:14px 16px;z-index:99999;box-shadow:0 8px 30px rgba(0,0,0,0.5);transition:transform 0.35s ease;cursor:pointer;font-family:Inter,sans-serif;";
+    document.body.appendChild(p);
+    p.onclick = function() {
+      p.style.transform = 'translateX(-50%) translateY(-120%)';
+      window.openUserChat();
+    };
+  }
+  const preview = escHtml(text.slice(0, 90));
+  p.innerHTML =
+    '<div style="display:flex;align-items:flex-start;gap:10px;">' +
+      '<div style="font-size:22px;">↩️</div>' +
+      '<div style="flex:1;min-width:0;">' +
+        '<div style="font-size:12px;font-weight:700;color:var(--a2);letter-spacing:0.5px;margin-bottom:3px;">Developer Replied</div>' +
+        '<div style="font-size:13px;color:var(--tl);line-height:1.4;">' + preview + '</div>' +
+      '</div>' +
+    '</div>';
+  requestAnimationFrame(() => { p.style.transform = 'translateX(-50%) translateY(0)'; });
+  clearTimeout(p._hideT);
+  p._hideT = setTimeout(() => { p.style.transform = 'translateX(-50%) translateY(-120%)'; }, 6000);
+}
+
+
+/* ====== Vagobatik Bank coin flight animation ====== */
+function flyRadhaCoin(){
+  const name = document.getElementById('n28name');
+  const slot = document.getElementById('vbankSlot');
+  const bank = document.getElementById('vbankImg');
+  if (!name || !slot || !bank) return;
+  const nr = name.getBoundingClientRect();
+  const sr = slot.getBoundingClientRect();
+  const startX = nr.left + nr.width/2;
+  const startY = nr.top + nr.height/2;
+  const endX = sr.left + sr.width/2;
+  const endY = sr.top + sr.height/2;
+
+  const coin = document.createElement('div');
+  coin.className = 'radha-coin';
+  coin.textContent = 'राधा';
+  coin.style.left = startX + 'px';
+  coin.style.top = startY + 'px';
+  document.body.appendChild(coin);
+
+  // Force reflow so transition triggers
+  void coin.offsetWidth;
+  const dx = endX - startX;
+  const dy = endY - startY;
+  coin.classList.add('flying');
+  coin.style.transform = `translate(-50%,-50%) translate(${dx}px,${dy}px) scale(0.35) rotate(720deg)`;
+  coin.style.opacity = '0';
+
+  setTimeout(()=>{
+    bank.classList.add('deposit');
+    setTimeout(()=>bank.classList.remove('deposit'), 420);
+  }, 760);
+  setTimeout(()=>{ try{ coin.remove(); }catch(_){} }, 1100);
+}

@@ -27,12 +27,16 @@
   <link rel="stylesheet" href="./style-stotram.css?v=124">
 </head>
 <body>
+<!-- NOTIFICATION BELL MOVED TO COMMUNITY VIEW -->
+
+
 <!-- LOADING -->
 <div class="ls" id="ls">
   <div class="ls-rings">
+
     <div class="glow1"></div>
     <div class="glow2"></div>
-    <canvas id="ringCanvas" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:5;"></canvas>
+    <canvas id="ringCanvas" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:5;background:transparent;"></canvas>
     <script>
     (function() {
       var RADHA = 'राधा';
@@ -67,7 +71,8 @@
         var ls = document.getElementById('ls');
         if (!canvas || !ls || ls.classList.contains('hide')) return;
 
-        var size = canvas.parentElement.offsetWidth || 320;
+        var rect = canvas.parentElement.getBoundingClientRect();
+        var size = rect.width || 320;
         var dpr  = window.devicePixelRatio || 1;
         if (canvas.width !== size * dpr) {
           canvas.width  = size * dpr;
@@ -79,9 +84,9 @@
         ctx.scale(dpr, dpr);
 
         var cx = size / 2, cy = size / 2;
-        var r1 = size * 0.42;  // yellow outer ring
-        var r2 = size * 0.38;  // blue inner ring
-        var fs = Math.max(10, Math.round(size * 0.047));
+        var r1 = size * 0.46;  // yellow outer ring
+        var r2 = size * 0.40;  // blue inner ring
+        var fs = Math.max(11, Math.round(size * 0.052));
 
         drawTextOnRing(ctx, cx, cy, r1,  rot1, '#FFD700', fs);
         drawTextOnRing(ctx, cx, cy, r2, -rot2, '#4A90E2', fs);
@@ -114,12 +119,43 @@
       }
     })();
     </script>
-    <img class="ls-img" id="guruImg" src="./guru.jpg" alt="Shri Radha Rani" style="position:relative;z-index:10;box-shadow:0 0 40px 15px rgba(255,215,0,0.4),0 0 80px 30px rgba(255,215,0,0.2);">
+    <img class="ls-img" id="guruImg" src="./guru.jpg" alt="Shri Radha Rani" style="position:relative;z-index:10;">
     <img id="appIconImg" style="display:none" src="./icon-192.png" alt="App Icon"/>
   </div>
-  <div class="ls-title">राधे राधे</div>
-  <div class="ls-sub">Jai Shri Radha</div>
+  <div class="ls-title">जय जय श्री हरिवंश</div>
+  <div class="ls-sub">জয় জয় শ্রী হরিবংশ</div>
 </div>
+
+<!-- Falling Peacock Feathers -->
+<div class="ls-feathers" id="lsFeathers"></div>
+<script>
+(function(){
+  var container = document.getElementById('lsFeathers');
+  var featherEmojis = ['🪈','🦚','🪈','🦚','🪈'];
+  var feathers = [];
+  var count = 0;
+  for(var i=0;i<count;i++){
+    var el = document.createElement('span');
+    el.className = 'feather';
+    var delay = (Math.random()*8).toFixed(2);
+    var dur   = (5 + Math.random()*6).toFixed(2);
+    var left  = (Math.random()*100).toFixed(1);
+    var size  = (20 + Math.random()*18).toFixed(0);
+    el.style.cssText = 'left:'+left+'vw;font-size:'+size+'px;animation-duration:'+dur+'s;animation-delay:'+delay+'s;';
+    el.textContent = featherEmojis[i % featherEmojis.length];
+    container.appendChild(el);
+    feathers.push(el);
+  }
+  // Hide feathers when splash hides
+  var ls = document.getElementById('ls');
+  if(ls){
+    var obs = new MutationObserver(function(){
+      if(ls.classList.contains('hide')) container.style.display='none';
+    });
+    obs.observe(ls,{attributes:true,attributeFilter:['class']});
+  }
+})();
+</script>
 
 <!-- NAV — 6 tabs (no separate Target) -->
 
@@ -152,9 +188,10 @@
     Stats
   </button>
 
-  <button class="nb" id="navLb" onclick="sv('vlb',this);loadLeaderboard(window._lbPeriod||'alltime')">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 21h8M12 17v4M17 3H7l-2 7h14l-2-7z"/><path d="M5 10c0 4 3.5 7 7 7s7-3 7-7"/></svg>
-    Ranks
+  <button class="nb" id="navLb" onclick="sv('vlb',this);loadLeaderboard(window._lbPeriod||'alltime')" style="position:relative;">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+    Community
+
   </button>
   <button class="nb" onclick="sv('vset',this)">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
@@ -271,7 +308,10 @@
 <!-- 28 NAMES VIEW -->
 <div class="view" id="v28">
   <div class="v28-header">
-    <div class="v28-title">28 Names of Radha</div>
+    <div style="display:flex;gap:6px;align-items:center">
+      <button class="sk-icon-btn" id="n28StatsBtn" onclick="toggle28Stats()" style="background:rgba(255,215,0,0.08);border-color:rgba(255,215,0,0.3);color:var(--gold);">📊 Stats <span id="n28StatsChev" style="font-size:10px;transition:transform 0.25s;display:inline-block">▾</span></button>
+      <button class="sk-icon-btn" onclick="App.undo28()" style="background:rgba(109,184,255,0.10);border-color:rgba(109,184,255,0.35);color:var(--a2);">↺ Undo</button>
+    </div>
     <div style="display:flex;gap:6px;align-items:center">
       <button id="n28ScriptToggle" onclick="toggle28Script()" style="background:rgba(255,215,0,0.08);border:1px solid rgba(255,215,0,0.3);border-radius:16px;color:var(--gold);font-size:12px;font-weight:600;padding:5px 13px;cursor:pointer;font-family:'Hind Siliguri',serif;letter-spacing:0.3px;transition:all 0.2s;">हिन्दी</button>
       <button class="sk-icon-btn" id="skToggleBtn" onclick="toggleSankalp()">
@@ -294,34 +334,18 @@
     </div>
   </div>
   <div class="n28wrap">
-    <!-- Single line timers: small, left and right -->
-    <div style="display:flex;justify-content:space-between;align-items:center;padding:4px 4px 6px;">
-      <div class="n28timer-box" style="align-items:flex-start">
-        <div class="n28timer-val" id="n28CycleTimer">0:00</div>
-        <div class="n28timer-lbl">Cycle Time</div>
-      </div>
-      <div class="n28timer-box" style="align-items:center">
-        <div class="n28timer-val" id="n28t" style="color:var(--gold);font-size:13px">0</div>
-        <div class="n28timer-lbl">Today</div>
-      </div>
-      <div class="n28timer-box" style="align-items:flex-end">
-        <div class="n28timer-val gold" id="n28TotalTimer">00:00:00</div>
-        <div class="n28timer-lbl">Jap Timer</div>
-      </div>
+    <!-- Vagobatik Bank at top of jap display -->
+    <div class="vbank-wrap">
+      <img class="vbank-img" id="vbankImg" src="./vagobatik-bank.png" alt="Vagobatik Bank" draggable="false">
+      <div class="vbank-slot" id="vbankSlot"></div>
+      <div class="vbank-label">Vagobatik Bank</div>
     </div>
+    <!-- Hidden helpers (kept for JS functionality) -->
+    <span id="n28CycleTimer" style="display:none">0:00</span>
+    <span id="n28t" style="display:none">0</span>
 
-    <!-- 28 Names Daily Progress Bar -->
-    <div id="n28ProgressWrap" style="padding:4px 4px 6px;display:none;">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
-        <span style="font-size:9px;color:rgba(189,147,249,0.6);letter-spacing:1.5px;text-transform:uppercase;font-weight:700;">Daily Progress</span>
-        <span id="n28ProgressLabel" style="font-size:10px;color:#BD93F9;font-weight:700;">0 / 0 cycles</span>
-      </div>
-      <div style="height:6px;background:rgba(189,147,249,0.12);border-radius:10px;overflow:hidden;box-shadow:inset 0 1px 3px rgba(0,0,0,0.4);">
-        <div id="n28ProgressBar" style="height:100%;width:0%;background:linear-gradient(90deg,rgba(189,147,249,0.8),rgba(150,80,255,0.9));border-radius:10px;transition:width 0.5s ease;box-shadow:0 0 8px rgba(189,147,249,0.5);"></div>
-      </div>
-    </div>
 
-    <!-- Tap area: Radha name at top, meaning, pause button -->
+    <!-- Tap area: Radha name (lowered toward bottom), meaning, pause button -->
     <div class="n28tz" id="tz28" aria-label="Tap to chant 28 Names of Radha" role="button" tabindex="0" ontouchstart="App.h28(event)" onmousedown="App.h28(event)">
       <div class="mf" id="mf28" style="border-radius:22px;">
         <div class="mf-line1">Radha Vallabh</div>
@@ -334,17 +358,28 @@
       </div>
     </div>
 
-    <!-- Cycle status text -->
-    <div class="n28cycle" id="n28cycle" style="text-align:center;margin-top:6px;">Tap to begin · Cycle 1</div>
+    <!-- Cycle status text (hidden — kept for JS compatibility) -->
+    <span id="n28cycle" style="display:none">Tap to begin · Cycle 1</span>
 
-    <!-- 28 beads in a single line -->
-    <div class="n28prog" id="n28prog" style="margin-top:6px;"></div>
+    <!-- 28 beads tracker (hidden — kept for JS compatibility) -->
+    <span id="n28prog" style="display:none"></span>
 
-    <!-- Undo + Stats buttons -->
-    <div style="display:flex;gap:8px;margin-top:10px">
-      <button class="cb danger" onclick="App.undo28()">↩ Undo</button>
-      <button class="cb" id="n28StatsBtn" onclick="toggle28Stats()" style="border-color:rgba(255,215,0,0.3);color:var(--gold);background:rgba(255,215,0,0.06)">📊 Stats <span id="n28StatsChev" style="font-size:10px;transition:transform 0.25s;display:inline-block">▾</span></button>
+    <!-- Bottom bar: Daily Progress (row 1) + Today's Jap Time (row 2) -->
+    <div id="n28ProgressWrap" style="padding:10px 4px 4px;display:flex;flex-direction:column;gap:6px;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:9px;color:rgba(189,147,249,0.6);letter-spacing:1.5px;text-transform:uppercase;font-weight:700;margin-bottom:4px;">Daily Progress</div>
+          <div style="height:6px;background:rgba(189,147,249,0.12);border-radius:10px;overflow:hidden;box-shadow:inset 0 1px 3px rgba(0,0,0,0.4);">
+            <div id="n28ProgressBar" style="height:100%;width:0%;background:linear-gradient(90deg,rgba(189,147,249,0.8),rgba(150,80,255,0.9));border-radius:10px;transition:width 0.5s ease;box-shadow:0 0 8px rgba(189,147,249,0.5);"></div>
+          </div>
+        </div>
+        <div id="n28ProgressLabel" style="text-align:right;font-size:11px;color:#BD93F9;font-weight:700;white-space:nowrap;">0 cycles · 0/28</div>
+      </div>
+      <div style="text-align:center;font-size:13px;color:var(--gold);font-family:'EB Garamond',serif;letter-spacing:0.5px;white-space:nowrap;">
+        Today’s Jap Time : <span id="n28TotalTimer">00:00:00</span>
+      </div>
     </div>
+
 
     <!-- 28 NAMES STATS PANEL -->
     <div id="n28StatsPanel" style="display:none;margin-top:10px">
@@ -418,21 +453,6 @@
       <input type="text" class="sti" id="ssIn" placeholder="Short description (optional)">
       <textarea class="sti" id="slIn" rows="6" placeholder="Paste or type full lyrics here (optional)&#10;Stored in your account — visible only to you" style="resize:vertical;min-height:110px;font-family:Hind Siliguri,serif;font-size:14px;line-height:1.8"></textarea>
       <button class="asb" onclick="addSt()">Add Stotram</button>
-    </div>
-  </div>
-  <!-- Developer Panel (visible only to developer accounts) -->
-  <div id="devStSection" style="margin-bottom:10px">
-    <button id="devStBtn" onclick="toggleDevPanel()" style="display:none;width:100%;padding:10px;border-radius:11px;border:1px solid rgba(255,215,0,0.3);background:rgba(255,215,0,0.06);color:var(--gold);font-size:13px;font-weight:600;cursor:pointer;font-family:Inter,sans-serif;margin-bottom:6px">🛠 Developer: Edit/Add Global Stotrams ▾</button>
-    <div id="devStPanel" style="display:none;background:rgba(0,0,0,0.3);border:1px solid rgba(255,215,0,0.2);border-radius:11px;padding:12px;margin-bottom:10px">
-      <!-- Add Global Stotram Form -->
-      <div style="font-size:12px;color:var(--gold);letter-spacing:1px;margin-bottom:8px;text-transform:uppercase">🌍 Add Global Stotram (visible to all users)</div>
-      <input type="text" id="devStName" placeholder="Stotram name (required)" style="width:100%;background:rgba(0,0,0,0.3);border:1px solid rgba(255,215,0,0.2);border-radius:8px;padding:8px 11px;color:var(--tl);font-size:13px;font-family:Hind Siliguri,serif;box-sizing:border-box;margin-bottom:6px">
-      <input type="text" id="devStSub" placeholder="Description (optional)" style="width:100%;background:rgba(0,0,0,0.3);border:1px solid rgba(255,215,0,0.2);border-radius:8px;padding:8px 11px;color:var(--tl);font-size:13px;font-family:Hind Siliguri,serif;box-sizing:border-box;margin-bottom:6px">
-      <textarea id="devStLyrics" rows="5" placeholder="Full lyrics (optional)" style="width:100%;background:rgba(0,0,0,0.3);border:1px solid rgba(255,215,0,0.2);border-radius:8px;padding:8px 11px;color:var(--tl);font-size:13px;font-family:Hind Siliguri,serif;resize:vertical;box-sizing:border-box;margin-bottom:6px"></textarea>
-      <button onclick="devAddGlobalStotram()" style="width:100%;padding:9px;border-radius:9px;border:none;background:linear-gradient(135deg,rgba(255,215,0,0.4),rgba(255,180,0,0.25));color:var(--gold);font-size:13px;font-weight:600;cursor:pointer;margin-bottom:12px">🌍 Add for All Users</button>
-      <hr style="border:none;border-top:1px solid rgba(255,215,0,0.15);margin:8px 0 12px">
-      <!-- Edit inbuilt stotrams + global list -->
-      <div id="devStList"></div>
     </div>
   </div>
   <!-- Global Translation Toggle removed — moved to per-stotram reader (top-right) -->
@@ -990,24 +1010,35 @@
   </div>
 </div>
 
-<!-- LEADERBOARD VIEW -->
+<!-- COMMUNITY VIEW -->
 <div class="view" id="vlb">
   <!-- Hero Banner -->
-  <div class="lb-hero">
+  <div class="lb-hero" style="position: relative;">
     <div class="lb-hero-glow"></div>
-    <div class="lb-hero-trophy">🏆</div>
-    <div class="lb-hero-title">Devotee Leaderboard</div>
-    <div class="lb-hero-sub">Guru Kripahi Kevalam.Ladder-board is valueless</div>
+    <div class="lb-hero-trophy">🪷</div>
+    <div class="lb-hero-title">Community</div>
+    <div class="lb-hero-sub">Devotees together · Guru Kripahi Kevalam</div>
+    
+
   </div>
 
-  <!-- Opt-in banner (shown only when not opted in and signed in) -->
-  <div class="lb-optin-banner" id="lbOptinBanner" style="display:none">
-    <div class="lb-optin-icon">🙏</div>
-    <div class="lb-optin-text">
-      <div class="lb-optin-title">Join the Community Board</div>
-      <div class="lb-optin-desc">Share your jap count with devotees. Enable in <b>Settings → Leaderboard</b>.</div>
+  <!-- LEADERBOARD SETTINGS (Moved from Settings tab) -->
+  <div class="sc" id="lbSettingCard" style="background:rgba(255,215,0,0.04);border-color:rgba(255,215,0,0.25);margin:16px 16px 8px 16px;padding-bottom:8px;">
+    <!-- Opt-in toggle -->
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:4px 0;margin-bottom:12px;">
+      <div style="font-size:14px;color:var(--gold);font-weight:600">🪷 Join Community Board</div>
+      <div class="tg" id="tgLbOptIn" onclick="toggleLbOptIn()"></div>
     </div>
-    <button class="lb-optin-btn" onclick="sv('vset', document.querySelector('.nb:last-child')); setTimeout(()=>{document.getElementById('lbSettingCard').scrollIntoView({behavior:'smooth'})},300)">Enable ›</button>
+
+    <!-- Display name -->
+    <div id="lbNameRow" style="display:none;">
+      <div style="font-size:11px;color:var(--gold);letter-spacing:1px;text-transform:uppercase;font-weight:600;margin-bottom:7px">Display Name</div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <input type="text" id="lbNameIn" autocomplete="off" spellcheck="false" maxlength="30" placeholder="Keep original name or type custom name…" style="flex:1;background:rgba(0,0,0,0.35);border:1px solid rgba(255,215,0,0.3);border-radius:10px;padding:9px 12px;color:var(--tl);font-size:13px;font-family:'Inter',sans-serif;outline:none">
+        <button onclick="saveLbName()" style="padding:9px 16px;border-radius:10px;border:1px solid rgba(255,215,0,0.5);background:linear-gradient(135deg,rgba(255,215,0,0.15),rgba(255,180,0,0.05));color:#FFD700;font-size:12px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;white-space:nowrap;box-shadow:0 4px 12px rgba(255,215,0,0.2),inset 0 1px 0 rgba(255,255,255,0.1);transition:all 0.3s ease;text-shadow:0 0 8px rgba(255,215,0,0.4);">✨ Save</button>
+      </div>
+      <div id="lbNameFeedback" style="font-size:11px;margin-top:5px;color:var(--green);min-height:16px"></div>
+    </div>
   </div>
 
   <!-- Period Tabs -->
@@ -1020,7 +1051,7 @@
 
   <!-- Your rank card (shown when opted in and ranked) -->
   <div class="lb-my-rank" id="lbMyRank" style="display:none">
-    <div class="lb-my-rank-label">Your Rank</div>
+    <div class="lb-my-rank-label">Your Position</div>
     <div class="lb-my-rank-num" id="lbMyRankNum">#—</div>
     <div class="lb-my-rank-jap" id="lbMyRankJap">— jap</div>
   </div>
@@ -1051,6 +1082,8 @@
   <div style="display:flex;justify-content:center;padding:10px 0 16px">
     <button id="lbRefreshBtn" onclick="loadLeaderboard(window._lbPeriod||'alltime')" style="background:rgba(255,215,0,0.08);border:1px solid rgba(255,215,0,0.3);border-radius:20px;color:var(--gold);font-size:12px;font-weight:600;padding:8px 22px;cursor:pointer;font-family:'Inter',sans-serif;letter-spacing:0.5px;transition:all 0.2s">↻ Refresh</button>
   </div>
+
+
 </div>
 
 <!-- SETTINGS VIEW — includes Targets + Cloud Sync + Preferences + Backup -->
@@ -1381,41 +1414,22 @@
     <div class="sr" style="align-items:center">
       <div><label>Sound Type</label><div class="sub">Choose between bell chime or Panchojanno Shankya</div></div>
       <select id="soundTypeSel" onchange="setSoundType(this.value)" style="padding:7px 10px;border-radius:10px;border:1px solid rgba(74,144,226,0.35);background:rgba(74,144,226,0.10);color:var(--a2);font-size:12px;font-family:Inter,sans-serif;cursor:pointer">
-        <option value="bell">🔔 Bell Chime</option>
-        <option value="shankya">🐚 Panchojanno Shankya</option>
+        <option value="shankya" selected>🐚 Panchojanno Shankya</option>
       </select>
     </div>
 
+    <!-- Vibration on mala completion + major milestone -->
+    <div class="sr" style="margin-top:6px;">
+      <div><label>Vibration</label><div class="sub">Vibrate on mala completion &amp; major milestones</div></div>
+      <div class="tg" id="tgVib" onclick="tgs('vib')"></div>
+    </div>
     <!-- Mahamantra Language toggle moved to its own card below Gaudiya -->
     <span id="hkLangLabel" style="display:none">Hindi</span>
     <button onclick="testSound()" style="padding:7px 14px;border-radius:20px;border:1px solid rgba(74,144,226,0.3);background:rgba(74,144,226,0.12);color:var(--a2);font-size:12px;cursor:pointer;font-family:Inter,sans-serif;margin-top:6px">🔔 Test Sound</button>
   </div>
 
 
-  <!-- LEADERBOARD SETTINGS -->
-  <div class="sc" id="lbSettingCard" style="background:rgba(255,215,0,0.04);border-color:rgba(255,215,0,0.25)">
-    <h3>🏆 Community Leaderboard</h3>
-    <p style="font-size:12px;color:var(--td);margin-bottom:14px">Share your jap count on the community leaderboard. Your display name and total jap count become visible to all signed-in users.</p>
 
-    <!-- Opt-in toggle -->
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid rgba(255,215,0,0.12);margin-bottom:12px">
-      <div>
-        <div style="font-size:13px;color:var(--tl);font-weight:500">Join Leaderboard</div>
-        <div style="font-size:11px;color:var(--td);margin-top:2px">Show my jap count publicly</div>
-      </div>
-      <div class="tg" id="tgLbOptIn" onclick="toggleLbOptIn()"></div>
-    </div>
-
-    <!-- Display name -->
-    <div id="lbNameRow">
-      <div style="font-size:11px;color:var(--gold);letter-spacing:1px;text-transform:uppercase;font-weight:600;margin-bottom:7px">Display Name</div>
-      <div style="display:flex;gap:8px;align-items:center">
-        <input type="text" id="lbNameIn" autocomplete="off" spellcheck="false" maxlength="30" placeholder="Radha Das / Devotee name…" style="flex:1;background:rgba(0,0,0,0.35);border:1px solid rgba(255,215,0,0.3);border-radius:10px;padding:9px 12px;color:var(--tl);font-size:13px;font-family:'Inter',sans-serif;outline:none">
-        <button onclick="saveLbName()" style="padding:9px 16px;border-radius:10px;border:1px solid rgba(255,215,0,0.5);background:linear-gradient(135deg,rgba(255,215,0,0.15),rgba(255,180,0,0.05));color:#FFD700;font-size:12px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;white-space:nowrap;box-shadow:0 4px 12px rgba(255,215,0,0.2),inset 0 1px 0 rgba(255,255,255,0.1);transition:all 0.3s ease;text-shadow:0 0 8px rgba(255,215,0,0.4);">✨ Save</button>
-      </div>
-      <div id="lbNameFeedback" style="font-size:11px;margin-top:5px;color:var(--green);min-height:16px"></div>
-    </div>
-  </div>
 
   <!-- PHOTO CUSTOMIZATION SETTINGS -->
   <div class="sc photo-settings-card non-gaudiya-setting">
@@ -1434,7 +1448,7 @@
           <input type="file" accept="image/*" style="display:none" onchange="uploadCustomPhoto('rv', this)">
         </label>
         <button class="photo-reset-btn" onclick="resetPhoto('rv')">↩ Default</button>
-        <button class="photo-reset-btn" style="color:var(--a2); flex:0.7" onclick="selectRepoPhoto('rv', 0)">Blank</button>
+        <button class="photo-reset-btn" style="flex:0.7" onclick="selectRepoPhoto('rv', 0)">Blank</button>
       </div>
     </div>
 
@@ -1448,7 +1462,7 @@
           <input type="file" accept="image/*" style="display:none" onchange="uploadCustomPhoto('hitju', this)">
         </label>
         <button class="photo-reset-btn" onclick="resetPhoto('hitju')">↩ Default</button>
-        <button class="photo-reset-btn" style="color:var(--a2); flex:0.7" onclick="selectRepoPhoto('hitju', 0)">Blank</button>
+        <button class="photo-reset-btn" style="flex:0.7" onclick="selectRepoPhoto('hitju', 0)">Blank</button>
       </div>
     </div>
 
@@ -1462,7 +1476,7 @@
           <input type="file" accept="image/*" style="display:none" onchange="uploadCustomPhoto('gurudev', this)">
         </label>
         <button class="photo-reset-btn" onclick="resetPhoto('gurudev')">↩ Default</button>
-        <button class="photo-reset-btn" style="color:var(--a2); flex:0.7" onclick="selectRepoPhoto('gurudev', 0)">Blank</button>
+        <button class="photo-reset-btn" style="flex:0.7" onclick="selectRepoPhoto('gurudev', 0)">Blank</button>
       </div>
     </div>
   </div>
@@ -1474,6 +1488,78 @@
     <div id="appLinkDisplay" style="font-size:11px;color:var(--a2);background:rgba(74,144,226,0.08);border:1px solid rgba(74,144,226,0.2);border-radius:8px;padding:8px 11px;margin-bottom:10px;word-break:break-all;font-family:monospace;cursor:pointer" onclick="shareApp()" title="Tap to copy"></div>
     <script>(function(){function p(){var el=document.getElementById('appLinkDisplay');if(!el)return;var u=location.href.replace(/\/index\.html([?#].*)?$/,'/').split('?')[0].split('#')[0];if(!u.endsWith('/'))u+='/';el.textContent=u;}if(document.readyState!=='loading')p();else document.addEventListener('DOMContentLoaded',p);})();</script>
     <button class="pb" onclick="shareApp()" style="background:linear-gradient(135deg,rgba(255,215,0,0.35),rgba(255,180,0,0.25));color:var(--gold);border:1px solid rgba(255,215,0,0.4)">🌸 Share Radha Naam Jap App</button>
+  </div>
+
+  <!-- FEEDBACK FORM -->
+  <div class="sc" style="background:rgba(74,144,226,0.03);border-color:rgba(74,144,226,0.18)">
+    <h3 style="color:var(--a2)">💬 Chat with Developer</h3>
+    <p style="font-size:12px;color:var(--td);margin-bottom:12px">Send feedback, report bugs, or ask questions. The developer will reply here.</p>
+    <button class="pb" onclick="window.openUserChat()" style="background:rgba(74,144,226,0.15);color:var(--a2);border:1px solid rgba(74,144,226,0.3);position:relative;">
+      💬 Open Chat
+      <span id="userChatBadge" style="display:none;position:absolute;top:-8px;right:-8px;min-width:18px;height:18px;padding:0 4px;background:#FF3B30;border-radius:9px;border:2px solid #060D1F;color:#fff;font-size:10px;font-weight:700;line-height:14px;text-align:center;"></span>
+    </button>
+  </div>
+
+  <!-- DEVELOPER ONLY SECTION -->
+  <div id="devOptionsPanel" class="sc" style="display:none;background:rgba(46,204,113,0.05);border-color:rgba(46,204,113,0.2)">
+    <h3 style="color:var(--green)">🛠️ Developer Settings</h3>
+    
+    <div style="margin-top:15px;border-top:1px solid rgba(46,204,113,0.15);padding-top:15px;">
+      <div style="font-size:12px;color:var(--green);margin-bottom:5px;">User Feedback</div>
+      <button class="pb" onclick="openDevFeedbackPanel()" style="background:rgba(46,204,113,0.15);color:var(--green);border:1px solid rgba(46,204,113,0.3);position:relative;">
+        📥 Read Feedback
+        <span id="feedbackBadge" style="display:none;position:absolute;top:-8px;right:-8px;min-width:20px;height:20px;padding:0 5px;background:#FF3B30;border-radius:10px;border:2px solid #060D1F;color:#fff;font-size:11px;font-weight:700;line-height:16px;text-align:center;font-family:Inter,sans-serif;"></span>
+      </button>
+    </div>
+  </div>
+
+  <!-- DEVELOPER FEEDBACK MODAL -->
+  <!-- ══ DEVELOPER CHAT PANEL ══ -->
+  <div id="devFeedbackModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:calc(100px + env(safe-area-inset-bottom));z-index:99998;background:rgba(6,13,31,0.97);backdrop-filter:blur(12px);flex-direction:column;align-items:center;justify-content:center;padding:12px;box-sizing:border-box;">
+    <div style="background:linear-gradient(160deg,#0a1f12 0%,#060D1F 100%);border:2px solid rgba(46,204,113,0.6);border-radius:20px;width:100%;max-width:680px;height:100%;display:flex;flex-direction:column;box-shadow:0 0 30px rgba(46,204,113,0.15);overflow:hidden;">
+      <div style="background:linear-gradient(90deg,rgba(46,204,113,0.08),rgba(46,204,113,0.22),rgba(46,204,113,0.08));padding:14px 16px;border-bottom:1px solid rgba(46,204,113,0.25);flex-shrink:0;display:flex;align-items:center;gap:12px;">
+        <button id="devPanelBackBtn" onclick="window._devPanelBack()" style="background:rgba(46,204,113,0.15);color:#2ecc71;border:1px solid rgba(46,204,113,0.4);padding:7px 14px;border-radius:10px;font-size:13px;font-weight:bold;cursor:pointer;flex-shrink:0;">✕ Close</button>
+        <div style="flex:1;text-align:center;">
+          <div style="font-size:22px;line-height:1;">📥</div>
+          <div id="devPanelTitle" style="color:#2ecc71;font-size:15px;font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-top:2px;">User Feedback</div>
+        </div>
+        <div style="width:70px;"></div>
+      </div>
+      <!-- Thread list view -->
+      <div id="devFeedbackContent" style="padding:16px;color:var(--tl);font-size:14px;line-height:1.6;overflow-y:auto;flex:1;min-height:0;border-bottom:2px solid rgba(46,204,113,0.35);">
+        <div style="text-align:center;color:var(--td);margin-top:20px;">Loading...</div>
+      </div>
+      <!-- Per-thread chat view (hidden initially) -->
+      <div id="devChatView" style="display:none;flex-direction:column;flex:1;overflow:hidden;min-height:0;">
+        <div id="devChatMessages" style="flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:8px;min-height:0;"></div>
+        <div style="flex-shrink:0;padding:10px 14px 12px;background:rgba(0,0,0,0.3);border-top:1px solid rgba(46,204,113,0.2);display:flex;gap:8px;align-items:flex-end;">
+          <textarea id="devChatInput" rows="2" placeholder="Type reply..." style="flex:1;min-width:0;background:rgba(0,0,0,0.3);border:1px solid rgba(46,204,113,0.3);border-radius:10px;padding:8px 10px;color:var(--tl);font-size:13px;resize:none;font-family:Inter,sans-serif;box-sizing:border-box;"></textarea>
+          <button onclick="window._devChatSend()" style="flex-shrink:0;background:rgba(46,204,113,0.2);color:#2ecc71;border:1px solid rgba(46,204,113,0.4);padding:10px 18px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;">Send ↩</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ USER CHAT MODAL ══ -->
+  <div id="userChatModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:calc(100px + env(safe-area-inset-bottom));z-index:99998;background:rgba(6,13,31,0.97);backdrop-filter:blur(12px);flex-direction:column;align-items:center;justify-content:center;padding:12px;box-sizing:border-box;">
+    <div style="background:linear-gradient(160deg,#060D1F 0%,#0a1225 100%);border:2px solid rgba(74,144,226,0.5);border-radius:20px;width:100%;max-width:680px;height:100%;display:flex;flex-direction:column;box-shadow:0 0 30px rgba(74,144,226,0.15);overflow:hidden;">
+      <div style="background:linear-gradient(90deg,rgba(74,144,226,0.08),rgba(74,144,226,0.22),rgba(74,144,226,0.08));padding:14px 16px;border-bottom:1px solid rgba(74,144,226,0.25);flex-shrink:0;display:flex;align-items:center;gap:12px;">
+        <button onclick="window.closeUserChat()" style="background:rgba(74,144,226,0.15);color:var(--a2);border:1px solid rgba(74,144,226,0.4);padding:7px 14px;border-radius:10px;font-size:13px;font-weight:bold;cursor:pointer;flex-shrink:0;">✕ Close</button>
+        <div style="flex:1;text-align:center;">
+          <div style="font-size:22px;line-height:1;">💬</div>
+          <div style="color:var(--a2);font-size:15px;font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-top:2px;">Chat with Developer</div>
+        </div>
+        <div style="width:70px;"></div>
+      </div>
+      <div id="userChatMessages" style="flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:8px;min-height:0;">
+        <div style="text-align:center;color:var(--td);margin-top:30px;">Loading chat...</div>
+      </div>
+      <!-- Input row: flex-shrink:0 ensures it is never squashed or hidden -->
+      <div style="flex-shrink:0;padding:10px 14px 12px;background:rgba(0,0,0,0.3);border-top:1px solid rgba(74,144,226,0.2);display:flex;gap:8px;align-items:flex-end;">
+        <textarea id="userChatInput" rows="2" placeholder="Type your message..." style="flex:1;min-width:0;background:rgba(0,0,0,0.3);border:1px solid rgba(74,144,226,0.3);border-radius:10px;padding:8px 10px;color:var(--tl);font-size:13px;resize:none;font-family:Inter,sans-serif;box-sizing:border-box;"></textarea>
+        <button onclick="window._userChatSend()" style="flex-shrink:0;background:rgba(74,144,226,0.25);color:var(--a2);border:1px solid rgba(74,144,226,0.5);padding:10px 18px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;">Send</button>
+      </div>
+    </div>
   </div>
 
 </div>
@@ -1542,6 +1628,6 @@
     <!-- Gives tithi boundary accuracy matching ISKCON/Drik Panchang exactly -->
     <script src="./panchangData.js?v=117"></script>
     <script src="./stotrams.js?v=115"></script>
-    <script src="./app.js?v=118"></script>
+    <script src="./app.js?v=125"></script>
   </body>
 </html>

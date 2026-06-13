@@ -7,6 +7,7 @@
   --tl:#ECEEFB;--td:#8089B8;
 }
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html{scroll-behavior:smooth;}
 body{font-family:'Inter',sans-serif;background:var(--bd);color:var(--tl);min-height:100vh;min-height:100dvh;overflow-x:hidden;position:relative;width:100vw;max-width:100%;}
 body::before{content:'';position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:120vmax;height:120vmax;
   background:radial-gradient(circle at 50% 30%,rgba(34,85,204,0.18) 0%,transparent 50%),
@@ -16,16 +17,31 @@ body::before{content:'';position:fixed;top:50%;left:50%;transform:translate(-50%
 .ls{position:fixed;inset:0;background:var(--bd);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:999;transition:opacity 0.8s;width:100vw;height:100vh;height:100dvh;}
 .ls.hide{opacity:0;pointer-events:none;visibility:hidden;}
 .ls-img{width:200px;height:200px;border-radius:50%;object-fit:cover;object-position:top center;
-  border:3px solid rgba(255,215,0,0.6);animation:glow 2s ease-in-out infinite;position:relative;z-index:10;}
-@keyframes glow{0%,100%{box-shadow:0 0 30px rgba(255,215,0,0.35);}50%{box-shadow:0 0 65px rgba(255,215,0,0.75);}}
-.ls-title{font-family:'Tiro Devanagari Hindi',serif;font-size:28px;color:var(--gold);letter-spacing:8px;margin-top:40px;
-  text-shadow:0 0 20px rgba(255,215,0,0.8),0 2px 8px rgba(0,0,0,0.9);position:relative;z-index:20;}
-.ls-sub{font-size:12px;color:#D6E8FF;letter-spacing:4px;text-transform:uppercase;margin-top:10px;
+  border:none;animation:glowAlt 4s ease-in-out infinite;position:relative;z-index:10;}
+@keyframes glowAlt{
+  0%  {box-shadow:0 0 50px 15px rgba(255,215,0,0.7),0 0 100px 40px rgba(255,215,0,0.35),0 0 150px 60px rgba(255,165,0,0.15);}
+  25% {box-shadow:0 0 60px 20px rgba(255,215,0,0.9),0 0 110px 50px rgba(255,215,0,0.5),0 0 170px 80px rgba(255,165,0,0.25);}
+  50% {box-shadow:0 0 50px 15px rgba(74,144,226,0.7),0 0 100px 40px rgba(74,144,226,0.35),0 0 150px 60px rgba(100,180,255,0.15);}
+  75% {box-shadow:0 0 60px 20px rgba(74,144,226,0.9),0 0 110px 50px rgba(74,144,226,0.5),0 0 170px 80px rgba(100,180,255,0.25);}
+  100%{box-shadow:0 0 50px 15px rgba(255,215,0,0.7),0 0 100px 40px rgba(255,215,0,0.35),0 0 150px 60px rgba(255,165,0,0.15);}
+}
+.ls-title{font-family:'Tiro Devanagari Hindi',serif;font-size:22px;color:var(--gold);letter-spacing:4px;margin-top:36px;
+  text-shadow:0 0 20px rgba(255,215,0,0.8),0 2px 8px rgba(0,0,0,0.9);position:relative;z-index:20;text-align:center;line-height:1.5;}
+.ls-sub{font-size:14px;color:#D6E8FF;letter-spacing:2px;margin-top:10px;font-family:'Noto Sans Bengali','Noto Sans',sans-serif;
   text-shadow:0 2px 8px rgba(0,0,0,0.9);position:relative;z-index:20;}
+/* Falling peacock feathers */
+.ls-feathers{position:fixed;inset:0;pointer-events:none;z-index:1000;overflow:hidden;}
+.feather{position:absolute;top:-80px;opacity:0;animation:featherFall linear infinite;}
+@keyframes featherFall{
+  0%  {opacity:0;  transform:translate(0px, 0vh)   rotate(0deg);}
+  8%  {opacity:1;}
+  85% {opacity:0.8;}
+  100%{opacity:0;  transform:translate(20px, 110vh) rotate(380deg);}
+}
 /* Spinning Radha Text Rings */
 .ls-rings{position:relative;display:flex;align-items:center;justify-content:center;width:min(320px,85vw);height:min(320px,85vw);flex-shrink:0;}
-.ls-rings .glow1{position:absolute;width:min(260px,70vw);height:min(260px,70vw);border-radius:50%;background:radial-gradient(circle,rgba(255,215,0,0.35) 0%,transparent 70%);filter:blur(18px);animation:glow 2s ease-in-out infinite;pointer-events:none;}
-.ls-rings .glow2{position:absolute;width:min(200px,54vw);height:min(200px,54vw);border-radius:50%;background:radial-gradient(circle,rgba(255,215,0,0.22) 0%,transparent 70%);filter:blur(12px);animation:glow 2s ease-in-out infinite;pointer-events:none;}
+.ls-rings .glow1{display:none;}
+.ls-rings .glow2{display:none;}
 .ls-ring{display:none;}
 @keyframes spin-fwd{from{transform:rotate(0deg);}to{transform:rotate(360deg);}}
 @keyframes spin-rev{from{transform:rotate(0deg);}to{transform:rotate(-360deg);}}
@@ -35,6 +51,8 @@ body::before{content:'';position:fixed;top:50%;left:50%;transform:translate(-50%
   .view{height:-webkit-fill-available;max-height:-webkit-fill-available;overflow-y:auto;-webkit-overflow-scrolling:touch;}
   #vj.active{height:-webkit-fill-available;overflow:hidden;}
   body{height:-webkit-fill-available;}
+  #devFeedbackModal{height:-webkit-fill-available;}
+  #devFeedbackModal>div{max-height:-webkit-fill-available;}
 }
 
 
@@ -576,7 +594,8 @@ button.hpb.active{
 .sk-panel-inner{padding:10px 14px 14px;}
 .n28tz{flex:1;background:radial-gradient(ellipse at center,rgba(34,85,204,0.22) 0%,rgba(6,13,31,0.6) 100%);
   border:1px solid rgba(74,144,226,0.2);border-radius:22px;
-  display:flex;align-items:center;justify-content:center;flex-direction:column;
+  display:flex;align-items:center;justify-content:flex-end;flex-direction:column;
+  padding-bottom:70px;
   cursor:pointer;user-select:none;-webkit-user-select:none;position:relative;overflow:hidden;min-height:320px;
   touch-action:manipulation;-webkit-touch-callout:none;}
 .n28name{font-family:'Hind Siliguri','Tiro Devanagari Hindi',serif;font-size:clamp(34px,10vw,58px);color:#FFD93D;
@@ -838,12 +857,13 @@ button.n28-gold-btn-danger,
 }
 .photo-upload-btn:hover { background:linear-gradient(135deg, rgba(74,144,226,0.25), rgba(74,144,226,0.15)); box-shadow:0 0 16px rgba(74,144,226,0.3); }
 .photo-upload-btn.active, .photo-reset-btn.active {
-  background: linear-gradient(135deg, rgba(255,215,0,0.2), rgba(255,180,0,0.05));
-  border-color: rgba(255,215,0,0.6);
+  background: linear-gradient(135deg, rgba(255,215,0,0.22), rgba(255,180,0,0.08));
+  border: 2.5px solid #FFD700;
   color: #FFD700;
-  text-shadow: 0 0 8px rgba(255,215,0,0.5);
-  box-shadow: 0 0 16px rgba(255,215,0,0.3), inset 0 1px 0 rgba(255,255,255,0.15);
+  text-shadow: 0 0 8px rgba(255,215,0,0.6);
+  box-shadow: 0 0 0 2px rgba(255,215,0,0.25), 0 0 18px rgba(255,215,0,0.35), inset 0 1px 0 rgba(255,255,255,0.15);
   transform: translateY(-1px);
+  outline: none;
 }
 .photo-reset-btn {
   background: linear-gradient(135deg, rgba(255,255,255,0.05), rgba(255,255,255,0.01));
@@ -1101,7 +1121,7 @@ button.n28-gold-btn-danger,
 .ms-toggle-wrap{display:flex;justify-content:center;gap:8px;margin-bottom:18px;}
 .ms-toggle-btn{padding:6px 16px;border-radius:20px;border:1px solid rgba(74,144,226,0.25);background:rgba(74,144,226,0.08);color:var(--td);font-size:11px;cursor:pointer;font-family:'Inter',sans-serif;transition:all 0.3s;}
 .ms-toggle-btn.active{background:rgba(255,215,0,0.15);border-color:rgba(255,215,0,0.4);color:var(--gold);}
-.ms-card{position:relative;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:18px;padding:16px;margin-bottom:14px;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);cursor:pointer;transition:transform 0.25s ease,box-shadow 0.3s ease;overflow:hidden;}
+.ms-card{position:relative;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:18px;padding:16px;margin-bottom:14px;-webkit-cursor:pointer;transition:transform 0.25s ease,box-shadow 0.3s ease;overflow:hidden;}
 .ms-card:hover,.ms-card:active{transform:scale(1.02);}
 .ms-card.tier-bronze{box-shadow:0 0 18px rgba(184,115,51,0.3),inset 0 0 30px rgba(184,115,51,0.05);}
 .ms-card.tier-silver{box-shadow:0 0 18px rgba(192,192,220,0.35),inset 0 0 30px rgba(192,192,220,0.05);}
@@ -1137,7 +1157,7 @@ button.n28-gold-btn-danger,
 .ms-section-sep{height:1px;background:linear-gradient(90deg,transparent,rgba(74,144,226,0.2),transparent);margin:20px 0;}
 /* Lakh section cards */
 .ms-lakh-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;}
-.ms-lakh-card{position:relative;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:14px;padding:12px;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);cursor:pointer;transition:transform 0.2s;overflow:hidden;}
+.ms-lakh-card{position:relative;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:14px;padding:12px;-webkit-cursor:pointer;transition:transform 0.2s;overflow:hidden;}
 .ms-lakh-card:hover,.ms-lakh-card:active{transform:scale(1.02);}
 .ms-lakh-card.achieved{border-color:rgba(255,215,0,0.25);}
 .ms-lakh-card .ms-lakh-label{font-family:'Cinzel Decorative',serif;font-size:11px;color:var(--tl);letter-spacing:1px;}
@@ -1517,7 +1537,7 @@ body.hk-bn #hkLangBtnHi{opacity:0.55;}
   border-radius: 10px;
   background: rgba(0,0,0,0.4);
   border: 1px solid rgba(255,200,100,0.18);
-  backdrop-filter: blur(6px);
+  
   flex-shrink: 0;
 }
 .hcj-player {
@@ -1593,7 +1613,7 @@ body.hk-bn #hkLangBtnHi{opacity:0.55;}
   box-shadow:
     0 8px 28px rgba(0,0,0,0.45),
     inset 0 1px 0 rgba(255,255,255,0.06);
-  backdrop-filter: blur(14px);
+  
 }
 .hcj-player{
   gap: 14px;
@@ -1707,8 +1727,8 @@ body.hk-bn #hkLangBtnHi{opacity:0.55;}
   position:sticky; bottom:0; left:0; right:0;
   padding:14px 18px calc(14px + env(safe-area-inset-bottom,0px));
   background:linear-gradient(180deg, rgba(20,14,30,.55) 0%, rgba(15,10,24,.92) 55%, rgba(10,6,18,.98) 100%);
-  backdrop-filter:blur(22px) saturate(160%);
-  -webkit-backdrop-filter:blur(22px) saturate(160%);
+   saturate(160%);
+  -webkit- saturate(160%);
   border-top:1px solid rgba(255,255,255,.08);
   box-shadow:0 -10px 28px rgba(0,0,0,.45);
   z-index:6;
@@ -2155,7 +2175,7 @@ body.hk-bn #hkLangBtnHi{opacity:0.55;}
   border:1px solid rgba(245,209,122,0.35);
   border-radius:20px;padding:16px;margin:6px 0 14px;
   font-family:'Inter',sans-serif;
-  backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px);
+   -webkit-
   box-shadow:
     0 10px 40px rgba(0,0,0,0.55),
     0 0 0 1px rgba(245,209,122,0.10) inset,
@@ -2191,7 +2211,7 @@ body.hk-bn #hkLangBtnHi{opacity:0.55;}
     inset 0 1px 0 rgba(255,255,255,0.08),
     0 6px 18px rgba(0,0,0,0.35);
   overflow:hidden;
-  backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px);
+   -webkit-
 }
 .pt-card::before{
   content:'';position:absolute;inset:0;border-radius:16px;pointer-events:none;
@@ -2536,8 +2556,8 @@ body.hk-bn #hkLangBtnHi{opacity:0.55;}
 .tz .rv-wm{
   position:absolute; top:var(--rv-top); left:50%; transform:translateX(-50%);
   width:var(--rv-w); height:auto;
-  opacity:.55;
-  filter:drop-shadow(0 0 22px rgba(245,209,122,.45));
+  opacity:.50;
+  filter:none;
   pointer-events:none; user-select:none; z-index:1;
 }
 /* Watery edge-fading & blending for custom photos */
@@ -2567,14 +2587,30 @@ body.hk-bn #hkLangBtnHi{opacity:0.55;}
   transition: none !important;
 }
 
+/* ✨ SUSTAINED MALA GLOW — stays ON until Panchojanno Shankya finishes */
+@keyframes malaGlowSustained {
+  0%,100% { opacity:1; filter:drop-shadow(0 0 60px rgba(255,220,80,1)) drop-shadow(0 0 120px rgba(255,180,0,0.9)) drop-shadow(0 0 40px rgba(255,255,150,0.8)); }
+  33%     { opacity:1; filter:drop-shadow(0 0 80px rgba(255,240,100,1)) drop-shadow(0 0 140px rgba(255,215,0,1))   drop-shadow(0 0 50px rgba(255,230,80,0.9)); }
+  66%     { opacity:1; filter:drop-shadow(0 0 75px rgba(80,160,255,1))  drop-shadow(0 0 130px rgba(60,120,255,0.9)) drop-shadow(0 0 45px rgba(150,200,255,0.8)); }
+}
+.tz img.mala-glow-sustained {
+  animation: malaGlowSustained 2s ease-in-out infinite !important;
+  -webkit-mask-image: none !important;
+  mask-image: none !important;
+  mix-blend-mode: screen !important;
+  z-index: 4 !important;
+  opacity: 1 !important;
+  transition: none !important;
+}
+
 /* Hit Ju Maharaj — bottom-left, anchored to RV's bottom edge */
 .tz .hitju-wm{
   position:absolute;
   bottom: clamp(22px, 4.5vh, 60px);
   left:10px;
   width:var(--side-w); height:auto;
-  opacity:.5;
-  filter:drop-shadow(0 0 12px rgba(245,209,122,.35));
+  opacity:.45;
+  filter:none;
   pointer-events:none; user-select:none; z-index:1;
 }
 
@@ -2584,8 +2620,8 @@ body.hk-bn #hkLangBtnHi{opacity:0.55;}
   bottom: clamp(22px, 4.5vh, 60px);
   right:10px;
   width:var(--side-w); height:auto;
-  opacity:.5;
-  filter:drop-shadow(0 0 12px rgba(245,209,122,.35));
+  opacity:.45;
+  filter:none;
   pointer-events:none; user-select:none; z-index:1;
 }
 
@@ -2601,18 +2637,34 @@ body.hk-bn #hkLangBtnHi{opacity:0.55;}
   }
 }
 
-/* Dynamic golden glow — gentle breathing pulse on the three watermarks */
-@keyframes tzGoldPulse{
-  0%,100%{filter:drop-shadow(0 0 10px rgba(245,209,122,0.30)) drop-shadow(0 0 18px rgba(255,193,74,0.20));}
-  50%   {filter:drop-shadow(0 0 22px rgba(245,209,122,0.75)) drop-shadow(0 0 38px rgba(255,193,74,0.55));}
+/* ✨ DIVINE BREATHING GLOW — 0→80% golden→0, then 0→80% blue→0, in sync, all 3 images */
+/*
+  Timeline over 10s (ease-in-out per segment):
+  0%   → completely dark (glow=0, opacity base)
+  25%  → peak golden glow (80%)
+  50%  → back to dark (glow=0)
+  75%  → peak blue glow (80%)
+  100% → back to dark (glow=0) — loops
+*/
+@keyframes divineBreathGlow{
+  0%   { opacity:0.45; filter:drop-shadow(0 0 0px  rgba(255,215,0,0))   drop-shadow(0 0 0px  rgba(80,160,255,0)); }
+  25%  { opacity:0.85; filter:drop-shadow(0 0 32px rgba(255,215,0,0.80)) drop-shadow(0 0 55px rgba(255,180,0,0.60)); }
+  50%  { opacity:0.45; filter:drop-shadow(0 0 0px  rgba(255,215,0,0))   drop-shadow(0 0 0px  rgba(80,160,255,0)); }
+  75%  { opacity:0.85; filter:drop-shadow(0 0 32px rgba(80,160,255,0.80)) drop-shadow(0 0 55px rgba(60,120,255,0.60)); }
+  100% { opacity:0.45; filter:drop-shadow(0 0 0px  rgba(255,215,0,0))   drop-shadow(0 0 0px  rgba(80,160,255,0)); }
 }
-@keyframes tzGoldPulseStrong{
-  0%,100%{filter:drop-shadow(0 0 18px rgba(245,209,122,0.40)) drop-shadow(0 0 28px rgba(255,193,74,0.25));}
-  50%   {filter:drop-shadow(0 0 32px rgba(245,209,122,0.85)) drop-shadow(0 0 60px rgba(255,193,74,0.6));}
+@keyframes divineBreathGlowStrong{
+  0%   { opacity:0.50; filter:drop-shadow(0 0 0px  rgba(255,215,0,0))   drop-shadow(0 0 0px  rgba(80,160,255,0)); }
+  25%  { opacity:0.95; filter:drop-shadow(0 0 42px rgba(255,215,0,0.80)) drop-shadow(0 0 70px rgba(255,180,0,0.65)); }
+  50%  { opacity:0.50; filter:drop-shadow(0 0 0px  rgba(255,215,0,0))   drop-shadow(0 0 0px  rgba(80,160,255,0)); }
+  75%  { opacity:0.95; filter:drop-shadow(0 0 42px rgba(80,160,255,0.80)) drop-shadow(0 0 70px rgba(60,120,255,0.65)); }
+  100% { opacity:0.50; filter:drop-shadow(0 0 0px  rgba(255,215,0,0))   drop-shadow(0 0 0px  rgba(80,160,255,0)); }
 }
-.tz .rv-wm{animation:tzGoldPulseStrong 4.5s ease-in-out infinite;}
-.tz .hitju-wm,.tz .gurudev-wm{animation:tzGoldPulse 3.8s ease-in-out infinite;}
-.tz .gurudev-wm{animation-delay:1.9s;}
+
+/* All 3 images share the SAME 10s cycle — perfectly in sync, starts from zero glow */
+.tz .rv-wm     { animation: divineBreathGlowStrong 10s ease-in-out infinite; animation-delay: 0s; }
+.tz .hitju-wm  { animation: divineBreathGlow        10s ease-in-out infinite; animation-delay: 0s; }
+.tz .gurudev-wm{ animation: divineBreathGlow        10s ease-in-out infinite; animation-delay: 0s; }
 
 /* Hide these devotional images in Gaudiya / ISKCON mode */
 body.gaudiya-mode .tz .rv-wm,
@@ -2658,12 +2710,12 @@ body.gaudiya-mode .tz .cm-wm{
 }
 .lb-hero-trophy{
   font-size:52px;line-height:1;margin-bottom:8px;position:relative;z-index:1;
-  animation:lbTrophyFloat 3s ease-in-out infinite;
-  filter:drop-shadow(0 0 20px rgba(255,215,0,0.6));
+  animation:lbTrophyFloat 4s ease-in-out infinite;
+  filter:drop-shadow(0 0 18px rgba(255,215,0,0.55));
 }
 @keyframes lbTrophyFloat{
-  0%,100%{transform:translateY(0);}
-  50%{transform:translateY(-8px);}
+  0%,100%{transform:translateY(0) scale(1);}
+  50%{transform:translateY(-10px) scale(1.04);}
 }
 .lb-hero-title{
   font-family:'Cinzel Decorative',serif;font-size:17px;color:var(--gold);
@@ -2818,3 +2870,39 @@ body.gaudiya-mode .tz .cm-wm{
 }
 .lb-change.up{background:rgba(57,201,151,0.15);color:var(--green);}
 .lb-change.down{background:rgba(232,51,109,0.12);color:var(--rl);}
+
+
+/* ═══════════════════════════════════════════════════════
+   COMMUNITY nav tab update — people icon fits 8-tab nav
+   ═══════════════════════════════════════════════════════ */
+/* Ensure community tab icon matches the others */
+#navLb svg{
+  width:18px;height:18px;
+}
+
+
+/* ============ Vagobatik Bank + Coin Flight ============ */
+.vbank-wrap{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:6px 0 4px;margin-top:4px;}
+.vbank-img{height:120px;width:auto;max-width:80%;object-fit:contain;
+  filter:drop-shadow(0 6px 18px rgba(255,180,40,0.35)) drop-shadow(0 0 22px rgba(255,215,0,0.25));
+  animation:vbankGlow 3.6s ease-in-out infinite;}
+@keyframes vbankGlow{0%,100%{filter:drop-shadow(0 6px 18px rgba(255,180,40,0.30)) drop-shadow(0 0 22px rgba(255,215,0,0.22));}
+  50%{filter:drop-shadow(0 8px 26px rgba(255,200,80,0.55)) drop-shadow(0 0 34px rgba(255,215,0,0.45));}}
+/* Invisible anchor at the bank's coin-slot location (top center of img) */
+.vbank-slot{position:absolute;top:14px;left:50%;width:2px;height:2px;pointer-events:none;}
+.vbank-label{font-family:'Cinzel Decorative',serif;font-size:11px;letter-spacing:3px;color:var(--gold);
+  text-transform:uppercase;margin-top:-2px;opacity:0.85;text-shadow:0 0 12px rgba(255,215,0,0.4);}
+
+/* Flying coin */
+.radha-coin{position:fixed;width:34px;height:34px;border-radius:50%;
+  background:radial-gradient(circle at 35% 30%,#fff5b0 0%,#ffd23a 35%,#c98b08 80%,#7a4d00 100%);
+  border:1.5px solid #fff2a8;
+  box-shadow:0 0 14px rgba(255,215,0,0.85),0 0 28px rgba(255,180,40,0.55),inset 0 -2px 4px rgba(120,70,0,0.5);
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Hind Siliguri','Tiro Devanagari Hindi',serif;font-weight:800;font-size:13px;color:#5a3500;
+  text-shadow:0 1px 0 rgba(255,255,200,0.6);
+  pointer-events:none;z-index:9999;will-change:transform,opacity;
+  transform:translate(-50%,-50%) scale(1);}
+.radha-coin.flying{transition:transform 850ms cubic-bezier(.55,-0.2,.3,1.4),opacity 200ms ease 700ms;}
+.vbank-img.deposit{animation:vbankPop 380ms ease;}
+@keyframes vbankPop{0%{transform:scale(1);}40%{transform:scale(1.06) translateY(-2px);}100%{transform:scale(1);}}

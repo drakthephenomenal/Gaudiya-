@@ -583,7 +583,7 @@ button.hpb.active{
 
   /* 28 NAMES */
 #v28{background:radial-gradient(ellipse at top,#091A30 0%,var(--bd) 60%);overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;}
-.n28wrap{display:flex;flex-direction:column;flex:1;min-height:0;padding:0 12px 80px;overflow-x:hidden;}
+.n28wrap{display:flex;flex-direction:column;flex:1;min-height:0;padding:0 12px 0;overflow-x:hidden;}
 .v28-header{display:flex;align-items:center;justify-content:space-between;padding:12px 14px 4px;}
 .v28-title{font-family:'Cinzel Decorative',serif;font-size:14px;color:var(--a2);letter-spacing:2px;}
 .sk-icon-btn{background:rgba(232,51,109,0.12);border:1px solid rgba(232,51,109,0.35);border-radius:22px;padding:6px 14px;color:var(--rose);font-size:16px;cursor:pointer;display:flex;align-items:center;gap:6px;font-family:'Inter',sans-serif;font-size:12px;font-weight:600;transition:all 0.2s;}
@@ -603,7 +603,7 @@ button.hpb.active{
   text-shadow:0 0 25px rgba(255,217,61,0.85),0 0 50px rgba(255,200,40,0.4);
   animation:nameIn 0.45s cubic-bezier(0.34,1.56,0.64,1) forwards;will-change:transform,opacity;}
 @keyframes nameIn{0%{opacity:0;transform:translateY(22px);}100%{opacity:1;transform:translateY(0);}}
-@keyframes nameOut{0%{opacity:1;transform:translateY(0);}60%{opacity:0.85;}100%{opacity:0;transform:translateY(calc(-50% - 140px));}}
+@keyframes nameOut{0%{opacity:1;transform:translateY(0) scale(1);}100%{opacity:0;transform:translateY(-420px) scale(0.1);}}
 .n28meaning{font-size:12px;color:var(--a2);margin-top:6px;letter-spacing:1px;text-align:center;opacity:0.85;}
 .n28cycle{font-size:11px;color:var(--td);margin-top:6px;letter-spacing:2px;text-transform:uppercase;}
 .n28timers{display:flex;gap:14px;justify-content:center;margin-top:8px;flex-wrap:wrap;}
@@ -2603,10 +2603,12 @@ body.hk-bn #hkLangBtnHi{opacity:0.55;}
   transition: none !important;
 }
 
-/* Hit Ju Maharaj — bottom-left, anchored to RV's bottom edge */
+/* Hit Ju Maharaj — bottom-left, anchored to RV's bottom edge
+   (uses top:--rv-bottom so it tracks the central image on every
+   viewport instead of getting overlapped on short screens) */
 .tz .hitju-wm{
   position:absolute;
-  bottom: clamp(22px, 4.5vh, 60px);
+  top: calc(var(--rv-bottom) - var(--side-w) * 0.55);
   left:10px;
   width:var(--side-w); height:auto;
   opacity:.45;
@@ -2617,12 +2619,18 @@ body.hk-bn #hkLangBtnHi{opacity:0.55;}
 /* Gurudev — bottom-right, same plane as Hitju */
 .tz .gurudev-wm{
   position:absolute;
-  bottom: clamp(22px, 4.5vh, 60px);
+  top: calc(var(--rv-bottom) - var(--side-w) * 0.55);
   right:10px;
   width:var(--side-w); height:auto;
   opacity:.45;
   filter:none;
   pointer-events:none; user-select:none; z-index:1;
+}
+
+/* Make sure the tap zone is always tall enough to contain the
+   central RV image + the side images below it, on every device. */
+.tz{
+  min-height: calc(var(--rv-bottom) + var(--side-w) * 0.9 + 20px);
 }
 
 /* Tighten gap between tap area and bottom nav so it matches Android */
@@ -2881,28 +2889,253 @@ body.gaudiya-mode .tz .cm-wm{
 }
 
 
-/* ============ Vagobatik Bank + Coin Flight ============ */
-.vbank-wrap{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:6px 0 4px;margin-top:4px;}
-.vbank-img{height:120px;width:auto;max-width:80%;object-fit:contain;
-  filter:drop-shadow(0 6px 18px rgba(255,180,40,0.35)) drop-shadow(0 0 22px rgba(255,215,0,0.25));
-  animation:vbankGlow 3.6s ease-in-out infinite;}
-@keyframes vbankGlow{0%,100%{filter:drop-shadow(0 6px 18px rgba(255,180,40,0.30)) drop-shadow(0 0 22px rgba(255,215,0,0.22));}
-  50%{filter:drop-shadow(0 8px 26px rgba(255,200,80,0.55)) drop-shadow(0 0 34px rgba(255,215,0,0.45));}}
-/* Invisible anchor at the bank's coin-slot location (top center of img) */
-.vbank-slot{position:absolute;top:14px;left:50%;width:2px;height:2px;pointer-events:none;}
-.vbank-label{font-family:'Cinzel Decorative',serif;font-size:11px;letter-spacing:3px;color:var(--gold);
-  text-transform:uppercase;margin-top:-2px;opacity:0.85;text-shadow:0 0 12px rgba(255,215,0,0.4);}
+/* ───────────────────────────────────────────────────────────
+   BHAGAVADIK BANK + RADHA CURRENCY (28 NAMES SECTION)
+   ─────────────────────────────────────────────────────────── */
+.n28wrap{ padding-bottom:calc(52px + env(safe-area-inset-bottom)); }
+.n28tz{
+  padding-top: clamp(360px, 62vh, 640px);
+  padding-bottom: clamp(20px, 3vh, 36px);
+  min-height: clamp(560px, calc(100dvh - 188px), 940px);
+}  /* larger tap zone with bank inside it */
 
-/* Flying coin */
-.radha-coin{position:fixed;width:34px;height:34px;border-radius:50%;
-  background:radial-gradient(circle at 35% 30%,#fff5b0 0%,#ffd23a 35%,#c98b08 80%,#7a4d00 100%);
-  border:1.5px solid #fff2a8;
-  box-shadow:0 0 14px rgba(255,215,0,0.85),0 0 28px rgba(255,180,40,0.55),inset 0 -2px 4px rgba(120,70,0,0.5);
-  display:flex;align-items:center;justify-content:center;
-  font-family:'Hind Siliguri','Tiro Devanagari Hindi',serif;font-weight:800;font-size:13px;color:#5a3500;
-  text-shadow:0 1px 0 rgba(255,255,200,0.6);
-  pointer-events:none;z-index:9999;will-change:transform,opacity;
-  transform:translate(-50%,-50%) scale(1);}
-.radha-coin.flying{transition:transform 850ms cubic-bezier(.55,-0.2,.3,1.4),opacity 200ms ease 700ms;}
-.vbank-img.deposit{animation:vbankPop 380ms ease;}
-@keyframes vbankPop{0%{transform:scale(1);}40%{transform:scale(1.06) translateY(-2px);}100%{transform:scale(1);}}
+.bb-wrap{
+  position:absolute; top:4px; left:50%; transform:translateX(-50%);
+  width:min(98vw,700px);
+  height:clamp(330px, 60vh, 620px);
+  z-index:24;
+  display:flex; align-items:center; justify-content:center;
+  pointer-events:none;
+  background: radial-gradient(circle at center, rgba(255,217,61,0.10) 0%, rgba(109,184,255,0.06) 55%, rgba(0,0,0,0) 75%);
+  border-radius: 18px;
+}
+.bb-img{
+  position:absolute; left:50%; top:16px; transform:translateX(-50%);
+  width:min(96vw,680px); height:auto;
+  max-height:clamp(310px, 58vh, 590px);
+  object-fit:contain;
+  /* Softer mask so the full bank (including the steps & base) stays visible */
+  -webkit-mask-image: radial-gradient(ellipse at 50% 50%, rgba(0,0,0,1) 70%, rgba(0,0,0,0.9) 85%, rgba(0,0,0,0) 100%);
+  mask-image: radial-gradient(ellipse at 50% 50%, rgba(0,0,0,1) 70%, rgba(0,0,0,0.9) 85%, rgba(0,0,0,0) 100%);
+  animation: bbFloat 4.5s ease-in-out infinite, bbImgGlow 2.6s ease-in-out infinite;
+  will-change: transform, filter;
+}
+.bb-glow{
+  position:absolute; left:50%; top:16px; transform:translateX(-50%);
+  width:min(88vw,360px); height:min(62vw,260px); border-radius:50%;
+  background: radial-gradient(circle, rgba(255,215,0,0.65) 0%, rgba(255,215,0,0) 65%);
+  filter: blur(14px);
+  animation: bbGlowSwap 2.6s ease-in-out infinite;
+  z-index:0;
+}
+@keyframes bbGlowSwap{
+  0%,100%{ background: radial-gradient(circle, rgba(255,215,0,0.70) 0%, rgba(255,215,0,0) 65%); }
+  50%   { background: radial-gradient(circle, rgba(109,184,255,0.75) 0%, rgba(109,184,255,0) 65%); }
+}
+@keyframes bbFloat{
+  0%,100%{ transform: translate(-50%, 0); }
+  50%   { transform: translate(-50%,-4px); }
+}
+@keyframes bbImgGlow{
+  0%,100%{ filter: drop-shadow(0 6px 14px rgba(0,0,0,0.55)) drop-shadow(0 0 30px rgba(255,215,0,0.9)) drop-shadow(0 0 60px rgba(255,180,0,0.5)); }
+  50%   { filter: drop-shadow(0 6px 14px rgba(0,0,0,0.55)) drop-shadow(0 0 30px rgba(109,184,255,0.9)) drop-shadow(0 0 60px rgba(60,140,255,0.5)); }
+}
+
+.bb-label{
+  position:absolute; top:0; left:50%; transform:translateX(-50%);
+  font-family:'Cinzel Decorative',serif; font-size:clamp(11px,2.5vw,15px); letter-spacing:2.6px;
+  color:#FFD93D; text-shadow:0 0 6px rgba(255,215,0,0.6);
+  white-space:nowrap;
+}
+.bb-count{ display:none; } /* legacy */
+.bb-wrap.bb-pulse .bb-img{ animation: bbReceive 0.55s ease-out; }
+@keyframes bbReceive{
+  0%{ transform: translateX(-50%) scale(1); filter: drop-shadow(0 6px 14px rgba(0,0,0,0.55)); }
+  40%{ transform: translateX(-50%) scale(1.10); filter: drop-shadow(0 6px 22px rgba(255,215,0,0.95)); }
+  100%{ transform: translateX(-50%) scale(1); filter: drop-shadow(0 6px 14px rgba(0,0,0,0.55)); }
+}
+
+/* ── Radha Coin (single-element, iOS-safe) ── */
+.radha-coin-wrap{
+  position:absolute; left:0; top:0;
+  width:72px; height:72px;
+  pointer-events:none; z-index:30;
+  will-change:transform, opacity;
+}
+.radha-coin-img{
+  width:100%; height:100%;
+  border-radius:50%;
+  display:block;
+  border:2.5px solid #FFE57A;
+  box-shadow:
+    0 0 0 3px rgba(255,215,0,0.28),
+    0 0 22px rgba(255,215,0,1),
+    0 0 48px rgba(255,200,40,0.7);
+  will-change:transform;
+}
+@keyframes coinSpinFlight{
+  from{ transform:perspective(400px) rotateY(0deg); }
+  to  { transform:perspective(400px) rotateY(360deg); }
+}
+@keyframes coinPopIn{
+  0%  { transform:perspective(400px) rotateY(0deg) scale(0); }
+  55% { transform:perspective(400px) rotateY(260deg) scale(1.22); }
+  100%{ transform:perspective(400px) rotateY(360deg) scale(1); }
+}
+@keyframes coinDeposit{
+  0%  { transform:perspective(400px) rotateY(0deg) scale(1); opacity:1; }
+  40% { transform:perspective(400px) rotateY(200deg) translateY(-14px) scale(0.5); opacity:0.85; }
+  100%{ transform:perspective(400px) rotateY(400deg) translateY(-28px) scale(0.04); opacity:0; }
+}
+.n28name-ghost{
+  filter: drop-shadow(0 0 18px rgba(255,215,0,0.85));
+}
+
+/* Sparkle burst particles spawned when coin enters bank door */
+.bb-spark{
+  position:absolute; border-radius:50%;
+  pointer-events:none; z-index:35; will-change:transform,opacity;
+}
+@keyframes bbSparkFly{
+  0%  { transform:translate(var(--tx,0px),var(--ty,0px)) scale(1.2); opacity:1; }
+  60% { opacity:0.85; }
+  100%{ transform:translate(var(--ex,0px),var(--ey,0px)) scale(0);   opacity:0; }
+}
+@keyframes bbBankFlash{
+  0%  { filter: drop-shadow(0 6px 14px rgba(0,0,0,0.55)) brightness(1); }
+  25% { filter: drop-shadow(0 0 48px rgba(255,215,0,1)) drop-shadow(0 0 80px rgba(255,180,0,0.8)) brightness(1.65); }
+  100%{ filter: drop-shadow(0 6px 14px rgba(0,0,0,0.55)) brightness(1); }
+}
+
+#n28ProgressWrap{
+  margin-top:4px !important;
+  margin-bottom:0 !important;
+  padding-bottom:4px;
+}
+
+/* ───────────────────────────────────────────────────────────
+   PREMIUM GLOSSY YELLOW TOP BUTTONS (28-NAMES HEADER)
+   ─────────────────────────────────────────────────────────── */
+#v28 .v28-header .sk-icon-btn,
+#v28 .v28-header #n28ScriptToggle{
+  background: linear-gradient(180deg,#FFF1A8 0%,#FFD93D 45%,#E0A800 100%) !important;
+  border: 1px solid #FFE066 !important;
+  color:#3a2200 !important;
+  font-weight:800 !important;
+  letter-spacing:0.4px;
+  box-shadow:
+    0 1px 0 rgba(255,255,255,0.85) inset,
+    0 -2px 4px rgba(180,120,0,0.35) inset,
+    0 4px 10px rgba(255,180,0,0.45),
+    0 0 14px rgba(255,215,0,0.35);
+  position:relative; overflow:hidden;
+  transition: transform 0.18s ease, box-shadow 0.25s ease, filter 0.25s ease;
+  animation: btnGlossPulse 3.2s ease-in-out infinite;
+}
+#v28 .v28-header .sk-icon-btn::after,
+#v28 .v28-header #n28ScriptToggle::after{
+  content:""; position:absolute; top:0; left:-60%;
+  width:55%; height:100%;
+  background: linear-gradient(120deg, transparent 0%, rgba(255,255,255,0.75) 50%, transparent 100%);
+  transform: skewX(-22deg);
+  animation: btnSheen 3.4s ease-in-out infinite;
+  pointer-events:none;
+}
+#v28 .v28-header .sk-icon-btn:active,
+#v28 .v28-header #n28ScriptToggle:active{ transform: scale(0.96); filter:brightness(1.05); }
+@keyframes btnGlossPulse{
+  0%,100%{ filter:brightness(1) saturate(1); }
+  50%   { filter:brightness(1.08) saturate(1.15); }
+}
+@keyframes btnSheen{
+  0%   { left:-60%; }
+  55%  { left:120%; }
+  100% { left:120%; }
+}
+
+/* ───────────────────────────────────────────────────────────
+   GOLDEN PAUSE/RESUME BUTTON — next to Today's Jap Timer
+   ─────────────────────────────────────────────────────────── */
+#n28PauseBtn{
+  background: linear-gradient(180deg,#FFF1A8 0%,#FFD93D 45%,#E0A800 100%);
+  border: 1px solid #FFE066;
+  color: #3a2200;
+  font-weight: 800;
+  font-size: 11px;
+  border-radius: 16px;
+  padding: 5px 13px;
+  cursor: pointer;
+  letter-spacing: 0.4px;
+  font-family: 'Inter', sans-serif;
+  white-space: nowrap;
+  box-shadow:
+    0 1px 0 rgba(255,255,255,0.85) inset,
+    0 -2px 4px rgba(180,120,0,0.35) inset,
+    0 4px 10px rgba(255,180,0,0.45),
+    0 0 14px rgba(255,215,0,0.35);
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.18s ease, box-shadow 0.25s ease;
+  animation: btnGlossPulse 3.2s ease-in-out infinite;
+  flex-shrink: 0;
+}
+#n28PauseBtn::after{
+  content:; position:absolute; top:0; left:-60%;
+  width:55%; height:100%;
+  background: linear-gradient(120deg, transparent 0%, rgba(255,255,255,0.75) 50%, transparent 100%);
+  transform: skewX(-22deg);
+  animation: btnSheen 3.4s ease-in-out infinite;
+  pointer-events:none;
+}
+#n28PauseBtn:active{ transform: scale(0.96); filter: brightness(1.05); }
+
+/* ───────────────────────────────────────────────────────────
+   RADHA COIN COUNTER — visible on bank face
+   ─────────────────────────────────────────────────────────── */
+.bb-counter{
+  position:absolute;
+  left:50%; top:68%;
+  transform:translateX(-50%);
+  z-index:26;
+  display:flex; flex-direction:column; align-items:center; gap:1px;
+  pointer-events:none;
+  opacity:0;
+  transition:opacity 0.6s ease;
+}
+.bb-counter.visible{ opacity:1; }
+.bb-counter-coin{
+  font-size:clamp(18px,4vw,28px);
+  line-height:1;
+  filter:drop-shadow(0 0 6px rgba(255,215,0,0.9));
+  animation:coinBadgeBob 2.4s ease-in-out infinite;
+}
+@keyframes coinBadgeBob{
+  0%,100%{ transform:translateY(0); }
+  50%    { transform:translateY(-3px); }
+}
+.bb-counter-n{
+  font-family:'EB Garamond',serif;
+  font-size:clamp(20px,5.5vw,36px);
+  font-weight:700;
+  color:#FFD93D;
+  text-shadow:
+    0 0 6px rgba(255,215,0,1),
+    0 0 18px rgba(255,180,0,0.9),
+    0 0 36px rgba(255,140,0,0.6);
+  line-height:1;
+  letter-spacing:1px;
+}
+.bb-counter-sub{
+  font-family:'Hind Siliguri',serif;
+  font-size:clamp(8px,1.8vw,11px);
+  color:rgba(255,215,0,0.72);
+  letter-spacing:2px;
+  text-transform:uppercase;
+  text-shadow:0 0 8px rgba(255,215,0,0.5);
+}
+@keyframes bbCountPop{
+  0%  { transform:translateX(-50%) scale(1); filter:brightness(1); }
+  40% { transform:translateX(-50%) scale(1.45); filter:brightness(1.7) drop-shadow(0 0 14px rgba(255,215,0,1)); }
+  100%{ transform:translateX(-50%) scale(1); filter:brightness(1); }
+}
+.bb-counter.pop{ animation:bbCountPop 0.45s cubic-bezier(0.34,1.56,0.64,1) forwards; }

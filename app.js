@@ -641,8 +641,8 @@ const App = {
   updateTimerToday() {
     // ── UNIFIED: Today's Jap Time shared by Radha/RV/HK page AND 28 Names tab ──
     const combinedSec = this.getTotalJapSecondsToday();
-    const tt = document.getElementById("timerToday");
-    if (tt) tt.textContent = "Today's Jap Time: " + this.fmtTime(combinedSec);
+    const tt = document.getElementById("timerToday2") || document.getElementById("timerToday");
+    if (tt) tt.textContent = this.fmtTime(combinedSec);
     // Mirror the SAME total on the 28 Names tab
     const te28 = document.getElementById("n28TotalTimer");
     if (te28) te28.textContent = this.fmtTime(combinedSec);
@@ -1146,9 +1146,7 @@ const App = {
     this._arm28AutoPause();
     if (this.S.h28[this.S.tk] % 28 === 0) cycleDone28();
     u28();
-    try { flyRadhaCoin(); } catch(_) {}
   },
-
 
   undo28() {
     if ((this.S.h28[this.S.tk] || 0) > 0) {
@@ -2108,6 +2106,7 @@ function tgs(k) {
       navigator.geolocation.getCurrentPosition(
         (pos) => {
           const lat = pos.coords.latitude, lng = pos.coords.longitude;
+          window._appLat = lat; window._appLng = lng; // share with Vedic Panchanga engine
           if (App.S) { App.S.lastLat = lat; App.S.lastLng = lng; App.save(); }
           // Persist GPS-enabled state and coords to localStorage so the toggle
           // stays ON across refreshes for both guest and signed-in users,
@@ -6038,34 +6037,23 @@ function u28() {
     } else {
       const newName = get28Name(entry);
       const oldName = nameEl.textContent;
-      if (oldName && oldName !== newName) {
-        // Clone the current name and let the clone slowly drift out;
-        // the real element flips to the new name IMMEDIATELY so it appears at once.
-        // Multiple clones can queue and animate out in parallel.
-        try {
-          const parent = nameEl.parentNode;
-          if (parent) {
-            const ghost = nameEl.cloneNode(true);
-            ghost.removeAttribute("id");
-            // Position the ghost in the same spot as the live name
-            const cs = window.getComputedStyle(nameEl);
-            ghost.style.position = "absolute";
-            ghost.style.left = nameEl.offsetLeft + "px";
-            ghost.style.top = nameEl.offsetTop + "px";
-            ghost.style.width = nameEl.offsetWidth + "px";
-            ghost.style.height = nameEl.offsetHeight + "px";
-            ghost.style.margin = "0";
-            ghost.style.pointerEvents = "none";
-            ghost.style.zIndex = "5";
-            ghost.style.animation = "nameOut 2.2s cubic-bezier(0.22,0.61,0.36,1) forwards";
-            // Ensure parent can host absolutely positioned child
-            const pp = window.getComputedStyle(parent).position;
-            if (pp === "static") parent.style.position = "relative";
-            parent.appendChild(ghost);
-            setTimeout(() => { try { ghost.remove(); } catch (_) {} }, 2400);
-          }
-        } catch (_) {}
-        // New name appears immediately with a quick pop-in
+
+      // Force full container width on nameEl every update — fixes WebKit flex bug
+      // where long names overflow right due to GPU layer width being locked
+      const _tz = nameEl.parentNode;
+      if (_tz) {
+        const _w = _tz.getBoundingClientRect().width;
+        if (_w > 0) {
+          nameEl.style.width = _w + "px";
+          nameEl.style.maxWidth = _w + "px";
+          nameEl.style.left = "0px";
+          nameEl.style.position = "relative";
+        }
+      }
+
+      if (oldName && oldName !== newName && !window.__bbTakeover28) {
+        // Ghost clone removed — coin pod carries the old name visually.
+        // New name appears immediately with a quick pop-in.
         nameEl.style.animation = "none";
         nameEl.offsetHeight;
         nameEl.textContent = newName;
@@ -6157,6 +6145,18 @@ function cycleDone28() {
   clearTimeout(App._n28CompletionTimer);
 
   App.resetCycleTimer28();
+
+  // ── Cycle completion: whole tap zone glows ──
+  const tz28El = document.getElementById("tz28");
+  if (tz28El) {
+    tz28El.classList.remove("rc-cycle-glow");
+    void tz28El.offsetWidth;
+    tz28El.classList.add("rc-cycle-glow");
+    setTimeout(() => tz28El.classList.remove("rc-cycle-glow"), 3200);
+  }
+
+  // ── Cycle completion: Panchajanya Shankha MP3 ──
+  try { playShankya(); } catch(e) {}
 
   // Show Radha Vallabh / Sri Harivangsa animation
   const mf28 = document.getElementById("mf28");
@@ -8425,6 +8425,7 @@ function initSunTimes() {
   const savedLat = App.S && App.S.lastLat;
   const savedLng = App.S && App.S.lastLng;
   if (savedLat && savedLng) {
+    window._appLat = savedLat; window._appLng = savedLng; // seed for Vedic Panchanga
     // GPS toggle was ON and coords are saved — use them
     updateSunInfo(savedLat, savedLng);
     setInterval(() => updateSunInfo(savedLat, savedLng), 600000);
@@ -8872,7 +8873,7 @@ if ("serviceWorker" in navigator) {
       if (e.data && e.data.type === "SW_UPDATED") {
         if (sessionStorage.getItem("sw_reloaded") === e.data.version) return;
         sessionStorage.setItem("sw_reloaded", e.data.version);
-        const pageAge = Date.now() - performance.timing.navigationStart;
+        const pageAge = performance.now(); // ms since page navigation start
         if (pageAge < 6000) {
           // Page is brand-new — SW already served fresh files, no reload needed
           console.log("[SW] SW_UPDATED ignored — page is fresh (<6s old)");
@@ -11627,6 +11628,11 @@ function renderLeaderboard(docs, period) {
       const shk = Object.values(d.historyHK || {}).reduce((a,b)=>a+b,0);
       const s28 = Object.values(d.history28 || {}).reduce((a,b)=>a+b,0);
       d._breakdown = { r: sr, rv: srv, hk: shk, n28: s28 };
+      const tr2 = Object.values(d.timerHistory || {}).reduce((a,b)=>a+b,0);
+      const trv2 = Object.values(d.timerHistoryRV || {}).reduce((a,b)=>a+b,0);
+      const thk2 = Object.values(d.timerHistoryHK || {}).reduce((a,b)=>a+b,0);
+      const t282 = Object.values(d.timer28History || {}).reduce((a,b)=>a+b,0);
+      d._timeBreakdown = { r: tr2, rv: trv2, hk: thk2, n28: t282 };
     } else {
       // Sum history for this period
       const hist   = d.history || {};
@@ -11652,6 +11658,7 @@ function renderLeaderboard(docs, period) {
       score += sr + srv + shk + s28;
       timeScore += tr + trv + thk + t28;
       d._breakdown = { r: sr, rv: srv, hk: shk, n28: s28 };
+      d._timeBreakdown = { r: tr, rv: trv, hk: thk, n28: t28 };
     }
     return { ...d, score, timeScore };
   });
@@ -11707,18 +11714,48 @@ function renderLeaderboard(docs, period) {
     const onlineDot = isOnline ? '<span style="display:inline-block;width:8px;height:8px;background:#4ade80;border-radius:50%;margin-left:6px;box-shadow:0 0 6px rgba(74,222,128,0.6)" title="Online"></span>' : '';
     
     const name = (d.displayName || 'Anonymous Devotee').replace(/</g,'&lt;').replace(/>/g,'&gt;') + onlineDot;
-    const malas = Math.floor(d.score / (App.S.ms || 108));
+    const ms = App.S.ms || 108;
     
     let b = d._breakdown || { r:0, rv:0, hk:0, n28:0 };
-    let bdStr = [];
-    if (b.r > 0) bdStr.push('R: ' + _lbFmtJap(b.r));
-    if (b.rv > 0) bdStr.push('RV: ' + _lbFmtJap(b.rv));
-    if (b.n28 > 0) bdStr.push('28N: ' + _lbFmtJap(b.n28));
-    if (b.hk > 0) bdStr.push('HK: ' + _lbFmtJap(b.hk));
-    const breakdown = bdStr.length > 0 ? ' (' + bdStr.join(' | ') + ')' : '';
+    let tb = d._timeBreakdown || { r:0, rv:0, hk:0, n28:0 };
     
-    const timeDisplay = d.timeScore > 0 ? ' · ⏱ ' + _histFmtSec(d.timeScore) : '';
-    const meta = _lbFmtJap(d.score) + ' jap' + breakdown + timeDisplay + ' · ' + malas.toLocaleString('en-IN') + ' malas' + (d.streak > 0 ? ' · 🔥' + d.streak + 'd' : '');
+    // Build per-type breakdown: R and RV show malas (count/108), 28N shows cycles (count/28), HK shows malas
+    let bdParts = [];
+    if (b.r > 0) {
+      const rM = Math.floor(b.r / ms);
+      const rStr = _lbFmtJap(b.r) + (rM > 0 ? ' (' + rM + 'M)' : '');
+      bdParts.push('R: ' + rStr + (tb.r > 0 ? ' ⏱ ' + _histFmtSec(tb.r) : ''));
+    }
+    if (b.rv > 0) {
+      const rvM = Math.floor(b.rv / ms);
+      const rvStr = _lbFmtJap(b.rv) + (rvM > 0 ? ' (' + rvM + 'M)' : '');
+      bdParts.push('RV: ' + rvStr + (tb.rv > 0 ? ' ⏱ ' + _histFmtSec(tb.rv) : ''));
+    }
+    if (b.n28 > 0) {
+      const cyc28 = Math.floor(b.n28 / 28);
+      const cyc28Str = (cyc28 > 0 ? cyc28 + 'C ' : '') + '(' + _lbFmtJap(b.n28) + ')';
+      bdParts.push('28N: ' + cyc28Str + (tb.n28 > 0 ? ' ⏱ ' + _histFmtSec(tb.n28) : ''));
+    }
+    if (b.hk > 0) {
+      const hkM = Math.floor(b.hk / ms);
+      const hkStr = _lbFmtJap(b.hk) + (hkM > 0 ? ' (' + hkM + 'M)' : '');
+      bdParts.push('HK: ' + hkStr + (tb.hk > 0 ? ' ⏱ ' + _histFmtSec(tb.hk) : ''));
+    }
+    // Total: only count R+RV+HK malas (not 28N), 28N shown as cycles separately
+    const japOnly = (b.r || 0) + (b.rv || 0) + (b.hk || 0);
+    const totalMalas = Math.floor(japOnly / ms);
+    const total28Cyc = Math.floor((b.n28 || 0) / 28);
+    let totalStr = _lbFmtJap(d.score) + ' jap';
+    if (totalMalas > 0 || total28Cyc > 0) {
+      let tParts = [];
+      if (totalMalas > 0) tParts.push(totalMalas + 'M');
+      if (total28Cyc > 0) tParts.push(total28Cyc + 'C');
+      totalStr += ' (' + tParts.join(', ') + ')';
+    }
+    if (d.timeScore > 0) totalStr += ' ⏱ ' + _histFmtSec(d.timeScore);
+    if (d.streak > 0) totalStr += ' 🔥' + d.streak + 'd';
+    const breakdown = bdParts.length > 0 ? bdParts.join(' · ') : '';
+    const meta = (breakdown ? breakdown + '<br>' : '') + 'Total: ' + totalStr;
     return `<div class="${rowClass}">
       <div class="lb-badge ${badgeClass}">${badgeContent}</div>
       <div class="lb-info">
@@ -12658,37 +12695,262 @@ function _showUserReplyPopup(text) {
 }
 
 
-/* ====== Vagobatik Bank coin flight animation ====== */
-function flyRadhaCoin(){
-  const name = document.getElementById('n28name');
-  const slot = document.getElementById('vbankSlot');
-  const bank = document.getElementById('vbankImg');
-  if (!name || !slot || !bank) return;
-  const nr = name.getBoundingClientRect();
-  const sr = slot.getBoundingClientRect();
-  const startX = nr.left + nr.width/2;
-  const startY = nr.top + nr.height/2;
-  const endX = sr.left + sr.width/2;
-  const endY = sr.top + sr.height/2;
 
-  const coin = document.createElement('div');
-  coin.className = 'radha-coin';
-  coin.textContent = 'राधा';
-  coin.style.left = startX + 'px';
-  coin.style.top = startY + 'px';
-  document.body.appendChild(coin);
+/* ───────────────────────────────────────────────────────────
+   RADHA COIN FLIGHT — rebuilt from scratch (v2)
+   Listens directly on the 28-Names tap zone (#tz28) for taps,
+   independent of any wrapping around App.h28. After the native
+   tap handler runs and the daily count increases, spawns one
+   ./radha-coin.png coin at the tapped name and flies it to the
+   Bhagavadik Bank image, then bumps the bank's coin counter.
+   Falls back to a 🪙 emoji if the coin image fails to load.
+   ─────────────────────────────────────────────────────────── */
+(function () {
+  var COIN_SRC = "./radha-coin.png";
+  var STORAGE_KEY = "radhaCurrency";
+  var coinImageOk = true;
 
-  // Force reflow so transition triggers
-  void coin.offsetWidth;
-  const dx = endX - startX;
-  const dy = endY - startY;
-  coin.classList.add('flying');
-  coin.style.transform = `translate(-50%,-50%) translate(${dx}px,${dy}px) scale(0.35) rotate(720deg)`;
-  coin.style.opacity = '0';
+  // Preflight: check the coin image actually loads
+  (function preloadCoin() {
+    var test = new Image();
+    test.onload = function () { coinImageOk = true; };
+    test.onerror = function () {
+      coinImageOk = false;
+      console.error("[RadhaCoin] " + COIN_SRC + " failed to load — falling back to 🪙 emoji");
+    };
+    test.src = COIN_SRC;
+  })();
 
-  setTimeout(()=>{
-    bank.classList.add('deposit');
-    setTimeout(()=>bank.classList.remove('deposit'), 420);
-  }, 760);
-  setTimeout(()=>{ try{ coin.remove(); }catch(_){} }, 1100);
-}
+  function restoreCounter() {
+    try {
+      var saved = parseInt(localStorage.getItem(STORAGE_KEY) || "0", 10);
+      var bbc = document.getElementById("bbCount");
+      if (bbc && !isNaN(saved) && saved > 0) {
+        bbc.textContent = saved >= 1000 ? saved.toLocaleString() : String(saved);
+      }
+    } catch (_) {}
+  }
+
+  function bumpCounter() {
+    var bbc = document.getElementById("bbCount");
+    var bbctr = document.getElementById("bbCounter");
+    if (!bbc) return;
+    var n = (parseInt((bbc.textContent || "0").replace(/,/g, ""), 10) || 0) + 1;
+    bbc.textContent = n >= 1000 ? n.toLocaleString() : String(n);
+    try { localStorage.setItem(STORAGE_KEY, String(n)); } catch (_) {}
+    if (bbctr) {
+      bbctr.classList.remove("pop");
+      void bbctr.offsetWidth;
+      bbctr.classList.add("pop");
+    }
+  }
+
+  function getTod() {
+    try {
+      return (App.S.h28[App.S.tk] || 0);
+    } catch (_) {
+      return 0;
+    }
+  }
+
+  function spawnCoin(tappedName, tapX, tapY) {
+    var nameEl = document.getElementById("n28name");
+    var tz = document.getElementById("tz28");
+    var bankImg = document.getElementById("bbImg");
+    if (!nameEl || !tz || !bankImg) {
+      console.warn("[RadhaCoin] missing nameEl, tz28 or bbImg — cannot spawn coin");
+      return;
+    }
+
+    var tzRect = tz.getBoundingClientRect();
+
+    // ── Coin and name travel as ONE unit ──
+    var COIN_SIZE = 180; // px — must be declared BEFORE COIN_HALF
+    var GAP = 8;         // px between coin bottom and name top
+    var COIN_HALF = COIN_SIZE / 2; // = 90
+
+    // Use transform:translateX(-50%) so pod always centres regardless of its width
+    var tapCX  = tapX || (tzRect.left + tzRect.width * 0.5);  // tap centre X
+    var tapCY  = tapY || (tzRect.top  + tzRect.height * 0.75); // tap centre Y
+    var isIPad = window.innerWidth >= 768;
+    var bankCX = tzRect.left + tzRect.width  * 0.5;
+    var bankCY = tzRect.top  + tzRect.height * (isIPad ? 0.44 : 0.32);
+    // Pod left is always set to the target centre X; translateX(-50%) centres it
+    var startX = tapCX;
+    var startY = tapCY - COIN_HALF;   // top of coin at tap point
+    var endX   = bankCX;
+    var endY   = bankCY - COIN_HALF;
+
+    // Suppress any stray nameOut clones
+    try {
+      var clones = tz.querySelectorAll(".n28name:not(#n28name)");
+      clones.forEach(function(c) { c.style.display = "none"; });
+    } catch(_) {}
+
+    // Container: positioned at coin centre, no transform offset (children handle their own offset)
+    var pod = document.createElement("div");
+    pod.style.cssText = [
+      "position:fixed",
+      "left:" + startX + "px",
+      "top:"  + startY + "px",
+      "pointer-events:none",
+      "z-index:9000",
+      "display:flex",
+      "flex-direction:column",
+      "align-items:center",
+      "opacity:0",
+      "transform:translateX(-50%) scale(0.3)",
+      "will-change:left,top,transform,opacity",
+      "transition:" + [
+        "left 0.85s cubic-bezier(0.33,0.0,0.2,1)",
+        "top  0.85s cubic-bezier(0.33,0.0,0.2,1)",
+        "transform 0.85s cubic-bezier(0.33,0.0,0.2,1)",
+        "opacity 0.18s ease"
+      ].join(",")
+    ].join(";");
+
+    // ── Coin inside pod ──
+    var coin = document.createElement("div");
+    coin.style.cssText = [
+      "width:" + COIN_SIZE + "px",
+      "height:" + COIN_SIZE + "px",
+      "border-radius:50%",
+      "flex-shrink:0",
+      "background:transparent",
+      "box-shadow:none"
+    ].join(";");
+
+    if (coinImageOk) {
+      var img = document.createElement("img");
+      img.src = COIN_SRC;
+      img.alt = "Radha Coin";
+      img.draggable = false;
+      img.style.cssText = "width:100%;height:100%;border-radius:50%;display:block;filter:drop-shadow(0 0 18px rgba(255,215,0,0.9)) drop-shadow(0 0 40px rgba(255,170,0,0.5));";
+      img.onerror = function () {
+        coinImageOk = false;
+        coin.innerHTML = "";
+        coin.textContent = "🪙";
+        coin.style.fontSize = "72px";
+        coin.style.lineHeight = "1";
+        coin.style.background = "transparent";
+        coin.style.boxShadow = "none";
+      };
+      coin.appendChild(img);
+    } else {
+      coin.textContent = "🪙";
+      coin.style.fontSize = "72px";
+      coin.style.lineHeight = "1";
+      coin.style.background = "transparent";
+      coin.style.boxShadow = "none";
+    }
+    pod.appendChild(coin);
+
+    // ── Name label inside pod, just below the coin ──
+    var nameStyle = window.getComputedStyle(nameEl);
+    var ghost = document.createElement("div");
+    var screenW = window.innerWidth;
+    ghost.style.cssText = [
+      "margin-top:" + GAP + "px",
+      "font-family:" + nameStyle.fontFamily,
+      "font-size:" + nameStyle.fontSize,
+      "font-weight:" + nameStyle.fontWeight,
+      "color:" + nameStyle.color,
+      "white-space:normal",
+      "word-break:break-word",
+      "text-align:center",
+      "width:" + Math.min(screenW - 32, 420) + "px",
+      "max-width:" + Math.min(screenW - 32, 420) + "px",
+      "text-shadow:0 0 25px rgba(255,217,61,0.85),0 0 50px rgba(255,200,40,0.4)"
+    ].join(";");
+    ghost.textContent = tappedName || nameEl.textContent;
+    pod.appendChild(ghost);
+
+    // Bake the -COIN_SIZE/2 offset into left/top (margins ignored on position:fixed)
+    // This makes pod.left = coin-centre-x and pod.top = coin-centre-y
+
+    document.body.appendChild(pod);
+    void pod.getBoundingClientRect();
+
+    requestAnimationFrame(function () {
+      pod.style.opacity = "1";
+      pod.style.transform = "translateX(-50%) scale(1)";
+
+      requestAnimationFrame(function () {
+        pod.style.left = endX + "px";
+        pod.style.top  = endY + "px";
+        pod.style.transform = "translateX(-50%) scale(0.6)";
+      });
+    });
+
+    // On arrival: shrink to nothing, pulse the bank, bump the counter
+    setTimeout(function () {
+      pod.style.transition = [
+        "left 0.32s cubic-bezier(0.4,0,0.6,1)",
+        "top  0.32s cubic-bezier(0.4,0,0.6,1)",
+        "transform 0.32s cubic-bezier(0.4,0,0.6,1)",
+        "opacity 0.32s ease 0.05s"
+      ].join(",");
+      pod.style.transform = "translateX(-50%) scale(0.05)";
+      pod.style.opacity   = "0";
+      bankImg.classList.remove("rc-pulse");
+      void bankImg.offsetWidth;
+      bankImg.classList.add("rc-pulse");
+      bumpCounter();
+    }, 900);
+
+    // Cleanup
+    setTimeout(function () {
+      if (pod.parentNode) pod.parentNode.removeChild(pod);
+    }, 1400);
+  }
+
+  function onTapCapture(e) {
+    // Capture phase: fires BEFORE App.h28 runs — snap current displayed name + tap position
+    onTap._before = getTod();
+    onTap._wasAnimating = !!App._n28CompletionAnimating; // snapshot BEFORE cycleDone28 can fire
+    var nameEl = document.getElementById("n28name");
+    onTap._capturedName = nameEl ? nameEl.textContent : "";
+    // Get tap coordinates (touch or mouse)
+    var touch = e && e.touches && e.touches[0];
+    onTap._tapX = touch ? touch.clientX : (e ? e.clientX : null);
+    onTap._tapY = touch ? touch.clientY : (e ? e.clientY : null);
+  }
+
+  function onTap() {
+    var before = (typeof onTap._before === "number") ? onTap._before : getTod();
+    var wasAnimating = !!onTap._wasAnimating; // pre-captured in onTapCapture, before cycleDone28
+    var capturedName = onTap._capturedName || "";
+    var tapX = onTap._tapX;
+    var tapY = onTap._tapY;
+    // Let the native handler (App.h28) run first, then check on next tick
+    setTimeout(function () {
+      var after = getTod();
+      // Use wasAnimating (state BEFORE this tap) not current — fixes name 28 coin not banking
+      if (after > before && !wasAnimating) {
+        try { spawnCoin(capturedName, tapX, tapY); } catch (err) { console.error("[RadhaCoin] spawn error:", err); }
+      }
+    }, 0);
+  }
+
+  function setup() {
+    var tz = document.getElementById("tz28");
+    if (typeof App === "undefined" || !App || !tz) {
+      return setTimeout(setup, 120);
+    }
+    if (App.__radhaCoinWrapped) return;
+    App.__radhaCoinWrapped = true;
+
+    restoreCounter();
+
+    tz.addEventListener("touchstart", onTapCapture, { capture: true, passive: true });
+    tz.addEventListener("mousedown", onTapCapture, { capture: true });
+    tz.addEventListener("touchstart", onTap, { passive: true });
+    tz.addEventListener("mousedown", onTap);
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", setup);
+  } else {
+    setup();
+  }
+})();

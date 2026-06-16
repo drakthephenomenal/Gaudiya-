@@ -3,7 +3,7 @@
 // Push notifications & FCM removed.
 
 // ═══════════════════════════════════════════════════════
-const CACHE = 'radha-jap-v125';
+const CACHE = 'radha-jap-v144';
 
 const LOCAL_ASSETS = [
   './',
@@ -18,6 +18,13 @@ const LOCAL_ASSETS = [
   './icon-192.png',
   './icon-512.png',
   './manifest.json',
+  './bhagavadik-bank.png',
+  './radha-coin.png',
+  './gurudev/1.png',
+  './gurudev/2.png',
+  './radha_vallabh/1.png',
+  './hitju_maharaj/1.png',
+  './Panchojanno%20Shankya.mp3',
 ];
 
 const EXTERNAL_ASSETS = [
@@ -77,20 +84,27 @@ async function storeResponse(cacheKey, response) {
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();
+  // Only block install on LOCAL assets — external (Firebase/fonts/CDN) cached in background
   event.waitUntil((async () => {
     const cache = await caches.open(CACHE);
     await Promise.allSettled(LOCAL_ASSETS.map((asset) => cacheLocalAsset(cache, asset)));
-    await Promise.allSettled(EXTERNAL_ASSETS.map((asset) => cacheExternalAsset(cache, asset)));
+    // External assets fetched in background — do not block install
+    Promise.allSettled(EXTERNAL_ASSETS.map((asset) => cacheExternalAsset(cache, asset)));
   })());
 });
 
 self.addEventListener('activate', (event) => {
   event.waitUntil((async () => {
     const keys = await caches.keys();
-    await Promise.all(keys.filter((key) => key !== CACHE).map((key) => caches.delete(key)));
+    const oldKeys = keys.filter((key) => key !== CACHE);
+    const isUpdate = oldKeys.length > 0; // false on very first install, true on update
+    await Promise.all(oldKeys.map((key) => caches.delete(key)));
     await self.clients.claim();
-    const clients = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
-    clients.forEach((client) => client.postMessage({ type: 'SW_UPDATED', version: CACHE }));
+    // Only notify existing clients on UPDATE (not fresh install) to avoid double-load
+    if (isUpdate) {
+      const clients = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+      clients.forEach((client) => client.postMessage({ type: 'SW_UPDATED', version: CACHE }));
+    }
   })());
 });
 
@@ -144,4 +158,3 @@ self.addEventListener('fetch', (event) => {
 self.addEventListener('message', (event) => {
   if (event.data && event.data.type === 'SKIP_WAITING') self.skipWaiting();
 });
-

@@ -92,11 +92,16 @@ const App = {
   lmc: 0,
   lm28: 0,
   timerRunning: false,
-  timerSeconds: 0,
+  timerSeconds: 0,           // (A) sessionSeconds — cumulative chanting time since app open. Never resets on mala complete.
   timerInterval: null,
-  timerSavedSeconds: 0,
+  timerSavedSeconds: 0,      // session committed-to-history high-water mark (used only for partial in-progress live deltas on session pause)
   autoStopTimeout: null,
-  malaWallStart: 0, // Date.now() at start of current mala (persisted in localStorage)
+  _autoStopToken: 0,         // monotonic token to invalidate stale auto-pause timeouts (see tapTimer / malaOk)
+  malaWallStart: 0,          // Date.now() at start of current mala (persisted in localStorage)
+  // (B) currentMalaSeconds — active chanting time for the CURRENT mala only.
+  // Resets to 0 when a mala completes AND when a new mala starts. Never leaks across malas.
+  currentMalaSeconds: 0,
+  _currentMalaStartTs: null, // Date.now() captured when the current mala's first bead was tapped
   fbDebouncePush: null,
 
   // ── IndexedDB ──
@@ -189,6 +194,8 @@ const App = {
   },
 
   async save() {
+    // GHOST MODE: never write to IDB while viewing another user's data.
+    if (isGhostMode()) return;
     // GUEST MODE: never persist to IDB or localStorage — guest jap is intentionally ephemeral.
     // Only signed-in users get local persistence (as an offline buffer for cloud sync).
     if (!this._uid) return;
@@ -397,6 +404,13 @@ const App = {
     // Date changes at 12:00 AM local time (GPS/device timezone).
     // Use local date methods so the key matches the user's clock midnight.
     const d = new Date(Date.now() + (window._serverTimeOffsetMs || 0));
+    return this.tkFromDate(d);
+  },
+
+  // Build a YYYY-MM-DD key from a Date using LOCAL (GPS-driven) fields.
+  // Never use toISOString() for date keys — that returns UTC and shifts
+  // the day boundary for any user not at UTC+0.
+  tkFromDate(d) {
     return (
       d.getFullYear() +
       "-" +
@@ -545,8 +559,14 @@ const App = {
     document.getElementById("timerBtn").className = "tbtn pause";
     this.timerInterval = setInterval(() => {
       this.timerSeconds++;
+      // Tick the per-mala counter in lockstep — but only while a mala is actually
+      // in progress (start anchor is set). Never advances between malas.
+      if (this._currentMalaStartTs !== null) this.currentMalaSeconds++;
       // Persist so per-mala duration survives app close / reopen
-      try { localStorage.setItem("rjap_timerSeconds", String(this.timerSeconds)); } catch(e){}
+      try {
+        localStorage.setItem("rjap_timerSeconds", String(this.timerSeconds));
+        localStorage.setItem("rjap_currentMalaSeconds", String(this.currentMalaSeconds));
+      } catch(e){}
       document.getElementById("timerDisplay").textContent = this.fmtTime(
         this.timerSeconds,
       );
@@ -562,10 +582,11 @@ const App = {
     document.getElementById("timerDisplay").classList.remove("running");
     document.getElementById("timerBtn").textContent = "▶ Resume";
     document.getElementById("timerBtn").className = "tbtn start";
-    // Save only the delta since last save (avoids double-counting on resume)
-    const _th = this.getCurTimerHistory();
-    const delta = this.timerSeconds - this.timerSavedSeconds;
-    _th[this.S.tk] = (_th[this.S.tk] || 0) + delta;
+    // Do NOT commit an unfinished mala into timerHistory here.
+    // timerHistory is the sum of completed malas only; Today's Jap Time already
+    // adds currentMalaSeconds live. Writing the delta on pause/resume causes the
+    // visible time to double (6s becomes 12s) and corrupts later idle rollback.
+    const delta = Math.max(0, this.timerSeconds - this.timerSavedSeconds);
     this.timerSavedSeconds = this.timerSeconds;
     // Log this jap session with timestamps
     if (this._sessionStart) {
@@ -585,12 +606,27 @@ const App = {
   tapTimer() {
     this.startTimer();
     clearTimeout(this.autoStopTimeout);
-    // Snapshot timerSeconds at the moment of the last tap.
-    // When auto-pause fires 6 s later we roll back to this snapshot
-    // so the idle gap is never counted as jap time.
+    // Snapshot BOTH the session counter and the per-mala counter at the moment
+    // of the last tap. When auto-pause fires 6 s later we roll back to these
+    // snapshots so the idle gap is never counted as jap time.
     const secondsAtTap = this.timerSeconds;
+    const malaSecondsAtTap = this.currentMalaSeconds;
+    // Token so malaOk() can invalidate this pending autoStop if a mala
+    // completes between now and the 6 s deadline (prevents leaking the
+    // previous mala's snapshot into the next mala — Bug #2 root cause).
+    const token = ++this._autoStopToken;
     this.autoStopTimeout = setTimeout(() => {
+      if (token !== this._autoStopToken) return; // invalidated by malaOk
       this.timerSeconds = secondsAtTap;
+      this.currentMalaSeconds = malaSecondsAtTap;
+      this.timerSavedSeconds = secondsAtTap;
+      try {
+        localStorage.setItem("rjap_timerSeconds", String(this.timerSeconds));
+        localStorage.setItem("rjap_currentMalaSeconds", String(this.currentMalaSeconds));
+      } catch(_){ }
+      const td = document.getElementById("timerDisplay");
+      if (td) td.textContent = this.fmtTime(this.timerSeconds);
+      this.updateTimerToday();
       this.pauseTimer();
     }, 6000);
   },
@@ -598,17 +634,24 @@ const App = {
   toggleTimer() {
     clearTimeout(this.autoStopTimeout);
     if (this.timerRunning) this.pauseTimer();
-    else this.startTimer();
+    else this.tapTimer();
   },
 
   resetTimer() {
     clearTimeout(this.autoStopTimeout);
+    this._autoStopToken++; // invalidate any in-flight autoStop
     clearInterval(this.timerInterval);
     this.timerInterval = null;
     this.timerRunning = false;
     this.timerSeconds = 0;
     this.timerSavedSeconds = 0;
-    this._malaTimerStart = 0; // reset per-mala timer anchor
+    this._malaTimerStart = 0;
+    this.currentMalaSeconds = 0;
+    this._currentMalaStartTs = null;
+    try {
+      localStorage.setItem("rjap_timerSeconds", "0");
+      localStorage.setItem("rjap_currentMalaSeconds", "0");
+    } catch(_){}
     document.getElementById("timerDisplay").textContent = App.fmtTime(App.timerSeconds);
     document.getElementById("timerDisplay").classList.remove("running");
     document.getElementById("timerBtn").textContent = "▶ Start";
@@ -625,10 +668,11 @@ const App = {
     const rvSec    = (this.S.timerHistoryRV || {})[tk] || 0;
     const hkSec    = (this.S.timerHistoryHK || {})[tk] || 0;
     const n28Sec   = (this.S.timer28History || {})[tk] || 0;
-    // live delta from the Radha/RV/HK jap timer
-    const liveJap = this.timerRunning
-      ? Math.max(0, this.timerSeconds - this.timerSavedSeconds)
-      : 0;
+    // Live delta for the IN-PROGRESS mala only. timerHistory[tk] already holds
+    // the sum of COMPLETED mala durations (kept in sync by syncTimerFromMalaLog),
+    // so adding currentMalaSeconds gives today's true running total without
+    // double-counting completed malas.
+    const liveJap = this.currentMalaSeconds || 0;
     // live delta from the 28-Names timer (elapsed since session start − already flushed)
     let live28 = 0;
     if (this._n28TotalStart && !this._n28Paused) {
@@ -727,13 +771,27 @@ const App = {
   ensureMalaWallStart() {
     const ms = this.S.ms || 108;
     const countInMala = this.gTod() % ms;
-    if (countInMala === 1 || this.malaWallStart === 0) {
+    // First bead of a new mala, OR no in-progress mala recorded yet → start a fresh mala clock.
+    if (countInMala === 1 || this.malaWallStart === 0 || this._currentMalaStartTs === null) {
       this.malaWallStart = Date.now();
       localStorage.setItem("rjap_malaWallStart", String(this.malaWallStart));
-      // Also anchor the timer-based mala start — this is the authoritative clock
-      if (this._malaTimerStart === undefined || this._malaTimerStart === null)
-        this._malaTimerStart = this.timerSeconds;
+      // (B) Reset the per-mala counter. This is the ONLY place (besides malaOk)
+      // that touches currentMalaSeconds — guarantees no leak from prior mala.
+      this.currentMalaSeconds = 0;
+      this._currentMalaStartTs = Date.now();
+      try {
+        localStorage.setItem("rjap_currentMalaSeconds", "0");
+        localStorage.setItem("rjap_currentMalaStartTs", String(this._currentMalaStartTs));
+      } catch(_){}
+      // Legacy fields kept for backward compatibility but no longer authoritative.
+      this._malaTimerStart = this.timerSeconds;
       localStorage.setItem("rjap_malaTimerStart", String(this._malaTimerStart));
+      // Capture the GPS-local date this mala STARTED on so the whole mala
+      // (including count + time) gets credited to the start date even if
+      // it finishes after midnight.
+      this.S.malaStartTk = this.getTk();
+      this.S.malaStartMode = this.S.japMode;
+      localStorage.setItem("rjap_malaStartTk", this.S.malaStartTk);
     }
   },
 
@@ -775,24 +833,40 @@ const App = {
     // interval is actually running, matching exactly what the user sees on screen.
     // Wall-clock (malaWallStart) is NOT used because it keeps running even when
     // the phone screen is off or the browser throttles the interval.
+    // ── Record mala duration using the per-mala counter (B) ──
+    // currentMalaSeconds is the ONLY authoritative source for mala duration.
+    // It contains active chanting seconds for THIS mala only and cannot leak
+    // from prior malas. We never use sessionSeconds (timerSeconds) here.
     let malaDuration;
-    if (this.timerSeconds > 0 && this._malaTimerStart !== undefined) {
-      malaDuration = Math.max(1, this.timerSeconds - this._malaTimerStart);
+    if (this.currentMalaSeconds > 0) {
+      malaDuration = this.currentMalaSeconds;
+    } else if (this._currentMalaStartTs) {
+      // Timer was never started this mala (e.g. user disabled active-tap timer) —
+      // fall back to wall clock since the per-mala start anchor.
+      malaDuration = Math.max(1, Math.round((Date.now() - this._currentMalaStartTs) / 1000));
     } else {
-      // Fallback: wall-clock (e.g. timer was never started, manual jap entry)
-      malaDuration = Math.max(
-        1,
-        Math.round((Date.now() - this.malaWallStart) / 1000),
-      );
+      // Last-resort wall-clock fallback (manual jap entry, etc.)
+      malaDuration = Math.max(1, Math.round((Date.now() - this.malaWallStart) / 1000));
     }
+    // CRITICAL Bug #2 fix: invalidate any pending autoStop from the completing
+    // tap so its stale `secondsAtTap` snapshot cannot restore the prior mala's
+    // counter value 6 s later and leak into the next mala.
+    clearTimeout(this.autoStopTimeout);
+    this._autoStopToken++;
     // Capture the REAL wall-clock start of this mala BEFORE we reset it
-    const _malaRealStart = this.malaWallStart || (Date.now() - malaDuration * 1000);
-    // Anchor next mala's timer start to current timerSeconds
-    this._malaTimerStart = this.timerSeconds;
-    localStorage.setItem("rjap_malaTimerStart", String(this._malaTimerStart));
-    localStorage.setItem("rjap_timerSeconds", String(this.timerSeconds));
-    this.malaWallStart = Date.now();
-    localStorage.setItem("rjap_malaWallStart", String(this.malaWallStart));
+    const _malaRealStart = this._currentMalaStartTs || this.malaWallStart || (Date.now() - malaDuration * 1000);
+    // Reset the per-mala counter (B) — next mala starts fresh from 0.
+    // Done BEFORE pushing to log so any re-entrancy can't double-count.
+    this.currentMalaSeconds = 0;
+    this._currentMalaStartTs = null;
+    this._malaTimerStart = this.timerSeconds; // legacy anchor, no longer authoritative
+    this.malaWallStart = 0;
+    try {
+      localStorage.setItem("rjap_currentMalaSeconds", "0");
+      localStorage.removeItem("rjap_currentMalaStartTs");
+      localStorage.setItem("rjap_malaTimerStart", String(this._malaTimerStart));
+      localStorage.setItem("rjap_malaWallStart", "0");
+    } catch(_){}
     const isRVm = this.S.japMode === "rv";
     const isHKm = this.S.japMode === "hk";
     if (isRVm) {
@@ -821,10 +895,69 @@ const App = {
       n: malaNum,
       sec: malaDuration,
     });
+    // ── GPS START-DATE CREDITING ─────────────────────────────────────
+    // If this mala started on a different GPS-local date than it finished
+    // on (e.g. began 23:58 June 15, completed 00:59 June 16), move the
+    // 108 count + the full malaDuration back to the start date.
+    try {
+      const _startTk = this.S.malaStartTk;
+      const _endTk = this.getTk();
+      if (_startTk && _startTk !== _endTk) {
+        const _ms = this.S.ms || 108;
+        const _mode = this.S.malaStartMode || this.S.japMode;
+        const _hist =
+          _mode === "rv" ? (this.S.historyRV = this.S.historyRV || {})
+          : _mode === "hk" ? (this.S.historyHK = this.S.historyHK || {})
+          : (this.S.history = this.S.history || {});
+        const _moveCount = Math.min(_ms, _hist[_endTk] || 0);
+        if (_moveCount > 0) {
+          _hist[_endTk] = (_hist[_endTk] || 0) - _moveCount;
+          _hist[_startTk] = (_hist[_startTk] || 0) + _moveCount;
+        }
+        // Move the mala's elapsed seconds from end-day bucket to start-day bucket.
+        const _th =
+          _mode === "rv" ? (this.S.timerHistoryRV = this.S.timerHistoryRV || {})
+          : _mode === "hk" ? (this.S.timerHistoryHK = this.S.timerHistoryHK || {})
+          : (this.S.timerHistory = this.S.timerHistory || {});
+        const _moveSec = Math.min(malaDuration, _th[_endTk] || 0);
+        if (_moveSec > 0) {
+          _th[_endTk] = (_th[_endTk] || 0) - _moveSec;
+          _th[_startTk] = (_th[_startTk] || 0) + _moveSec;
+        }
+        // Re-anchor live mala counters against the (now reduced) end-day bucket
+        // so the next tap on the new day starts mala #1 fresh.
+        this.lmc   = Math.floor((this.S.history   [_endTk] || 0) / _ms);
+        this.lmcRV = Math.floor((this.S.historyRV [_endTk] || 0) / _ms);
+        this.lmcHK = Math.floor(((this.S.historyHK||{})[_endTk] || 0) / _ms);
+      }
+    } catch (e) { console.warn("startTk credit:", e); }
+    this.S.malaStartTk = "";
+    this.S.malaStartMode = "";
+    try { localStorage.removeItem("rjap_malaStartTk"); } catch(_){}
     // ── UNIFIED TIME: timerHistory[today] = sum of mala log entries ──
     // This keeps all time displays (timer, stats, mala log, B&C day view) in harmony.
     this.syncTimerFromMalaLog();
     this.save();
+    // ── SESSION TIMER PERSISTS across malas (spec A) ─────────────────
+    // sessionSeconds (timerSeconds) represents total active chanting time
+    // since the app was opened. It MUST NOT reset on mala completion —
+    // only on app restart, force-close, or manual reset.
+    // Re-anchor timerSavedSeconds so any live-delta consumers measure
+    // from the current session position.
+    this.timerSavedSeconds = this.timerSeconds;
+    try {
+      localStorage.setItem("rjap_timerSeconds", String(this.timerSeconds));
+    } catch(_){}
+    const _td = document.getElementById("timerDisplay");
+    if (_td) _td.textContent = this.fmtTime(this.timerSeconds);
+    // ── PAUSE BOTH TIMERS ON MALA COMPLETION ──────────────────────────
+    // On mala completion the Session Timer and Today's Jap timer must
+    // pause together. (Today's Jap stops naturally because
+    // currentMalaSeconds was just reset to 0; we must also explicitly
+    // pause the running session interval so timerSeconds stops ticking.)
+    // The next bead tap will call tapTimer() → startTimer() and both
+    // counters resume in lockstep.
+    if (this.timerRunning) this.pauseTimer();
     // Animate mala duration on timer display
     this.flashMalaDuration(malaDuration);
     // ✨ MALA GLOW FLASH: briefly reveal all deity images fully with intense glow
@@ -857,6 +990,7 @@ const App = {
 
   // ── Main tap ──
   ht(e) {
+    if (isGhostMode()) return; // ghost mode: read-only, no jap
     // Suppress synthesized mousedown that follows a touchstart on the same tap
     if (e) {
       try { e.preventDefault(); } catch (_) {}
@@ -925,6 +1059,7 @@ const App = {
   },
 
   undo1() {
+    if (isGhostMode()) return; // ghost mode: read-only
     const isRV = this.S.japMode === "rv";
     const isHK = this.S.japMode === "hk";
     const hist = isRV
@@ -1115,6 +1250,13 @@ const App = {
 
   // ── 28 Names tap ──
   h28(e) {
+    // v154: ghost mode is strictly read-only. Block the tap before ANY state
+    // mutation so we never imprint the viewed user's session onto the dev's
+    // own profile. Wish target cycle counts remain visible via renderSankalpas().
+    if (isGhostMode()) {
+      if (e) { try { e.preventDefault(); } catch (_) {} }
+      return;
+    }
     if (e) {
       try { e.preventDefault(); } catch (_) {}
       const now = Date.now();
@@ -1149,6 +1291,7 @@ const App = {
   },
 
   undo28() {
+    if (isGhostMode()) return; // ghost mode: read-only, never mutate state
     if ((this.S.h28[this.S.tk] || 0) > 0) {
       // Freeze wish progress before changing h28 so bar reflects the undo
       (this.S.sankalpas || [])
@@ -1175,6 +1318,7 @@ const App = {
   // ── Silent Monk Auto Backup: triggered on every mala complete ──
   silentMonkBackup() {
     if (!fbUser) return;
+    if (isGhostMode()) return; // ghost mode: read-only
     // Delta push to Firebase (near-instant cross-device sync)
     clearTimeout(this.fbDebouncePush);
     fbPushDelta();
@@ -2333,6 +2477,7 @@ function toggleCs(bodyId, chevId) {
 
 // ── Manual Jap Entry ──
 function addManualJap() {
+  if (isGhostMode()) return; // ghost mode: read-only
   const n = parseInt(document.getElementById("manualJapIn").value) || 0;
   if (n <= 0) {
     toast("Please enter a number > 0");
@@ -2496,6 +2641,7 @@ function addManualJap() {
 }
 
 function addPrevJap() {
+  if (isGhostMode()) return; // ghost mode: read-only
   const n = parseInt(document.getElementById("prevJapIn").value) || 0;
   if (n <= 0) {
     toast("Please enter a number > 0");
@@ -2522,6 +2668,7 @@ function addPrevJap() {
 
 // ── Deduct Name Jap from Lifetime ──
 function addNameJapDeduct() {
+  if (isGhostMode()) return; // ghost mode: read-only
   const n = parseInt(document.getElementById("nameJapDeductIn").value) || 0;
   if (n <= 0) {
     toast("Please enter a number > 0");
@@ -2544,6 +2691,7 @@ function addNameJapDeduct() {
 }
 
 function removeNameJapDeduct() {
+  if (isGhostMode()) return; // ghost mode: read-only
   const n = parseInt(document.getElementById("nameJapRestoreIn").value) || 0;
   if (n <= 0) {
     toast("Please enter a number > 0");
@@ -2581,6 +2729,7 @@ function removeNameJapDeduct() {
 }
 
 function deductTodayJap() {
+  if (isGhostMode()) return; // ghost mode: read-only
   const n = parseInt(document.getElementById("deductTodayIn").value) || 0;
   if (n <= 0) {
     toast("Please enter a number > 0");
@@ -2663,6 +2812,7 @@ function deductTodayJap() {
 }
 
 function deductOtherJap() {
+  if (isGhostMode()) return; // ghost mode: read-only
   const date = (document.getElementById("deductOtherDate").value || "").trim();
   const n = parseInt(document.getElementById("deductOtherIn").value) || 0;
   if (!date) {
@@ -2728,6 +2878,7 @@ function deductOtherJap() {
 }
 
 function addOtherDayJap() {
+  if (isGhostMode()) return; // ghost mode: read-only
   const date = (document.getElementById("addJapOtherDate").value || "").trim();
   const n = parseInt(document.getElementById("addJapOtherIn").value) || 0;
   if (!date) {
@@ -2796,6 +2947,7 @@ function _jtSecs(minId, secId) {
 }
 
 function addJapTimeToday() {
+  if (isGhostMode()) return; // ghost mode: read-only
   const secs = _jtSecs("jtAddTodayMin", "jtAddTodaySec");
   if (secs <= 0) {
     toast("Please enter at least 1 minute");
@@ -2838,6 +2990,7 @@ function addJapTimeToday() {
 }
 
 function addJapTimeOther() {
+  if (isGhostMode()) return; // ghost mode: read-only
   const date = (document.getElementById("jtAddOtherDate").value || "").trim();
   const secs = _jtSecs("jtAddOtherMin", "jtAddOtherSec");
   if (!date) {
@@ -2869,6 +3022,7 @@ function addJapTimeOther() {
 }
 
 function deductJapTimeToday() {
+  if (isGhostMode()) return; // ghost mode: read-only
   const secs = _jtSecs("jtDedTodayMin", "jtDedTodaySec");
   if (secs <= 0) {
     toast("Please enter at least 1 minute");
@@ -2914,6 +3068,7 @@ function deductJapTimeToday() {
 }
 
 function deductJapTimeOther() {
+  if (isGhostMode()) return; // ghost mode: read-only
   const date = (document.getElementById("jtDedOtherDate").value || "").trim();
   const secs = _jtSecs("jtDedOtherMin", "jtDedOtherSec");
   if (!date) {
@@ -3132,9 +3287,7 @@ function uStats() {
   const hkTH = App.S.timerHistoryHK || {};
   const isHKMode = App.S.japMode === "hk";
   const liveExtraHK =
-    App.timerRunning && isHKMode
-      ? Math.max(0, App.timerSeconds - App.timerSavedSeconds)
-      : 0;
+    isHKMode ? (App.currentMalaSeconds || 0) : 0;
   const hkTod = (hkTH[App.S.tk] || 0) + liveExtraHK;
   const hkWk = wk.reduce((s, k) => s + (hkTH[k] || 0), 0) + liveExtraHK;
   const hkMo =
@@ -3292,17 +3445,15 @@ function uStats() {
       "</div>";
     bars.appendChild(c);
   });
+  const _liveMala = App.currentMalaSeconds || 0;
   const timeTod =
-    (curTimerHist[App.S.tk] || 0) +
-    (App.timerRunning ? App.timerSeconds - App.timerSavedSeconds : 0);
+    (curTimerHist[App.S.tk] || 0) + _liveMala;
   const timeWk =
-    wk.reduce((s, k) => s + (curTimerHist[k] || 0), 0) +
-    (App.timerRunning ? App.timerSeconds - App.timerSavedSeconds : 0);
+    wk.reduce((s, k) => s + (curTimerHist[k] || 0), 0) + _liveMala;
   const timeMo =
     Object.entries(curTimerHist)
       .filter(([k]) => k.startsWith(mp))
-      .reduce((s, [, v]) => s + v, 0) +
-    (App.timerRunning ? App.timerSeconds - App.timerSavedSeconds : 0);
+      .reduce((s, [, v]) => s + v, 0) + _liveMala;
   function fmtShort(s) {
     const h = Math.floor(s / 3600),
       m = Math.floor((s % 3600) / 60),
@@ -3321,9 +3472,7 @@ function uStats() {
   // Split Radha vs RV time per row
   const radhaTH = App.S.timerHistory || {};
   const rvTH = App.S.timerHistoryRV || {};
-  const liveExtra = App.timerRunning
-    ? Math.max(0, App.timerSeconds - App.timerSavedSeconds)
-    : 0;
+  const liveExtra = App.currentMalaSeconds || 0;
   const isRVMode = App.S.japMode === "rv";
   const rTod = (radhaTH[App.S.tk] || 0) + (!isRVMode ? liveExtra : 0);
   const rWk =
@@ -4564,6 +4713,7 @@ let fbSessionListener = null;
 // ── Single-device session enforcement ──
 async function fbClaimSession() {
   if (!fbUser || !fbDb) return;
+  if (isGhostMode()) return; // ghost mode: read-only
   const sessionRef = fbDb
     .collection("users")
     .doc(fbUser.uid)
@@ -5345,11 +5495,13 @@ async function fbSignOut() {
   fbAuth.signOut().then(() => toast("Signed out 🙏"));
 }
 async function fbPushDelta() {
+  if (isGhostMode()) return; // ghost mode: read-only
   return fbPushFull();
 }
 
 async function fbPushFull() {
   if (!fbUser) return;
+  if (isGhostMode()) return; // ghost mode: never write to Firestore
   // SAFETY: never push local state to cloud until we have successfully
   // pulled the authoritative cloud copy at least once this session.
   // Prevents wiping cloud data after "Clear app data" + re-login.
@@ -5762,6 +5914,10 @@ async function fbAutoSync() {
 let _fbDeb = null;
 function fbDebouncedPush() {
   if (!fbUser) return;
+  // v154: hard belt-and-suspenders guard. Even if some future tap path forgets
+  // its own isGhostMode() check, no ghost-mode write will ever reach Firestore
+  // and imprint the viewed user's data onto the developer's own profile.
+  if (typeof isGhostMode === "function" && isGhostMode()) return;
   clearTimeout(_fbDeb);
   _fbDeb = setTimeout(() => fbPushDelta(), 3000);
 }
@@ -6943,6 +7099,242 @@ function isDeveloper() {
   const email = (fbUser.email || "").toLowerCase().trim();
   return DEV_IDS.map((e) => e.toLowerCase()).includes(email);
 }
+
+// ══════════════════════════════════════════════════════════════
+// ── GHOST MODE  (developer read-only view of any user's data) ──
+// ══════════════════════════════════════════════════════════════
+
+let _ghostViewingUid  = null;   // UID currently being viewed; null = not in ghost mode
+let _ghostOwnState    = null;   // deep-copy of dev's own App.S before entering ghost mode
+let _ghostAllUsers    = [];     // cached list of {uid, name, email, phone, source}
+
+/** True while developer is shadowing another user's account. */
+function isGhostMode() { return !!_ghostViewingUid; }
+
+// ── Open the user-selection modal ─────────────────────────────
+window.openGhostUserList = async function () {
+  if (!isDeveloper()) return;
+  const modal = document.getElementById('ghostModal');
+  if (!modal) return;
+  modal.style.display = 'flex';
+  document.getElementById('ghostSearchInput').value = '';
+  _renderGhostList([]);
+  _setGhostListHtml('<div style="text-align:center;color:rgba(255,215,0,0.45);padding:30px 0;font-size:13px;">Loading users…</div>');
+  _ghostAllUsers = await _fetchAllKnownUsers();
+  filterGhostList();
+};
+
+window.closeGhostModal = function () {
+  const modal = document.getElementById('ghostModal');
+  if (modal) modal.style.display = 'none';
+};
+
+// ── Collect users from every available Firestore source ───────
+async function _fetchAllKnownUsers() {
+  const byUid = {};
+
+  // Helper to merge a record
+  const add = (uid, patch) => {
+    if (!uid) return;
+    if (!byUid[uid]) byUid[uid] = { uid };
+    Object.assign(byUid[uid], patch);
+  };
+
+  try {
+    // 1. feedbacks collection — uid-keyed, has userName / userEmail / userPhone
+    const fbSnap = await fbDb.collection('feedbacks').get();
+    fbSnap.forEach(doc => {
+      const d = doc.data();
+      add(doc.id, {
+        name:  d.userName  || '',
+        email: d.userEmail || '',
+        phone: d.userPhone || '',
+        source: 'feedback',
+      });
+    });
+  } catch (_) {}
+
+  try {
+    // 2. leaderboard collection — uid-keyed, has displayName + totalJap
+    const lbSnap = await fbDb.collection('leaderboard').get();
+    lbSnap.forEach(doc => {
+      const d = doc.data();
+      add(doc.id, {
+        name:  byUid[doc.id]?.name  || d.displayName || '',
+        email: byUid[doc.id]?.email || d.email       || '',
+        jap:   d.totalJap || 0,
+        source: byUid[doc.id] ? byUid[doc.id].source : 'leaderboard',
+      });
+    });
+  } catch (_) {}
+
+  // Sort: users with names first, then by name alpha
+  return Object.values(byUid).sort((a, b) => {
+    const an = (a.name || a.email || '').toLowerCase();
+    const bn = (b.name || b.email || '').toLowerCase();
+    if (an && !bn) return -1;
+    if (!an && bn) return  1;
+    return an.localeCompare(bn);
+  });
+}
+
+// ── Filter + render the list ──────────────────────────────────
+window.filterGhostList = function () {
+  const q = (document.getElementById('ghostSearchInput')?.value || '').toLowerCase().trim();
+  const filtered = q
+    ? _ghostAllUsers.filter(u =>
+        (u.uid   || '').toLowerCase().includes(q) ||
+        (u.name  || '').toLowerCase().includes(q) ||
+        (u.email || '').toLowerCase().includes(q) ||
+        (u.phone || '').toLowerCase().includes(q)
+      )
+    : _ghostAllUsers;
+  _renderGhostList(filtered);
+};
+
+function _setGhostListHtml(html) {
+  const el = document.getElementById('ghostUserList');
+  if (el) el.innerHTML = html;
+}
+
+function _renderGhostList(users) {
+  const el = document.getElementById('ghostUserList');
+  if (!el) return;
+  if (!users.length) {
+    el.innerHTML = '<div style="text-align:center;color:rgba(255,215,0,0.35);padding:30px 0;font-size:13px;">No matching users found.</div>';
+    return;
+  }
+  el.innerHTML = '';
+  users.forEach(u => {
+    const label   = u.name  || u.email || '(no name)';
+    const sublabel = u.email && u.name ? u.email : (u.phone || '');
+    const japStr  = u.jap ? ' · ' + _lbFmtJap(u.jap) + ' jap' : '';
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:center;gap:12px;padding:11px 14px;border-radius:12px;border:1px solid rgba(255,215,0,0.18);background:rgba(255,215,0,0.03);cursor:pointer;transition:background 0.15s;';
+    row.onmouseenter = () => { row.style.background = 'rgba(255,215,0,0.09)'; };
+    row.onmouseleave = () => { row.style.background = 'rgba(255,215,0,0.03)'; };
+    row.innerHTML = `
+      <div style="width:36px;height:36px;border-radius:50%;background:rgba(255,215,0,0.12);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">👤</div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:13px;font-weight:700;color:#FFD700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${_escHtmlG(label)}${japStr}</div>
+        ${sublabel ? `<div style="font-size:11px;color:rgba(255,255,255,0.35);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${_escHtmlG(sublabel)}</div>` : ''}
+        <div style="font-size:10px;color:rgba(255,215,0,0.28);margin-top:1px;font-family:monospace;">${u.uid}</div>
+      </div>
+      <div style="font-size:20px;flex-shrink:0;color:rgba(255,215,0,0.5);">›</div>`;
+    row.onclick = () => devEnterGhostMode(u.uid, label);
+    el.appendChild(row);
+  });
+}
+
+function _escHtmlG(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ── Enter ghost mode for a given UID ─────────────────────────
+window.devEnterGhostMode = async function (uid, displayLabel) {
+  if (!isDeveloper()) return;
+
+  // 1. Close the selection modal
+  closeGhostModal();
+
+  // 2. Save the developer's own clean state
+  _ghostOwnState = JSON.parse(JSON.stringify(App.S));
+
+  // 3. Prevent ALL writes while in ghost mode
+  _ghostViewingUid = uid;
+
+  // 4. Kill the real-time listener so viewed user's live changes
+  //    don't trigger a push back to the dev's own account
+  if (typeof fbListener === 'function') { try { fbListener(); } catch(_){} fbListener = null; }
+
+  // 5. Pull the viewed user's data from Firestore (read-only)
+  let snap;
+  try {
+    snap = await fbDb.collection('users').doc(uid).collection('data').doc('main').get();
+  } catch (e) {
+    toast('⚠️ Cannot read that user\'s data: ' + (e.message || e));
+    _ghostViewingUid = null;
+    _ghostOwnState   = null;
+    return;
+  }
+
+  if (!snap || !snap.exists) {
+    toast('⚠️ No data document found for that user.');
+    _ghostViewingUid = null;
+    _ghostOwnState   = null;
+    return;
+  }
+
+  // 6. Stamp viewed data into App.S without touching IDB / cloud
+  App._cloudHydrated = false;          // block any accidental push trigger
+  fbApplyRemote(snap.data());
+  App._cloudHydrated = false;          // keep blocked
+
+  // 7. Re-render everything
+  if (typeof switchJapMode === 'function') switchJapMode(App.S.japMode || 'radha');
+  App.ua();
+  if (typeof renderSt       === 'function') renderSt();
+  if (typeof u28            === 'function') u28();
+  if (typeof renderBcal     === 'function') renderBcal();
+  if (typeof renderCal      === 'function') renderCal();
+  if (typeof uStats         === 'function') uStats();
+  if (typeof renderSankalpas=== 'function') renderSankalpas();
+  if (typeof renderMalaLog  === 'function') renderMalaLog();
+
+  // 8. Update the dev panel UI
+  const pill = document.getElementById('ghostActivePill');
+  const exitBtn = document.getElementById('ghostExitBtn');
+  if (pill)   pill.style.display   = 'inline-block';
+  if (exitBtn) exitBtn.style.display = '';
+
+  toast('👁 Ghost: ' + _escHtmlG(displayLabel || uid.slice(0,10) + '…'));
+};
+
+// ── Exit ghost mode — restore dev's own state ─────────────────
+window.devExitGhostMode = async function () {
+  if (!isDeveloper()) return;
+
+  // 1. Clear ghost flag immediately so write guards lift
+  _ghostViewingUid = null;
+
+  // 2. Restore the dev's own state snapshot (no cloud call needed)
+  if (_ghostOwnState) {
+    App.S = JSON.parse(JSON.stringify(_ghostOwnState));
+    _ghostOwnState = null;
+  }
+
+  // 3. Re-hydrate from cloud to get any fresh changes since we entered ghost mode
+  App._cloudHydrated = false;
+  try {
+    await fbAutoSync();   // pulls dev's own cloud doc and sets up real-time listener
+  } catch (e) {
+    // If offline, just render from the snapshot we restored
+    App._cloudHydrated = true;
+  }
+
+  // 4. Re-render with dev's own data
+  if (typeof switchJapMode === 'function') switchJapMode(App.S.japMode || 'radha');
+  App.ua();
+  if (typeof renderSt       === 'function') renderSt();
+  if (typeof u28            === 'function') u28();
+  if (typeof renderBcal     === 'function') renderBcal();
+  if (typeof renderCal      === 'function') renderCal();
+  if (typeof uStats         === 'function') uStats();
+  if (typeof renderSankalpas=== 'function') renderSankalpas();
+  if (typeof renderMalaLog  === 'function') renderMalaLog();
+
+  // 5. Reset panel UI
+  const pill   = document.getElementById('ghostActivePill');
+  const exitBtn = document.getElementById('ghostExitBtn');
+  if (pill)    pill.style.display   = 'none';
+  if (exitBtn) exitBtn.style.display = 'none';
+
+  toast('↩ Back to your own account');
+};
+
+// ══════════════════════════════════════════════════════════════
+// END GHOST MODE
+// ══════════════════════════════════════════════════════════════
 
 function getEffectiveLyrics(id) {
   return (
@@ -8575,31 +8967,34 @@ window.addEventListener("load", async () => {
   );
   if (App.S.gaudiyaMode) document.body.classList.add("gaudiya-mode");
 
-  // Timer always starts from 0 on each app open.
-  // timerSavedSeconds tracks what's already committed to timerHistory this session.
+  // (A) sessionSeconds resets on every app open (per spec).
   App.timerSeconds = 0;
   App.timerSavedSeconds = 0;
-  App._malaTimerStart = 0; // timer-based anchor for mala duration (authoritative clock)
-  // Restore wall-clock mala start for cross-session timing
+  App._malaTimerStart = 0;             // legacy, no longer authoritative
+  // (B) currentMalaSeconds: restore from storage if a mala is in progress so the
+  // next bead tap continues the prior mala's duration instead of leaking the
+  // full session into history.
+  App.currentMalaSeconds = 0;
+  App._currentMalaStartTs = null;
   const savedMalaWall = localStorage.getItem("rjap_malaWallStart");
   const todayCount = App.gTod();
   const ms = App.S.ms || 108;
   const countInCurrentMala = todayCount % ms;
   if (savedMalaWall && countInCurrentMala > 0) {
     App.malaWallStart = parseInt(savedMalaWall);
-    // Mala in progress → restore active-tap timer so duration accumulates correctly
-    const savedTS = parseInt(localStorage.getItem("rjap_timerSeconds") || "0");
-    const savedMTS = parseInt(localStorage.getItem("rjap_malaTimerStart") || "0");
-    if (!isNaN(savedTS) && savedTS > 0) {
-      App.timerSeconds = savedTS;
-      App.timerSavedSeconds = savedTS;
-    }
-    if (!isNaN(savedMTS)) App._malaTimerStart = savedMTS;
+    const savedCMS = parseInt(localStorage.getItem("rjap_currentMalaSeconds") || "0");
+    const savedCMST = parseInt(localStorage.getItem("rjap_currentMalaStartTs") || "0");
+    if (!isNaN(savedCMS) && savedCMS > 0) App.currentMalaSeconds = savedCMS;
+    App._currentMalaStartTs = (!isNaN(savedCMST) && savedCMST > 0)
+      ? savedCMST
+      : App.malaWallStart;
   } else {
-    App.malaWallStart = Date.now();
-    localStorage.setItem("rjap_malaWallStart", String(App.malaWallStart));
+    App.malaWallStart = 0;
+    localStorage.removeItem("rjap_malaWallStart");
     localStorage.removeItem("rjap_timerSeconds");
     localStorage.removeItem("rjap_malaTimerStart");
+    localStorage.removeItem("rjap_currentMalaSeconds");
+    localStorage.removeItem("rjap_currentMalaStartTs");
   }
   document.getElementById("timerDisplay").textContent = "00:00:00";
 
@@ -8867,21 +9262,17 @@ if ("serviceWorker" in navigator) {
       .catch((e) => console.warn("SW registration failed:", e.message));
 
     navigator.serviceWorker.addEventListener("message", (e) => {
-      // ── SW_UPDATED: new SW activated — reload ONLY if this page is older than
-      // 6 seconds (fresh loads already have the new files from the SW install
-      // step and don't need a reload). Guard with sessionStorage against double-fire.
+      // ── SW_UPDATED (v154): NO auto-reload. ──
+      // Previous versions did window.location.reload() ~800ms after this
+      // message, which was the root cause of the "app loads twice / loading
+      // bar disappears then comes back" complaint on slow networks.
+      // The new SW (v154) no longer calls clients.claim(), so the current
+      // page keeps running on the old SW until the user navigates or
+      // manually refreshes — guaranteed clean, no flicker.
       if (e.data && e.data.type === "SW_UPDATED") {
-        if (sessionStorage.getItem("sw_reloaded") === e.data.version) return;
-        sessionStorage.setItem("sw_reloaded", e.data.version);
-        const pageAge = performance.now(); // ms since page navigation start
-        if (pageAge < 6000) {
-          // Page is brand-new — SW already served fresh files, no reload needed
-          console.log("[SW] SW_UPDATED ignored — page is fresh (<6s old)");
-          return;
-        }
-        console.log("[SW] SW_UPDATED — scheduling reload for fresh content");
-        // Small delay so any in-flight saves/renders finish cleanly
-        setTimeout(() => window.location.reload(), 800);
+        console.log("[SW] update ready (" + e.data.version + ") — will apply on next navigation");
+        // Optional: surface a soft toast / pill here if desired.
+        try { if (typeof toast === "function") toast("✨ Update ready — refresh anytime"); } catch (_) {}
       }
     });
 
@@ -8967,7 +9358,7 @@ function _isProseBlock(verse) {
 }
 
 // ── IDs that support translation (অনুবাদ) button
-const TRANSLATION_IDS = ["nkc", "gms", "rsn", "svb"];
+const TRANSLATION_IDS = ["nkc", "gms", "rsn", "svb", "dkc"];
 // ── IDs where prose sections need vertical-scroll mode
 const PROSE_IDS = ["nkc"];
 
@@ -9504,7 +9895,8 @@ var _hcjPlayerCleanup = null; // cleanup fn for window listeners added in _hcjRe
 // Audio clip path — works for any stotram that has audio clips
 var _AUDIO_STOTRAMS = {
   hcj: { prefix: "hcj" },
-  bss: { prefix: "bss" }
+  bss: { prefix: "bss" },
+  dkc: { prefix: "dkc" }
 };
 function _hcjAudioPath(i) {
   var cfg = _AUDIO_STOTRAMS[_currentStotramId];
@@ -10881,15 +11273,18 @@ function _histMalaTable(label, entries, color) {
 
   entries.forEach((e, i) => {
     const endTs = e.ts;
-    // Use stored startTs if available (accurate wall-clock); fall back to computed
-    const startTs = e.startTs ? e.startTs : endTs - e.sec * 1000;
+    // Duration MUST match the Mala Log (active chanting time = e.sec).
+    // Derive the displayed Start Time by subtracting the active duration from
+    // the end timestamp so End − Start === Duration in the table.
+    const durationSec = Math.max(1, e.sec || 0);
+    const startTs = endTs - durationSec * 1000;
     const even = i % 2 === 0;
     // Always use sequential index (i+1) — e.n can repeat when modes switch
     html += `<tr style="background:${even ? "rgba(0,0,0,0.15)" : "transparent"}">
       <td style="padding:6px 8px;color:${color};font-weight:600">Mala ${i + 1}</td>
       <td style="padding:6px 8px;color:var(--tl)">${_histFmtTime(endTs)}</td>
       <td style="padding:6px 8px;color:var(--td)">${_histFmtTime(startTs)}</td>
-      <td style="padding:6px 8px;text-align:right;color:var(--green)">${_histFmtSec(e.sec)}</td>
+      <td style="padding:6px 8px;text-align:right;color:var(--green)">${_histFmtSec(durationSec)}</td>
     </tr>`;
   });
 
@@ -10911,13 +11306,16 @@ function _hist28CycleTable(entries) {
 
   entries.forEach((e, i) => {
     const endTs = e.ts;
-    const startTs = e.startTs ? e.startTs : endTs - (e.sec || 0) * 1000;
+    // Match the log: duration = active chanting time (e.sec). Derive Start
+    // Time from End − Duration so the table stays internally consistent.
+    const durationSec = Math.max(1, e.sec || 0);
+    const startTs = endTs - durationSec * 1000;
     const even = i % 2 === 0;
     html += `<tr style="background:${even ? "rgba(0,0,0,0.15)" : "transparent"}">
       <td style="padding:6px 8px;color:var(--green);font-weight:600">Cycle ${i + 1}</td>
       <td style="padding:6px 8px;color:var(--tl)">${_histFmtTime(endTs)}</td>
       <td style="padding:6px 8px;color:var(--td)">${_histFmtTime(startTs)}</td>
-      <td style="padding:6px 8px;text-align:right;color:var(--gold)">${_histFmtSec(e.sec)}</td>
+      <td style="padding:6px 8px;text-align:right;color:var(--gold)">${_histFmtSec(durationSec)}</td>
     </tr>`;
   });
 
@@ -11493,19 +11891,30 @@ window._lbUnsubscribe = null;
 
 /** Get the date key prefix for the current period filter */
 function _lbGetPeriodKeys(period) {
-  const now = new Date();
+  const now = new Date(Date.now() + (window._serverTimeOffsetMs || 0));
   const keys = [];
   if (period === 'alltime') return null; // null = use totalJap field (no date filter)
   if (period === 'today') {
-    // Always use local date key (App.S.tk) — avoids UTC offset bug for UTC+5:30/+6 users
-    if (window.App && window.App.S && window.App.S.tk) {
-      return [window.App.S.tk];
+    // Always derive the key from the live device clock via App.getTk() so a
+    // stale App.S.tk (e.g. viewer's app backgrounded across midnight) doesn't
+    // make us sum yesterday's history for every other devotee. Keep App.S.tk
+    // in sync as a side-effect so the rest of the UI also refreshes.
+    let key = null;
+    try {
+      if (window.App && typeof window.App.getTk === 'function') {
+        key = window.App.getTk();
+        if (window.App.S && window.App.S.tk !== key) {
+          window.App.S.tk = key;
+        }
+      }
+    } catch(_) {}
+    if (!key) {
+      const y = now.getFullYear();
+      const m = String(now.getMonth()+1).padStart(2,'0');
+      const d = String(now.getDate()).padStart(2,'0');
+      key = y + '-' + m + '-' + d;
     }
-    // Fallback: derive local date from device clock (NOT toISOString which is UTC)
-    const y = now.getFullYear();
-    const m = String(now.getMonth()+1).padStart(2,'0');
-    const d = String(now.getDate()).padStart(2,'0');
-    return [y + '-' + m + '-' + d];
+    return [key];
   }
   if (period === 'month') {
     const y = now.getFullYear(), m = now.getMonth();
@@ -11645,16 +12054,29 @@ function renderLeaderboard(docs, period) {
       const tHistRV = d.timerHistoryRV || {};
       const tHistHK = d.timerHistoryHK || {};
       const tHist28 = d.timer28History || {};
-      periodKeys.forEach(function(k) {
-        sr += (hist[k] || 0);
-        srv += (histRV[k] || 0);
-        shk += (histHK[k] || 0);
-        s28 += (hist28[k] || 0);
-        tr += (tHist[k] || 0);
-        trv += (tHistRV[k] || 0);
-        thk += (tHistHK[k] || 0);
-        t28 += (tHist28[k] || 0);
-      });
+      if (period === 'today' && d.todayKey === periodKeys[0] && Number(d.todayJap || 0) > 0) {
+        const bd = d.todayBreakdown || {};
+        const tbd = d.todayTimeBreakdown || {};
+        sr = bd.r || 0;
+        srv = bd.rv || 0;
+        shk = bd.hk || 0;
+        s28 = bd.n28 || 0;
+        tr = tbd.r || 0;
+        trv = tbd.rv || 0;
+        thk = tbd.hk || 0;
+        t28 = tbd.n28 || 0;
+      } else {
+        periodKeys.forEach(function(k) {
+          sr += (hist[k] || 0);
+          srv += (histRV[k] || 0);
+          shk += (histHK[k] || 0);
+          s28 += (hist28[k] || 0);
+          tr += (tHist[k] || 0);
+          trv += (tHistRV[k] || 0);
+          thk += (tHistHK[k] || 0);
+          t28 += (tHist28[k] || 0);
+        });
+      }
       score += sr + srv + shk + s28;
       timeScore += tr + trv + thk + t28;
       d._breakdown = { r: sr, rv: srv, hk: shk, n28: s28 };
@@ -11787,6 +12209,7 @@ function lbSwitchPeriod(period) {
 /** Push current user's data to the leaderboard collection */
 async function pushLeaderboard() {
   if (!fbUser || !fbDb) return;
+  if (isGhostMode()) return; // ghost mode: read-only
   if (!App.S.lbOptIn) {
     // If opted out, remove the entry
     try {
@@ -11795,10 +12218,16 @@ async function pushLeaderboard() {
     return;
   }
 
+  // Use a live date key when publishing leaderboard data; App.S.tk can be
+  // stale on devices left open across midnight or restored from cache.
+  const liveTk = (window.App && typeof App.getTk === 'function') ? App.getTk() : (App.S.tk || '');
+  if (liveTk && App.S.tk !== liveTk) App.S.tk = liveTk;
+
   // Compute lifetime totals
   const hist   = App.S.history   || {};
   const histRV = App.S.historyRV || {};
   const histHK = App.S.historyHK || {};
+  const hist28 = App.S.h28 || {};
   const totalRadha = Object.values(hist).reduce((a,b)=>a+b,0);
   const totalRV    = Object.values(histRV).reduce((a,b)=>a+b,0);
   const totalHK    = Object.values(histHK).reduce((a,b)=>a+b,0);
@@ -11814,7 +12243,7 @@ async function pushLeaderboard() {
   // Compute streak from App.S (reuse existing streak logic)
   let streak = 0;
   try {
-    const tk = App.S.tk;
+    const tk = liveTk || App.S.tk;
     const allHist = {};
     Object.keys({...hist,...histRV,...histHK}).forEach(function(k) {
       allHist[k] = (hist[k]||0)+(histRV[k]||0)+(histHK[k]||0);
@@ -11822,7 +12251,7 @@ async function pushLeaderboard() {
     const today = new Date(tk+'T00:00:00');
     let d = new Date(today);
     while(true) {
-      const key = d.toISOString().slice(0,10);
+      const key = App.tkFromDate(d);
       const dayJap = allHist[key] || 0;
       const target = App.S.dt || App.S.dtRV || App.S.dtHK || 0;
       if (dayJap <= 0 || (target > 0 && dayJap < target)) break;
@@ -11832,6 +12261,21 @@ async function pushLeaderboard() {
     }
   } catch(_) {}
 
+  const todayBreakdown = {
+    r: hist[liveTk] || 0,
+    rv: histRV[liveTk] || 0,
+    hk: histHK[liveTk] || 0,
+    n28: hist28[liveTk] || 0,
+  };
+  const todayTimeBreakdown = {
+    r: (App.S.timerHistory || {})[liveTk] || 0,
+    rv: (App.S.timerHistoryRV || {})[liveTk] || 0,
+    hk: (App.S.timerHistoryHK || {})[liveTk] || 0,
+    n28: (App.S.timer28History || {})[liveTk] || 0,
+  };
+  const todayJap = todayBreakdown.r + todayBreakdown.rv + todayBreakdown.hk + todayBreakdown.n28;
+  const todayTimerSeconds = todayTimeBreakdown.r + todayTimeBreakdown.rv + todayTimeBreakdown.hk + todayTimeBreakdown.n28;
+
   const payload = {
     displayName,
     totalJap,
@@ -11839,11 +12283,16 @@ async function pushLeaderboard() {
     streak,
     optIn: true,
     updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+    todayKey: liveTk,
+    todayJap,
+    todayTimerSeconds,
+    todayBreakdown,
+    todayTimeBreakdown,
     // Store per-day histories so month/week filtering works
     history:   hist,
     historyRV: histRV,
     historyHK: histHK,
-    history28: App.S.h28 || {},
+    history28: hist28,
     // Push total timer seconds for leaderboard display
     timerSeconds: Object.values(App.S.timerHistory || {}).reduce((a,b)=>a+b,0) +
                   Object.values(App.S.timerHistoryRV || {}).reduce((a,b)=>a+b,0) +
@@ -12721,21 +13170,23 @@ function _showUserReplyPopup(text) {
     test.src = COIN_SRC;
   })();
 
+  function todayCount() {
+    try { return (App.S.h28[App.S.tk] || 0); } catch (_) { return 0; }
+  }
+
   function restoreCounter() {
-    try {
-      var saved = parseInt(localStorage.getItem(STORAGE_KEY) || "0", 10);
-      var bbc = document.getElementById("bbCount");
-      if (bbc && !isNaN(saved) && saved > 0) {
-        bbc.textContent = saved >= 1000 ? saved.toLocaleString() : String(saved);
-      }
-    } catch (_) {}
+    var bbc = document.getElementById("bbCount");
+    if (!bbc) return;
+    var n = todayCount();
+    bbc.textContent = n >= 1000 ? n.toLocaleString() : String(n);
   }
 
   function bumpCounter() {
     var bbc = document.getElementById("bbCount");
     var bbctr = document.getElementById("bbCounter");
     if (!bbc) return;
-    var n = (parseInt((bbc.textContent || "0").replace(/,/g, ""), 10) || 0) + 1;
+    // Always reflect TODAY's tap count (resets at midnight via App.S.tk)
+    var n = todayCount();
     bbc.textContent = n >= 1000 ? n.toLocaleString() : String(n);
     try { localStorage.setItem(STORAGE_KEY, String(n)); } catch (_) {}
     if (bbctr) {

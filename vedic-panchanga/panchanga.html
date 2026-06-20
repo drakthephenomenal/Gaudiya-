@@ -1,0 +1,246 @@
+  <div id="vpanchanga-view" style="display:none;padding-bottom:24px">
+
+    <!-- Header -->
+    <div class="vp-head">
+      <div class="vp-gaurabda" id="vp-gaurabda"></div>
+      <div class="vp-loc-row">
+        <span class="vp-loc-dot"></span>
+        <span id="vp-loc-text">Locating…</span>
+      </div>
+      <button class="vp-cal-trigger" id="vp-cal-trigger" onclick="vpOpenCalendar()" aria-label="Pick a date">
+        <span class="vp-cal-trigger-icon">📅</span>
+        <span>Pick a Date</span>
+      </button>
+      <button class="vp-cal-trigger vp-horo-trigger" id="vp-horo-trigger" onclick="vpHoroOpen()" aria-label="My Horoscope">
+        <span class="vp-cal-trigger-icon">🪐</span>
+        <span id="vp-horo-trigger-label">My Horoscope</span>
+      </button>
+    </div>
+
+    <!-- Clock -->
+    <div class="vp-clock-wrap">
+      <div class="vp-om-bg">ॐ</div>
+      <div id="vp-clock"></div>
+    </div>
+    <div id="vp-vaar-name"></div>
+    <div id="vp-month-line"></div>
+    <div id="vp-vaishnav-line"></div>
+
+    <!-- ORBITAL DIAL -->
+    <div class="vp-orbit-wrap" id="vp-orbit-wrap">
+      <div class="vp-orbit-space">
+        <div class="vp-orbit-stars"></div>
+      </div>
+      <div class="vp-orbit-ring"></div>
+      <div class="vp-orbit-center" id="vp-orbit-center">
+        <div class="vp-orbit-center-icon" id="vp-orbit-center-icon"></div>
+        <div class="vp-orbit-center-label" id="vp-orbit-center-label"></div>
+        <div class="vp-orbit-center-sub" id="vp-orbit-center-sub"></div>
+      </div>
+    </div>
+
+    <!-- Viewing bar for selected vaar -->
+    <div id="vp-viewing-bar" style="display:none">
+      <span class="vp-viewing-chip" id="vp-viewing-label"></span>
+      <button class="vp-back-btn" onclick="vpClearSelectedVaar()">← Back to today</button>
+    </div>
+
+    <!-- ══════════════════════════════════════════
+         CALENDAR DATE PICKER — modal overlay
+         ══════════════════════════════════════════ -->
+    <div class="vp-cal-overlay" id="vp-cal-overlay" onclick="vpCloseCalendarBackdrop(event)">
+      <div class="vp-cal-modal" id="vp-cal-modal">
+        <div class="vp-cal-modal-head">
+          <button class="vp-cal-nav-btn" onclick="vpCalChangeMonth(-1)" id="vp-cal-prev-btn" aria-label="Previous month">‹</button>
+          <button class="vp-cal-modal-title" id="vp-cal-month-label" onclick="vpCalToggleYearGrid()"></button>
+          <button class="vp-cal-nav-btn" onclick="vpCalChangeMonth(1)" id="vp-cal-next-btn" aria-label="Next month">›</button>
+        </div>
+
+        <!-- Month-day view -->
+        <div id="vp-cal-day-view">
+          <div class="vp-cal-weekdays">
+            <span>Su</span><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span>
+          </div>
+          <div class="vp-cal-grid" id="vp-cal-grid"></div>
+        </div>
+
+        <!-- Year-picker view (toggled by tapping the month/year title) -->
+        <div id="vp-cal-year-view" style="display:none">
+          <div class="vp-cal-year-nav">
+            <button class="vp-cal-nav-btn" onclick="vpCalChangeYearPage(-1)" aria-label="Earlier years">‹</button>
+            <span class="vp-cal-year-range" id="vp-cal-year-range"></span>
+            <button class="vp-cal-nav-btn" onclick="vpCalChangeYearPage(1)" aria-label="Later years">›</button>
+          </div>
+          <div class="vp-cal-year-grid" id="vp-cal-year-grid"></div>
+        </div>
+
+        <div class="vp-cal-modal-foot">
+          <button class="vp-cal-today-btn" onclick="vpCalGoToday()">Today</button>
+          <button class="vp-cal-close-btn" onclick="vpCloseCalendar()">Close</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════
+         HOROSCOPE CALCULATOR — modal overlay
+         Date + Time + Place of birth → birth-moment
+         Tithi / Nakshatra / Yoga / Karana / Vaar
+         ══════════════════════════════════════════ -->
+    <div class="vp-cal-overlay" id="vp-horo-overlay" onclick="vpHoroCloseBackdrop(event)">
+      <div class="vp-cal-modal vp-horo-modal" id="vp-horo-modal">
+        <div class="vp-cal-modal-head">
+          <span class="vp-cal-modal-title vp-horo-modal-title">🪐 My Horoscope</span>
+          <button class="vp-cal-nav-btn" onclick="vpHoroClose()" aria-label="Close">✕</button>
+        </div>
+
+        <div class="vp-horo-field">
+          <label class="vp-horo-label" for="vp-horo-date">Date of Birth</label>
+          <input type="date" id="vp-horo-date" class="vp-horo-input">
+        </div>
+
+        <div class="vp-horo-field">
+          <label class="vp-horo-label" for="vp-horo-time">Time of Birth</label>
+          <input type="time" id="vp-horo-time" class="vp-horo-input">
+        </div>
+
+        <div class="vp-horo-field">
+          <label class="vp-horo-label">Place of Birth</label>
+          <div class="vp-horo-latlng-row">
+            <input type="number" id="vp-horo-lat" class="vp-horo-input vp-horo-input-sm" placeholder="Latitude" step="0.0001">
+            <input type="number" id="vp-horo-lng" class="vp-horo-input vp-horo-input-sm" placeholder="Longitude" step="0.0001">
+          </div>
+          <button class="vp-horo-gps-btn" id="vp-horo-gps-btn" onclick="vpHoroUseGPS()">
+            <span>📍</span><span id="vp-horo-gps-btn-label">Use My Current Location</span>
+          </button>
+          <div class="vp-horo-note">Birth time is read in your device's current timezone. If you were born in a different timezone, set your device's timezone to match before calculating for an accurate result.</div>
+        </div>
+
+        <div class="vp-cal-modal-foot">
+          <button class="vp-cal-close-btn" onclick="vpHoroClose()">Cancel</button>
+          <button class="vp-cal-today-btn" onclick="vpHoroCalculate()">Calculate</button>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- ══════════════════════════════════════════
+         SELECTED DATE — Full Panchanga Horoscope
+         ══════════════════════════════════════════ -->
+    <div id="vp-dateresult-wrap" style="display:none">
+      <section class="vp-m-section vp-dateresult-section">
+        <div class="vp-dateresult-head">
+          <div class="vp-dateresult-title">
+            <span class="vp-dateresult-icon">📆</span>
+            <div>
+              <div class="vp-dateresult-label">Panchanga for</div>
+              <div class="vp-dateresult-date" id="vp-dateresult-date"></div>
+              <div class="vp-dateresult-sub" id="vp-dateresult-sub"></div>
+            </div>
+          </div>
+          <button class="vp-dateresult-close" onclick="vpClearDateResult()" aria-label="Close">✕</button>
+        </div>
+
+        <!-- Vaar summary strip -->
+        <div id="vp-dr-vaar-strip"></div>
+
+        <!-- Anga timeline cards: Tithi, Nakshatra, Yoga, Karana —
+             each with Previous / Current / Next + durations -->
+        <div class="vp-dr-anga-list" id="vp-dr-anga-list"></div>
+      </section>
+    </div>
+
+    <!-- ══════════════════════════════════════════
+         HOROSCOPE RESULT — Birth-moment Panchanga
+         ══════════════════════════════════════════ -->
+    <div id="vp-horo-result-wrap" style="display:none">
+      <section class="vp-m-section vp-dateresult-section">
+        <div class="vp-dateresult-head">
+          <div class="vp-dateresult-title">
+            <span class="vp-dateresult-icon">🪐</span>
+            <div>
+              <div class="vp-dateresult-label">Horoscope for</div>
+              <div class="vp-dateresult-date" id="vp-horo-result-date"></div>
+              <div class="vp-dateresult-sub" id="vp-horo-result-sub"></div>
+            </div>
+          </div>
+          <button class="vp-dateresult-close" onclick="vpHoroClearResult()" aria-label="Close">✕</button>
+        </div>
+
+        <!-- Vaar summary strip -->
+        <div class="vp-dr-vaar-strip" id="vp-horo-vaar-strip"></div>
+
+        <!-- Rashi / Janma predictions (Moon sign + Nakshatra-derived) -->
+        <div id="vp-horo-predictions"></div>
+
+        <!-- Save / Forget My Horoscope -->
+        <div class="vp-horo-save-row" id="vp-horo-save-row">
+          <button class="vp-horo-save-btn" id="vp-horo-save-btn" onclick="vpHoroSaveMine()">⭐ Save as My Horoscope</button>
+          <button class="vp-horo-forget-btn" id="vp-horo-forget-btn" onclick="vpHoroForgetMine()" style="display:none">✕ Forget My Horoscope</button>
+          <div class="vp-horo-save-note" id="vp-horo-save-note">Saving lets the app personalize today's auspicious/inauspicious windows for you (Tara Bala & Chandra Bala).</div>
+        </div>
+
+        <!-- Anga timeline cards: Tithi, Nakshatra, Yoga, Karana —
+             each with Previous / Current / Next + durations,
+             anchored to the exact birth moment -->
+        <div class="vp-dr-anga-list" id="vp-horo-anga-list"></div>
+      </section>
+    </div>
+
+    <!-- ══════════════════════════════════════════
+         SPECIAL YOGAS — top of content (if any)
+         ══════════════════════════════════════════ -->
+    <div id="vp-special-yoga-sec" style="display:none">
+      <section class="vp-m-section vp-special-yoga-section">
+        <div class="vp-sec-head vp-sec-head-gold">✨ Special Yoga Today</div>
+        <div class="vp-space-y" id="vp-yoga-cards"></div>
+      </section>
+    </div>
+
+    <!-- ══════════════════════════════════════════
+         PANCHANGA NOW — 4 Angas in one row
+         with collapsible upcoming rows under each
+         ══════════════════════════════════════════ -->
+    <div class="vp-now-panel" id="vp-now-panel">
+      <div class="vp-now-panel-head">
+        <div class="vp-pulse"></div>
+        <span id="vp-now-panel-title">Right Now &amp; Coming Soon</span>
+      </div>
+
+      <!-- 4 Anga Cards in a row -->
+      <div class="vp-anga-row-cards" id="vp-anga-row-cards"></div>
+    </div>
+
+    <!-- ══════════════════════════════════════════
+         ACTIVE MUHURTA BANNER (Current Now)
+         ══════════════════════════════════════════ -->
+    <div id="vp-current-muhurta-wrap"></div>
+
+    <!-- ══════════════════════════════════════════
+         UPCOMING — serial order, color-coded
+         ══════════════════════════════════════════ -->
+    <section class="vp-m-section" id="vp-upcoming-section">
+      <div class="vp-sec-head vp-sec-head-upcoming">Coming Up</div>
+      <div class="vp-upcoming-list" id="vp-upcoming-list"></div>
+    </section>
+
+    <!-- Tithi grid toggle -->
+    <button class="vp-tithi-toggle" id="vp-tithi-toggle" onclick="vpToggleGrid()">
+      <span>🌙 &nbsp;Lunar Month — All 30 Tithis</span>
+      <span class="vp-chevron" id="vp-chevron">▾</span>
+    </button>
+    <div class="vp-month-grid-wrap" id="vp-month-grid-wrap">
+      <div class="vp-month-grid" id="vp-month-grid"></div>
+    </div>
+
+    <!-- ══════════════════════════════════════════
+         DAY BOUNDARIES — collapsible
+         ══════════════════════════════════════════ -->
+    <button class="vp-collapsible-toggle" id="vp-db-toggle" onclick="vpToggleDayBoundaries()">
+      <span>🌄 &nbsp;Day Boundaries</span>
+      <span class="vp-chevron" id="vp-db-chevron">▾</span>
+    </button>
+    <div class="vp-collapsible-wrap" id="vp-db-wrap">
+      <div class="vp-db-grid" id="vp-db-grid"></div>
+    </div>
+
+  </div>

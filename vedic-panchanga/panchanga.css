@@ -1,0 +1,1139 @@
+/* ══════════════════════════════════════════════════════════════
+   VEDIC PANCHANGA — Redesigned Layout
+   ══════════════════════════════════════════════════════════════ */
+
+#vpanchanga-view{
+  --vp-sky-top:#FFF8EC;
+  --vp-sky-bot:#FDEFD9;
+  --vp-ink:#241B45;
+  --vp-ink-soft:#5A4F82;
+  --vp-ink-faint:#8B81AC;
+  --vp-card:#FFFFFF;
+  --vp-card-edge:rgba(36,27,69,.10);
+  --vp-sun:#FF8A3D;
+  --vp-sun2:#FFB35C;
+  --vp-violet:#7C5CFC;
+  --vp-violet2:#A78BFA;
+  --vp-jade:#0EA672;
+  --vp-jade-bg:#E7F8F0;
+  --vp-rose:#E1485F;
+  --vp-rose-bg:#FDEAEC;
+  --vp-gold:#D89A1F;
+  --vp-gold-bg:#FFF8DC;
+  /* Upcoming color scheme */
+  --vp-ausp-glow:#C8960A;     /* golden glow for auspicious */
+  --vp-ausp-bg:linear-gradient(135deg,#FFF9E0,#FFFDF5);
+  --vp-ausp-border:rgba(200,150,10,.35);
+  --vp-inaup-color:#6B3FA0;   /* violet for inauspicious */
+  --vp-inaup-bg:linear-gradient(135deg,#F3EEFF,#FAF7FF);
+  --vp-inaup-border:rgba(107,63,160,.3);
+  --vp-shadow:0 8px 24px rgba(76,58,150,.10);
+  --vp-shadow-lift:0 16px 36px rgba(76,58,150,.18);
+  color:var(--vp-ink);
+  background:linear-gradient(180deg,var(--vp-sky-top),var(--vp-sky-bot) 600px,var(--vp-sky-bot));
+  font-family:'Inter',sans-serif;
+  position:relative;
+  overflow-x:hidden;
+}
+
+#vpanchanga-view::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:480px;pointer-events:none;z-index:0;
+  background:
+    radial-gradient(circle at 18% 8%,rgba(255,179,92,.30),transparent 42%),
+    radial-gradient(circle at 82% 2%,rgba(124,92,252,.18),transparent 38%);
+}
+#vpanchanga-view > *{position:relative;z-index:1}
+
+/* ── Header ─────────────────────────────────────────────────── */
+#vpanchanga-view .vp-head{text-align:center;padding:18px 16px 4px}
+#vpanchanga-view .vp-gaurabda{font-size:.6rem;color:var(--vp-ink-faint);letter-spacing:.18em;text-transform:uppercase;font-weight:700}
+#vpanchanga-view .vp-loc-row{font-size:.58rem;color:var(--vp-ink-soft);letter-spacing:.08em;text-transform:uppercase;margin-top:6px;display:inline-flex;align-items:center;gap:5px;background:rgba(124,92,252,.08);padding:4px 12px;border-radius:999px}
+#vpanchanga-view .vp-loc-dot{width:5px;height:5px;background:var(--vp-violet);border-radius:50%;display:inline-block;box-shadow:0 0 8px rgba(124,92,252,.6)}
+
+/* Calendar trigger button */
+#vpanchanga-view .vp-cal-trigger{
+  display:inline-flex;align-items:center;gap:6px;
+  margin-top:10px;
+  font-family:inherit;font-size:.66rem;font-weight:800;
+  letter-spacing:.06em;text-transform:uppercase;
+  color:#fff;
+  background:linear-gradient(135deg,var(--vp-violet),#9B7FFF);
+  border:none;border-radius:999px;
+  padding:8px 16px;
+  cursor:pointer;
+  box-shadow:0 6px 18px rgba(124,92,252,.32);
+  transition:transform .2s ease,box-shadow .2s ease;
+}
+#vpanchanga-view .vp-cal-trigger:hover{
+  transform:translateY(-1px);
+  box-shadow:0 8px 22px rgba(124,92,252,.42);
+}
+#vpanchanga-view .vp-cal-trigger:active{transform:translateY(0) scale(.97)}
+#vpanchanga-view .vp-cal-trigger-icon{font-size:.82rem;line-height:1}
+#vpanchanga-view .vp-horo-trigger{
+  margin-left:8px;
+  background:linear-gradient(135deg,#D89A1F,#F0BE4E);
+  box-shadow:0 6px 18px rgba(216,154,31,.32);
+}
+#vpanchanga-view .vp-horo-trigger:hover{box-shadow:0 8px 22px rgba(216,154,31,.42)}
+
+/* Clock */
+#vpanchanga-view .vp-clock-wrap{text-align:center;padding:10px 20px 0;position:relative}
+#vpanchanga-view .vp-om-bg{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;opacity:.05;font-size:96px;font-family:'Tiro Devanagari Hindi',serif;color:var(--vp-sun)}
+#vpanchanga-view #vp-clock{font-family:'EB Garamond',serif;font-size:2.9rem;font-weight:700;color:var(--vp-ink);letter-spacing:-.03em}
+#vpanchanga-view #vp-vaar-name{font-family:'EB Garamond',serif;font-size:1.32rem;font-weight:600;text-align:center;margin-top:2px;color:var(--vp-violet)}
+#vpanchanga-view #vp-month-line{font-size:.72rem;color:var(--vp-sun);letter-spacing:.08em;text-transform:uppercase;text-align:center;margin-top:6px;font-weight:700}
+#vpanchanga-view #vp-vaishnav-line{font-size:.66rem;color:var(--vp-ink-faint);font-style:italic;font-family:'EB Garamond',serif;text-align:center;margin-top:2px}
+
+/* ══════════════════════════════════════════════════════════════
+   SOLAR SYSTEM ORBIT DIAL
+   ══════════════════════════════════════════════════════════════ */
+
+/* ── Outer container ────────────────────────────────────────── */
+#vpanchanga-view .vp-orbit-wrap{
+  position:relative;
+  width:344px;height:344px;
+  max-width:92vw;max-height:92vw;
+  margin:22px auto 8px;
+  display:flex;align-items:center;justify-content:center;
+}
+
+/* Deep space circle */
+#vpanchanga-view .vp-orbit-space{
+  position:absolute;inset:0;border-radius:50%;
+  background:radial-gradient(circle at 48% 42%,
+    #1e1545 0%, #0e0828 45%, #060318 100%);
+  border:1px solid rgba(160,130,255,.15);
+  box-shadow:
+    0 0 0 4px rgba(100,60,200,.08),
+    0 8px 40px rgba(80,40,180,.25),
+    inset 0 0 80px rgba(0,0,0,.7);
+  overflow:hidden;
+}
+/* Starfield */
+#vpanchanga-view .vp-orbit-stars{
+  position:absolute;inset:0;border-radius:50%;
+  background-image:
+    radial-gradient(circle,rgba(255,255,255,.90) 1px,transparent 1px),
+    radial-gradient(circle,rgba(255,255,255,.70) 1px,transparent 1px),
+    radial-gradient(circle,rgba(255,255,255,.55) 1px,transparent 1px),
+    radial-gradient(circle,rgba(200,180,255,.65) 1px,transparent 1px),
+    radial-gradient(circle,rgba(255,220,150,.50) 1px,transparent 1px);
+  background-size:55px 55px,35px 35px,70px 70px,48px 48px,90px 90px;
+  background-position:12px 18px,28px 40px,8px 55px,45px 12px,20px 70px;
+  animation:vpStarTwinkle 8s ease-in-out infinite;
+  pointer-events:none;
+}
+@keyframes vpStarTwinkle{0%,100%{opacity:.4}50%{opacity:.62}}
+
+/* Orbit track rings — one per planet, sized by real distance from Sun,
+   tinted to match that planet's glow colour so each ring reads as a
+   distinct "lane" even where rings sit close together. */
+#vpanchanga-view .vp-orbit-ring-guides{
+  position:absolute;inset:0;
+  display:flex;align-items:center;justify-content:center;
+  pointer-events:none;z-index:1;
+}
+#vpanchanga-view .vp-orbit-guide{
+  position:absolute;
+  border-radius:50%;
+  border:1px dashed rgba(180,150,255,.14);
+}
+#vpanchanga-view .vp-orbit-guide[data-vaar="3"]{border-color:rgba(80,210,140,.22)}   /* Mercury */
+#vpanchanga-view .vp-orbit-guide[data-vaar="5"]{border-color:rgba(235,235,255,.22)}  /* Venus */
+#vpanchanga-view .vp-orbit-guide[data-vaar="1"]{border-color:rgba(210,218,248,.22)}  /* Moon */
+#vpanchanga-view .vp-orbit-guide[data-vaar="2"]{border-color:rgba(230,70,70,.20)}    /* Mars */
+#vpanchanga-view .vp-orbit-guide[data-vaar="4"]{border-color:rgba(225,175,50,.22)}   /* Jupiter */
+#vpanchanga-view .vp-orbit-guide[data-vaar="6"]{border-color:rgba(100,150,250,.22)}  /* Saturn */
+/* Legacy single ring kept hidden/unused fallback */
+#vpanchanga-view .vp-orbit-ring{display:none}
+
+/* ── SUN at center — spinning, corona glowing ───────────────── */
+#vpanchanga-view .vp-orbit-center{
+  position:relative;
+  width:88px;height:88px;
+  border-radius:50%;
+  z-index:10;
+  display:flex;align-items:center;justify-content:center;
+  flex-direction:column;
+  pointer-events:none;
+}
+/* Inner corona */
+#vpanchanga-view .vp-orbit-center::before{
+  content:'';position:absolute;inset:-16px;border-radius:50%;
+  background:radial-gradient(circle,
+    rgba(255,200,60,.60) 0%,rgba(255,140,20,.28) 42%,
+    rgba(255,100,0,.10) 70%,transparent 100%);
+  animation:vpSunCorona 3s ease-in-out infinite;
+  pointer-events:none;z-index:0;
+}
+/* Outer corona */
+#vpanchanga-view .vp-orbit-center::after{
+  content:'';position:absolute;inset:-28px;border-radius:50%;
+  background:radial-gradient(circle,
+    rgba(255,180,40,.20) 0%,rgba(255,120,10,.08) 50%,transparent 80%);
+  animation:vpSunCorona 3s ease-in-out infinite reverse;
+  pointer-events:none;z-index:0;
+}
+@keyframes vpSunCorona{
+  0%,100%{transform:scale(1);opacity:.7}50%{transform:scale(1.20);opacity:1}
+}
+
+#vpanchanga-view .vp-orbit-center-icon{
+  width:88px;height:88px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  position:relative;z-index:2;overflow:visible;
+}
+#vpanchanga-view .vp-orbit-center-planet{
+  width:88px;height:88px;
+  object-fit:contain;border-radius:50%;pointer-events:none;
+  filter:
+    drop-shadow(0 0 14px rgba(255,180,60,.85))
+    drop-shadow(0 0 30px rgba(255,120,20,.55))
+    brightness(1.10);
+  animation:vpSunSpin 18s linear infinite;
+}
+@keyframes vpSunSpin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+
+/* Sun labels */
+#vpanchanga-view .vp-orbit-center-label{
+  position:absolute;bottom:-22px;
+  font-size:.55rem;font-weight:900;letter-spacing:.12em;text-transform:uppercase;
+  color:rgba(255,210,120,.95);
+  text-shadow:0 0 10px rgba(255,180,60,.8),0 1px 4px rgba(0,0,0,.9);
+  white-space:nowrap;z-index:15;
+}
+#vpanchanga-view .vp-orbit-center-sub{
+  position:absolute;bottom:-35px;
+  font-size:.44rem;color:rgba(200,170,255,.72);
+  letter-spacing:.08em;text-transform:uppercase;white-space:nowrap;z-index:15;
+}
+
+/* ── Planet arms — JS drives transform, CSS handles appearance ── */
+/* Each .vp-planet-arm is rotated by JS rAF loop                  */
+#vpanchanga-view .vp-planet-arm{
+  position:absolute;
+  width:0;height:0;
+  top:50%;left:50%;
+  transform-origin:0 0;
+  pointer-events:none;
+  will-change:transform;
+}
+#vpanchanga-view .vp-planet-node{
+  position:absolute;
+  width:38px;height:38px;
+  left:0;top:0; /* overwritten every frame by JS */
+  display:flex;align-items:center;justify-content:center;
+  pointer-events:all;
+  cursor:pointer;
+  will-change:transform,left,top;
+  z-index:2;
+}
+#vpanchanga-view .vp-planet-node:hover,
+#vpanchanga-view .vp-planet-node:active{
+  z-index:8; /* lift above neighbours during the rare moment orbits cross */
+}
+#vpanchanga-view .vp-planet-node.today,
+#vpanchanga-view .vp-planet-node.selected{
+  z-index:6; /* today/selected always tappable even if another planet briefly overlaps */
+}
+/* Planet image — self-spin driven by JS */
+#vpanchanga-view .vp-planet-img{
+  width:34px;height:34px;
+  object-fit:contain;
+  pointer-events:none;
+  filter:drop-shadow(0 2px 8px rgba(0,0,0,.75));
+  will-change:transform;
+  border-radius:50%;
+}
+#vpanchanga-view .vp-planet-node[data-vaar="6"] .vp-planet-img{
+  width:42px;height:42px;margin:-4px;
+}
+
+/* Day label — kept upright by JS counter-rotation */
+#vpanchanga-view .vp-planet-day-label{
+  position:absolute;bottom:-14px;left:50%;
+  transform:translateX(-50%);
+  font-size:.37rem;font-weight:900;letter-spacing:.07em;text-transform:uppercase;
+  color:#fff;
+  text-shadow:0 1px 5px rgba(0,0,0,.95);
+  background:rgba(0,0,0,.58);
+  padding:1px 6px;border-radius:999px;
+  backdrop-filter:blur(3px);
+  white-space:nowrap;
+  will-change:transform;
+}
+
+/* ── TODAY — pulsing multi-layer glow ───────────────────────── */
+#vpanchanga-view .vp-planet-node.today .vp-planet-img{
+  animation:vpTodayImgGlow 1.8s ease-in-out infinite;
+}
+@keyframes vpTodayImgGlow{
+  0%,100%{
+    filter:
+      drop-shadow(0 0 6px rgba(var(--pc,255,200,60),.85))
+      drop-shadow(0 0 18px rgba(var(--pc,255,200,60),.62))
+      drop-shadow(0 0 36px rgba(var(--pc,255,200,60),.34))
+      brightness(1.12)
+      saturate(1.1);
+  }
+  50%{
+    filter:
+      drop-shadow(0 0 14px rgba(var(--pc,255,200,60),1))
+      drop-shadow(0 0 34px rgba(var(--pc,255,200,60),.90))
+      drop-shadow(0 0 64px rgba(var(--pc,255,200,60),.60))
+      brightness(1.28)
+      saturate(1.2);
+  }
+}
+/* Expanding ripple rings */
+#vpanchanga-view .vp-planet-node.today::before,
+#vpanchanga-view .vp-planet-node.today::after{
+  content:'';position:absolute;border-radius:50%;
+  border:2px solid rgba(var(--pc,255,200,60),.75);
+  animation:vpTodayRipple 1.8s ease-out infinite;
+  pointer-events:none;
+}
+#vpanchanga-view .vp-planet-node.today::after{
+  animation-delay:.9s;border-color:rgba(var(--pc,255,200,60),.42);
+}
+@keyframes vpTodayRipple{
+  0%  {width:38px;height:38px;opacity:.9;top:0;left:0}
+  100%{width:82px;height:82px;opacity:0;top:-22px;left:-22px}
+}
+
+/* ── SELECTED — violet ripple ───────────────────────────────── */
+#vpanchanga-view .vp-planet-node.selected .vp-planet-img{
+  animation:vpSelectedGlow 2s ease-in-out infinite;
+}
+@keyframes vpSelectedGlow{
+  0%,100%{
+    filter:drop-shadow(0 0 8px rgba(160,120,255,.85)) drop-shadow(0 0 22px rgba(124,92,252,.65)) brightness(1.12);
+  }
+  50%{
+    filter:drop-shadow(0 0 18px rgba(180,140,255,1)) drop-shadow(0 0 42px rgba(124,92,252,.95)) brightness(1.25);
+  }
+}
+#vpanchanga-view .vp-planet-node.selected::before{
+  content:'';position:absolute;border-radius:50%;
+  border:2px solid rgba(124,92,252,.8);
+  animation:vpSelectedRipple 2s ease-out infinite;
+  pointer-events:none;
+}
+@keyframes vpSelectedRipple{
+  0%  {width:38px;height:38px;opacity:.9;top:0;left:0}
+  100%{width:78px;height:78px;opacity:0;top:-20px;left:-20px}
+}
+
+/* Hover */
+#vpanchanga-view .vp-planet-node:hover .vp-planet-img{
+  filter:drop-shadow(0 0 10px rgba(255,255,255,.5)) brightness(1.2);
+}
+
+/* Per-planet glow colour */
+#vpanchanga-view .vp-planet-node[data-vaar="0"]{--pc:255,160,60}
+#vpanchanga-view .vp-planet-node[data-vaar="1"]{--pc:210,218,248}
+#vpanchanga-view .vp-planet-node[data-vaar="2"]{--pc:230,70,70}
+#vpanchanga-view .vp-planet-node[data-vaar="3"]{--pc:80,210,140}
+#vpanchanga-view .vp-planet-node[data-vaar="4"]{--pc:225,175,50}
+#vpanchanga-view .vp-planet-node[data-vaar="5"]{--pc:235,235,255}
+#vpanchanga-view .vp-planet-node[data-vaar="6"]{--pc:100,150,250}
+
+/* Emoji fallback */
+#vpanchanga-view .vp-ob-icon{font-size:1.4rem;line-height:1}
+
+@media(prefers-reduced-motion:reduce){
+  #vpanchanga-view .vp-orbit-stars,
+  #vpanchanga-view .vp-orbit-center-planet{animation:none}
+  #vpanchanga-view .vp-planet-node.today::before,
+  #vpanchanga-view .vp-planet-node.today::after,
+  #vpanchanga-view .vp-planet-node.selected::before{display:none}
+  #vpanchanga-view .vp-planet-node.today .vp-planet-img,
+  #vpanchanga-view .vp-planet-node.selected .vp-planet-img{animation:none}
+}
+
+/* Viewing bar */
+#vpanchanga-view #vp-viewing-bar{text-align:center;margin-top:4px}
+#vpanchanga-view .vp-viewing-chip{font-size:.58rem;color:var(--vp-violet);background:rgba(124,92,252,.1);border:1px solid rgba(124,92,252,.3);padding:5px 14px;border-radius:999px;font-weight:700;letter-spacing:.1em;text-transform:uppercase}
+#vpanchanga-view .vp-back-btn{font-size:.56rem;color:var(--vp-ink-faint);text-transform:uppercase;letter-spacing:.1em;cursor:pointer;background:none;border:none;padding:0;margin-left:10px;font-weight:700}
+#vpanchanga-view .vp-back-btn:hover{color:var(--vp-violet)}
+
+/* ══════════════════════════════════════════════════════════════
+   SPECIAL YOGAS — gold banner at top
+   ══════════════════════════════════════════════════════════════ */
+#vpanchanga-view .vp-special-yoga-section{margin:18px 16px 0 !important}
+#vpanchanga-view .vp-yoga-card{
+  background:linear-gradient(135deg,#FFF9DC,#FFFFF5);
+  border:1px solid rgba(216,154,31,.45);
+  border-radius:16px;padding:16px 18px;
+  display:flex;align-items:flex-start;gap:13px;
+  box-shadow:0 4px 20px rgba(216,154,31,.25),0 0 0 1px rgba(216,154,31,.15);
+  animation:vpYogaGlow 3s ease-in-out infinite;
+}
+@keyframes vpYogaGlow{
+  0%,100%{box-shadow:0 4px 20px rgba(216,154,31,.2),0 0 0 1px rgba(216,154,31,.12)}
+  50%{box-shadow:0 6px 28px rgba(216,154,31,.38),0 0 0 1px rgba(216,154,31,.25)}
+}
+#vpanchanga-view .vp-yoga-icon{font-size:1.6rem;flex-shrink:0;margin-top:2px}
+#vpanchanga-view .vp-yoga-name{font-family:'EB Garamond',serif;font-size:1.08rem;font-weight:700;color:var(--vp-gold)}
+#vpanchanga-view .vp-yoga-desc{font-size:.74rem;color:var(--vp-ink-soft);margin-top:4px;line-height:1.55}
+#vpanchanga-view .vp-yoga-time{font-size:.68rem;background:rgba(216,154,31,.12);color:var(--vp-gold);border:1px solid rgba(216,154,31,.28);padding:4px 11px;border-radius:8px;margin-top:8px;display:inline-block;font-weight:700}
+
+/* ══════════════════════════════════════════════════════════════
+   NOW PANEL — 4 Angas in one horizontal row
+   ══════════════════════════════════════════════════════════════ */
+#vpanchanga-view .vp-now-panel{margin:18px 16px 0;border-radius:20px;background:linear-gradient(150deg,#FFF3DF,#FFFFFF 60%);border:1px solid rgba(255,138,61,.22);box-shadow:var(--vp-shadow);overflow:hidden}
+#vpanchanga-view .vp-now-panel-head{padding:14px 16px 8px;display:flex;align-items:center;gap:7px}
+#vpanchanga-view .vp-pulse{width:7px;height:7px;background:var(--vp-sun);border-radius:50%;animation:vpPulse 1.8s ease-in-out infinite;flex-shrink:0;box-shadow:0 0 8px rgba(255,138,61,.6)}
+@keyframes vpPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.8)}}
+#vpanchanga-view .vp-now-panel-head span{font-size:.62rem;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--vp-ink)}
+
+/* 4-column anga row */
+#vpanchanga-view .vp-anga-row-cards{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:8px;
+  padding:4px 12px 14px;
+}
+@media(max-width:600px){
+  #vpanchanga-view .vp-anga-row-cards{grid-template-columns:repeat(2,1fr)}
+}
+
+/* Each anga card */
+#vpanchanga-view .vp-anga-card{
+  background:var(--vp-card);
+  border-radius:14px;
+  border:1px solid var(--vp-card-edge);
+  padding:11px 12px;
+  box-shadow:0 3px 10px rgba(76,58,150,.06);
+  cursor:pointer;
+  transition:transform .2s ease,box-shadow .2s ease;
+  position:relative;
+  overflow:hidden;
+}
+#vpanchanga-view .vp-anga-card:hover{transform:translateY(-2px);box-shadow:var(--vp-shadow)}
+#vpanchanga-view .vp-anga-card.warn{
+  background:linear-gradient(150deg,var(--vp-rose-bg),#FFFFFF 70%);
+  border-color:rgba(225,72,95,.25);
+}
+#vpanchanga-view .vp-anga-card.good{
+  background:linear-gradient(150deg,#FFF3DF,#FFFFFF 70%);
+  border-color:rgba(255,138,61,.22);
+}
+
+/* Card label row */
+#vpanchanga-view .vp-anga-card-label{
+  font-size:.56rem;color:var(--vp-ink-faint);
+  text-transform:uppercase;letter-spacing:.1em;font-weight:800;
+  margin-bottom:5px;
+}
+/* Card anga name */
+#vpanchanga-view .vp-anga-card-name{
+  font-family:'EB Garamond',serif;
+  font-size:.98rem;font-weight:700;
+  color:var(--vp-ink);
+  line-height:1.2;
+  margin-bottom:3px;
+}
+#vpanchanga-view .vp-anga-card.good .vp-anga-card-name{color:var(--vp-sun)}
+#vpanchanga-view .vp-anga-card.warn .vp-anga-card-name{color:var(--vp-rose)}
+
+/* Card paksha sub */
+#vpanchanga-view .vp-anga-card-paksha{
+  font-size:.52rem;color:var(--vp-ink-faint);
+  font-weight:600;margin-bottom:4px;
+}
+/* Card effect */
+#vpanchanga-view .vp-anga-card-fx{
+  font-size:.64rem;color:var(--vp-ink-soft);
+  line-height:1.4;margin-bottom:6px;
+}
+/* Card end time */
+#vpanchanga-view .vp-anga-card-time{
+  font-size:.58rem;color:var(--vp-ink-soft);
+  font-weight:600;
+}
+/* Gold time remaining */
+#vpanchanga-view .vp-anga-card-left{
+  font-size:.58rem;color:var(--vp-sun);font-weight:700;
+}
+
+/* Collapsible upcoming for each anga card */
+#vpanchanga-view .vp-anga-card-toggle{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-top:6px;cursor:pointer;
+  font-size:.55rem;color:var(--vp-violet);font-weight:700;
+  letter-spacing:.05em;text-transform:uppercase;
+  background:rgba(124,92,252,.07);
+  border:none;border-radius:8px;
+  padding:5px 8px;width:100%;font-family:inherit;
+  transition:background .2s;
+}
+#vpanchanga-view .vp-anga-card-toggle:hover{background:rgba(124,92,252,.14)}
+#vpanchanga-view .vp-anga-card-toggle .vp-chevron-sm{
+  font-size:.6rem;transition:transform .2s;display:inline-block;
+}
+#vpanchanga-view .vp-anga-upcoming-wrap{
+  overflow:hidden;max-height:0;
+  transition:max-height .3s ease;
+  margin-top:0;
+}
+#vpanchanga-view .vp-anga-upcoming-wrap.open{max-height:400px;margin-top:6px}
+#vpanchanga-view .vp-anga-toggle-open .vp-chevron-sm{transform:rotate(180deg)}
+
+/* Upcoming items inside each anga card */
+#vpanchanga-view .vp-anga-upcoming-item{
+  display:flex;align-items:flex-start;gap:6px;
+  padding:6px 4px;
+  border-top:1px solid var(--vp-card-edge);
+}
+#vpanchanga-view .vp-anga-upcoming-dot{
+  width:6px;height:6px;border-radius:50%;
+  background:var(--vp-violet2);flex-shrink:0;margin-top:5px;
+}
+#vpanchanga-view .vp-anga-upcoming-name{
+  font-family:'EB Garamond',serif;
+  font-size:.82rem;font-weight:600;color:var(--vp-ink);
+  line-height:1.2;
+}
+#vpanchanga-view .vp-anga-upcoming-time{
+  font-size:.6rem;color:var(--vp-ink-faint);margin-top:1px;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   CURRENT MUHURTA BANNER
+   ══════════════════════════════════════════════════════════════ */
+#vpanchanga-view #vp-current-muhurta-wrap{margin:14px 16px 0}
+#vpanchanga-view .vp-current-banner{
+  border-radius:18px;padding:16px 18px;
+  display:flex;align-items:flex-start;gap:14px;
+  border:1.5px solid;
+}
+#vpanchanga-view .vp-current-banner.ausp{
+  background:linear-gradient(135deg,#FFF9DC,#FFFEF5);
+  border-color:rgba(14,166,114,.4);
+  box-shadow:0 6px 22px rgba(14,166,114,.15);
+}
+#vpanchanga-view .vp-current-banner.inaup{
+  background:linear-gradient(135deg,var(--vp-rose-bg),#FFF8F9);
+  border-color:rgba(225,72,95,.4);
+  box-shadow:0 6px 22px rgba(225,72,95,.15);
+}
+#vpanchanga-view .vp-current-banner.conflict{
+  background:linear-gradient(135deg,#FFF9DC,#FFF0F4);
+  border-color:rgba(216,154,31,.4);
+  box-shadow:0 6px 22px rgba(200,100,50,.18);
+}
+
+#vpanchanga-view .vp-cb-dot{
+  width:11px;height:11px;border-radius:50%;flex-shrink:0;margin-top:4px;
+  animation:vpPulse 1.8s ease-in-out infinite;
+}
+#vpanchanga-view .vp-current-banner.ausp .vp-cb-dot{
+  background:var(--vp-jade);box-shadow:0 0 12px rgba(14,166,114,.5);
+}
+#vpanchanga-view .vp-current-banner.inaup .vp-cb-dot{
+  background:var(--vp-rose);box-shadow:0 0 12px rgba(225,72,95,.5);
+}
+#vpanchanga-view .vp-current-banner.conflict .vp-cb-dot{
+  background:var(--vp-gold);box-shadow:0 0 12px rgba(216,154,31,.5);
+}
+#vpanchanga-view .vp-cb-body{flex:1;min-width:0}
+#vpanchanga-view .vp-cb-eyebrow{
+  font-size:.58rem;text-transform:uppercase;letter-spacing:.12em;font-weight:800;
+  margin-bottom:3px;
+}
+#vpanchanga-view .vp-current-banner.ausp .vp-cb-eyebrow{color:var(--vp-jade)}
+#vpanchanga-view .vp-current-banner.inaup .vp-cb-eyebrow{color:var(--vp-rose)}
+#vpanchanga-view .vp-current-banner.conflict .vp-cb-eyebrow{color:var(--vp-gold)}
+
+#vpanchanga-view .vp-cb-name{
+  font-family:'EB Garamond',serif;font-size:1.16rem;font-weight:700;
+  color:var(--vp-ink);line-height:1.2;margin-bottom:3px;
+}
+#vpanchanga-view .vp-cb-desc{font-size:.74rem;color:var(--vp-ink-soft);line-height:1.5;margin-bottom:6px}
+#vpanchanga-view .vp-cb-advice{
+  font-size:.72rem;font-weight:700;padding:5px 12px;border-radius:10px;
+  display:inline-block;margin-top:2px;
+}
+#vpanchanga-view .vp-current-banner.ausp .vp-cb-advice{
+  background:rgba(14,166,114,.12);color:var(--vp-jade);border:1px solid rgba(14,166,114,.25);
+}
+#vpanchanga-view .vp-current-banner.inaup .vp-cb-advice{
+  background:rgba(225,72,95,.1);color:var(--vp-rose);border:1px solid rgba(225,72,95,.22);
+}
+#vpanchanga-view .vp-current-banner.conflict .vp-cb-advice{
+  background:rgba(216,154,31,.12);color:var(--vp-gold);border:1px solid rgba(216,154,31,.25);
+}
+#vpanchanga-view .vp-cb-time{
+  font-size:.68rem;font-weight:600;color:var(--vp-ink-soft);margin-top:5px;
+}
+
+/* Multiple active at once — stacked mini rows */
+#vpanchanga-view .vp-cb-also{
+  margin-top:8px;padding-top:8px;border-top:1px solid var(--vp-card-edge);
+  font-size:.65rem;color:var(--vp-ink-soft);
+}
+#vpanchanga-view .vp-cb-also-item{
+  display:inline-flex;align-items:center;gap:5px;margin:3px 4px 0 0;
+  background:var(--vp-rose-bg);border:1px solid rgba(225,72,95,.18);
+  border-radius:8px;padding:3px 9px;font-weight:600;
+}
+#vpanchanga-view .vp-cb-also-item.good{
+  background:var(--vp-jade-bg);border-color:rgba(14,166,114,.2);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   UPCOMING LIST — serial order, gold (auspicious) / violet (inauspicious)
+   ══════════════════════════════════════════════════════════════ */
+#vpanchanga-view .vp-upcoming-list{display:flex;flex-direction:column;gap:9px;padding:0}
+#vpanchanga-view .vp-upcoming-row{
+  display:flex;align-items:flex-start;gap:12px;
+  padding:13px 15px;border-radius:16px;
+  border:1.5px solid;position:relative;
+  transition:transform .2s ease,box-shadow .2s ease;
+}
+#vpanchanga-view .vp-upcoming-row:hover{transform:translateY(-1px)}
+
+/* Auspicious — glowing golden */
+#vpanchanga-view .vp-upcoming-row.ausp{
+  background:var(--vp-ausp-bg);
+  border-color:var(--vp-ausp-border);
+  box-shadow:0 3px 14px rgba(200,150,10,.12);
+}
+#vpanchanga-view .vp-upcoming-row.ausp:hover{
+  box-shadow:0 6px 22px rgba(200,150,10,.22);
+}
+
+/* Inauspicious — violet */
+#vpanchanga-view .vp-upcoming-row.inaup{
+  background:var(--vp-inaup-bg);
+  border-color:var(--vp-inaup-border);
+  box-shadow:0 3px 14px rgba(107,63,160,.09);
+}
+#vpanchanga-view .vp-upcoming-row.inaup:hover{
+  box-shadow:0 6px 20px rgba(107,63,160,.18);
+}
+
+/* Left color stripe */
+#vpanchanga-view .vp-upcoming-row::before{
+  content:'';position:absolute;left:0;top:0;bottom:0;width:4px;border-radius:16px 0 0 16px;
+}
+#vpanchanga-view .vp-upcoming-row.ausp::before{background:linear-gradient(180deg,#F0C040,#C8960A)}
+#vpanchanga-view .vp-upcoming-row.inaup::before{background:linear-gradient(180deg,#9B7FFF,#6B3FA0)}
+
+#vpanchanga-view .vp-upcoming-icon{font-size:1.3rem;flex-shrink:0;margin-top:2px}
+#vpanchanga-view .vp-upcoming-body{flex:1;min-width:0}
+#vpanchanga-view .vp-upcoming-label{
+  font-size:.82rem;font-weight:700;
+  color:var(--vp-ink);line-height:1.3;margin-bottom:2px;
+}
+#vpanchanga-view .vp-upcoming-row.ausp .vp-upcoming-label{color:var(--vp-ausp-glow)}
+#vpanchanga-view .vp-upcoming-row.inaup .vp-upcoming-label{color:var(--vp-inaup-color)}
+#vpanchanga-view .vp-upcoming-desc{font-size:.7rem;color:var(--vp-ink-soft);line-height:1.4;margin-bottom:4px}
+#vpanchanga-view .vp-upcoming-timeblock{font-size:.68rem;color:var(--vp-ink-soft);font-weight:600}
+#vpanchanga-view .vp-upcoming-dur{font-size:.64rem;color:var(--vp-ink-faint)}
+
+#vpanchanga-view .vp-upcoming-right{flex-shrink:0;text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:5px;padding-left:8px}
+#vpanchanga-view .vp-in-pill{
+  font-size:.6rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;
+  padding:4px 11px;border-radius:999px;white-space:nowrap;
+}
+#vpanchanga-view .vp-upcoming-row.ausp .vp-in-pill{
+  background:rgba(200,150,10,.15);color:var(--vp-ausp-glow);
+  border:1px solid rgba(200,150,10,.3);
+}
+#vpanchanga-view .vp-upcoming-row.inaup .vp-in-pill{
+  background:rgba(107,63,160,.12);color:var(--vp-inaup-color);
+  border:1px solid rgba(107,63,160,.25);
+}
+
+/* Serial number badge */
+#vpanchanga-view .vp-upcoming-serial{
+  width:22px;height:22px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:.58rem;font-weight:800;flex-shrink:0;margin-top:2px;
+}
+#vpanchanga-view .vp-upcoming-row.ausp .vp-upcoming-serial{
+  background:rgba(200,150,10,.15);color:var(--vp-ausp-glow);
+}
+#vpanchanga-view .vp-upcoming-row.inaup .vp-upcoming-serial{
+  background:rgba(107,63,160,.12);color:var(--vp-inaup-color);
+}
+
+/* Section headings */
+#vpanchanga-view .vp-m-section{margin:20px 16px 0}
+#vpanchanga-view .vp-space-y>*+*{margin-top:9px}
+#vpanchanga-view .vp-sec-head{
+  font-size:.66rem;font-weight:800;letter-spacing:.18em;text-transform:uppercase;
+  color:var(--vp-ink-faint);display:flex;align-items:center;gap:10px;margin-bottom:14px;
+}
+#vpanchanga-view .vp-sec-head::before{content:'';width:16px;height:1px;background:var(--vp-ink-faint);opacity:.4}
+#vpanchanga-view .vp-sec-head::after{content:'';flex:1;height:1px;background:var(--vp-ink-faint);opacity:.18}
+#vpanchanga-view .vp-sec-head-gold{color:var(--vp-gold)}
+#vpanchanga-view .vp-sec-head-gold::before,#vpanchanga-view .vp-sec-head-gold::after{background:var(--vp-gold);opacity:.35}
+#vpanchanga-view .vp-sec-head-upcoming{color:var(--vp-violet)}
+#vpanchanga-view .vp-sec-head-upcoming::before,#vpanchanga-view .vp-sec-head-upcoming::after{background:var(--vp-violet);opacity:.3}
+
+/* ── Lunar month toggle + grid ─────────────────────────────────*/
+#vpanchanga-view .vp-tithi-toggle{
+  margin:20px 16px 0;padding:14px 18px;border-radius:16px;width:calc(100% - 32px);
+  display:flex;align-items:center;justify-content:space-between;cursor:pointer;
+  background:linear-gradient(135deg,var(--vp-violet),#9B7FFF);border:none;color:#fff;
+  box-shadow:0 8px 22px rgba(124,92,252,.3);position:relative;overflow:hidden;
+  font-family:'Inter',sans-serif;transition:box-shadow .25s ease;
+}
+#vpanchanga-view .vp-tithi-toggle::after{content:'';position:absolute;inset:0;pointer-events:none;background:linear-gradient(115deg,transparent 30%,rgba(255,255,255,.3) 50%,transparent 70%);transform:translateX(-100%);transition:transform .8s ease}
+#vpanchanga-view .vp-tithi-toggle:hover::after{transform:translateX(100%)}
+#vpanchanga-view .vp-tithi-toggle:hover{box-shadow:0 10px 28px rgba(124,92,252,.4)}
+#vpanchanga-view .vp-tithi-toggle span:first-child{font-size:.76rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#fff}
+#vpanchanga-view .vp-chevron{font-size:.9rem;color:#fff;transition:transform .25s;display:inline-block}
+#vpanchanga-view .vp-tithi-toggle.open .vp-chevron{transform:rotate(180deg)}
+
+#vpanchanga-view .vp-month-grid-wrap{overflow:hidden;max-height:0;transition:max-height .35s ease}
+#vpanchanga-view .vp-month-grid-wrap.open{max-height:2600px}
+#vpanchanga-view .vp-month-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:14px 16px}
+@media(min-width:540px){#vpanchanga-view .vp-month-grid{grid-template-columns:repeat(3,1fr)}}
+#vpanchanga-view .vp-paksha-label{grid-column:1/-1;font-size:.66rem;letter-spacing:.1em;text-transform:uppercase;font-weight:800;display:flex;align-items:center;gap:8px;padding:8px 0 2px}
+#vpanchanga-view .vp-paksha-label.s{color:var(--vp-sun)}
+#vpanchanga-view .vp-paksha-label.k{color:var(--vp-violet)}
+#vpanchanga-view .vp-paksha-label::after{content:'';flex:1;height:1px;background:currentColor;opacity:.18}
+#vpanchanga-view .vp-tcell{border-radius:14px;border:1px solid var(--vp-card-edge);background:#FFFFFF;padding:11px 13px;box-shadow:0 2px 8px rgba(76,58,150,.05)}
+#vpanchanga-view .vp-tcell.active{background:linear-gradient(135deg,#FFF3DF,#fff);border-color:rgba(255,138,61,.45);box-shadow:0 4px 16px rgba(255,138,61,.22)}
+#vpanchanga-view .vp-tcell-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:5px}
+#vpanchanga-view .vp-tcell-num{font-size:.6rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--vp-ink-faint)}
+#vpanchanga-view .vp-tcell.active .vp-tcell-num{color:var(--vp-sun)}
+#vpanchanga-view .vp-now-badge{font-size:.54rem;background:var(--vp-sun);color:#fff;padding:2px 7px;border-radius:999px;font-weight:800;letter-spacing:.06em;text-transform:uppercase}
+#vpanchanga-view .vp-tcell-name{font-family:'EB Garamond',serif;font-size:.88rem;font-weight:700;color:var(--vp-ink)}
+#vpanchanga-view .vp-tcell.active .vp-tcell-name{color:var(--vp-sun)}
+#vpanchanga-view .vp-tcell-start{font-size:.64rem;color:var(--vp-ink-soft);margin-top:5px;font-weight:600}
+#vpanchanga-view .vp-tcell-end{font-size:.62rem;color:var(--vp-ink-faint)}
+
+/* ── Day Boundaries — collapsible ──────────────────────────────*/
+#vpanchanga-view .vp-collapsible-toggle{
+  margin:20px 16px 0;padding:13px 18px;border-radius:16px;width:calc(100% - 32px);
+  display:flex;align-items:center;justify-content:space-between;cursor:pointer;
+  background:var(--vp-card);
+  border:1px solid var(--vp-card-edge);
+  color:var(--vp-ink);
+  box-shadow:0 4px 14px rgba(76,58,150,.07);
+  font-family:'Inter',sans-serif;
+  transition:box-shadow .2s ease;
+}
+#vpanchanga-view .vp-collapsible-toggle:hover{box-shadow:var(--vp-shadow)}
+#vpanchanga-view .vp-collapsible-toggle span:first-child{font-size:.74rem;font-weight:700;color:var(--vp-ink-soft)}
+#vpanchanga-view .vp-collapsible-wrap{overflow:hidden;max-height:0;transition:max-height .35s ease}
+#vpanchanga-view .vp-collapsible-wrap.open{max-height:1200px}
+#vpanchanga-view .vp-collapsible-toggle.open .vp-chevron{transform:rotate(180deg)}
+
+#vpanchanga-view .vp-db-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:14px 16px}
+@media(min-width:540px){#vpanchanga-view .vp-db-grid{grid-template-columns:repeat(4,1fr)}}
+#vpanchanga-view .vp-db-card{background:#fff;border:1px solid var(--vp-card-edge);border-radius:16px;padding:13px 15px;box-shadow:0 3px 10px rgba(76,58,150,.06);transition:all .2s ease}
+#vpanchanga-view .vp-db-card:hover{transform:translateY(-2px);box-shadow:var(--vp-shadow);border-color:rgba(255,138,61,.3)}
+#vpanchanga-view .vp-db-label{font-size:.64rem;color:var(--vp-ink-faint);text-transform:uppercase;letter-spacing:.08em;font-weight:800;margin-bottom:7px;display:flex;align-items:center;gap:5px}
+#vpanchanga-view .vp-db-time{font-size:.92rem;font-weight:700;color:var(--vp-ink);letter-spacing:.01em}
+#vpanchanga-view .vp-db-time .vp-sub{font-size:.76rem;color:var(--vp-ink-soft);font-weight:600}
+
+/* Relative-time pill */
+#vpanchanga-view .vp-rel{
+  display:inline-flex;align-items:center;gap:4px;font-size:.54rem;font-weight:800;
+  letter-spacing:.06em;text-transform:uppercase;padding:3px 9px;border-radius:999px;
+  border:1px solid transparent;white-space:nowrap;vertical-align:middle;
+}
+#vpanchanga-view .vp-rel::before{content:'';width:5px;height:5px;border-radius:50%;background:currentColor}
+#vpanchanga-view .vp-rel-soon{color:var(--vp-violet);background:rgba(124,92,252,.1);border-color:rgba(124,92,252,.25)}
+#vpanchanga-view .vp-rel-live{color:#fff;background:linear-gradient(135deg,var(--vp-sun),var(--vp-sun2));border-color:rgba(255,138,61,.6);box-shadow:0 0 10px rgba(255,138,61,.45);animation:vpRelLive 1.6s ease-in-out infinite}
+#vpanchanga-view .vp-rel-past{color:var(--vp-ink-faint);background:rgba(36,27,69,.05);border-color:rgba(36,27,69,.08)}
+@keyframes vpRelLive{0%,100%{box-shadow:0 0 8px rgba(255,138,61,.4)}50%{box-shadow:0 0 18px rgba(255,138,61,.7)}}
+@media (prefers-reduced-motion:reduce){#vpanchanga-view .vp-rel-live,#vpanchanga-view .vp-yoga-card{animation:none}}
+
+/* Adhik badge */
+#vpanchanga-view .vp-adhik-badge{font-size:.5rem;font-weight:800;padding:2px 7px;border-radius:999px;background:rgba(255,138,61,.14);color:var(--vp-sun);letter-spacing:.06em;text-transform:uppercase;margin-right:4px}
+
+/* Pulses */
+#vpanchanga-view .pulse-auspicious{animation:vpAuspiciousPulse 2.5s ease-in-out infinite}
+#vpanchanga-view .pulse-inauspicious{animation:vpInauspiciousPulse 4s ease-in-out infinite}
+@keyframes vpAuspiciousPulse{0%,100%{box-shadow:0 0 0 2px var(--vp-sun),0 4px 16px rgba(255,138,61,.18)}50%{box-shadow:0 0 0 2px var(--vp-sun),0 10px 30px rgba(255,138,61,.4)}}
+@keyframes vpInauspiciousPulse{0%,100%{box-shadow:0 0 0 2px var(--vp-rose),0 4px 16px rgba(225,72,95,.16)}50%{box-shadow:0 0 0 2px var(--vp-rose),0 10px 26px rgba(225,72,95,.34)}}
+@media (prefers-reduced-motion:reduce){#vpanchanga-view .pulse-auspicious,#vpanchanga-view .pulse-inauspicious{animation:none}}
+
+#vpanchanga-view{scroll-behavior:smooth}
+#vpanchanga-view button:focus-visible{outline:2px solid var(--vp-violet);outline-offset:2px}
+
+/* ══════════════════════════════════════════════════════════════
+   CALENDAR DATE PICKER — modal overlay
+   ══════════════════════════════════════════════════════════════ */
+#vpanchanga-view .vp-cal-overlay{
+  position:fixed;inset:0;z-index:2000;
+  background:rgba(20,12,40,.55);
+  backdrop-filter:blur(3px);
+  display:none;
+  align-items:center;justify-content:center;
+  padding:20px;
+}
+#vpanchanga-view .vp-cal-overlay.open{display:flex}
+
+#vpanchanga-view .vp-cal-modal{
+  width:100%;max-width:360px;
+  background:var(--vp-card);
+  border-radius:22px;
+  box-shadow:0 24px 60px rgba(20,12,50,.45);
+  padding:18px 18px 16px;
+  animation:vpCalPopIn .22s cubic-bezier(.2,.9,.3,1.2);
+}
+@keyframes vpCalPopIn{
+  from{opacity:0;transform:scale(.92) translateY(10px)}
+  to{opacity:1;transform:scale(1) translateY(0)}
+}
+
+#vpanchanga-view .vp-cal-modal-head{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:12px;
+}
+#vpanchanga-view .vp-cal-modal-title{
+  font-family:'EB Garamond',serif;font-size:1.18rem;font-weight:700;
+  color:var(--vp-ink);
+  background:none;border:none;cursor:pointer;
+  padding:4px 10px;border-radius:10px;
+  transition:background .2s ease;
+}
+#vpanchanga-view .vp-cal-modal-title:hover{background:rgba(124,92,252,.08)}
+#vpanchanga-view .vp-cal-modal-title::after{
+  content:' ▾';font-size:.7rem;color:var(--vp-violet);
+}
+#vpanchanga-view .vp-cal-nav-btn{
+  width:34px;height:34px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  background:rgba(124,92,252,.1);
+  border:none;color:var(--vp-violet);
+  font-size:1.2rem;font-weight:700;line-height:1;
+  cursor:pointer;
+  transition:background .2s ease;
+}
+#vpanchanga-view .vp-cal-nav-btn:hover{background:rgba(124,92,252,.2)}
+
+#vpanchanga-view .vp-cal-weekdays{
+  display:grid;grid-template-columns:repeat(7,1fr);
+  margin-bottom:4px;
+}
+#vpanchanga-view .vp-cal-weekdays span{
+  text-align:center;font-size:.6rem;font-weight:800;
+  letter-spacing:.06em;text-transform:uppercase;
+  color:var(--vp-ink-faint);padding:6px 0;
+}
+
+#vpanchanga-view .vp-cal-grid{
+  display:grid;grid-template-columns:repeat(7,1fr);
+  gap:3px;
+}
+#vpanchanga-view .vp-cal-day{
+  aspect-ratio:1;
+  display:flex;align-items:center;justify-content:center;
+  border-radius:11px;
+  font-size:.8rem;font-weight:600;color:var(--vp-ink);
+  background:transparent;border:none;
+  cursor:pointer;
+  transition:background .15s ease,transform .15s ease;
+  position:relative;
+  font-family:inherit;
+}
+#vpanchanga-view .vp-cal-day:hover{background:rgba(124,92,252,.1)}
+#vpanchanga-view .vp-cal-day:active{transform:scale(.92)}
+#vpanchanga-view .vp-cal-day.vp-cal-day-empty{cursor:default;pointer-events:none}
+#vpanchanga-view .vp-cal-day.vp-cal-day-today{
+  color:var(--vp-sun);font-weight:800;
+  box-shadow:inset 0 0 0 1.5px var(--vp-sun);
+}
+#vpanchanga-view .vp-cal-day.vp-cal-day-selected{
+  background:linear-gradient(135deg,var(--vp-violet),#9B7FFF);
+  color:#fff;font-weight:800;
+  box-shadow:0 4px 14px rgba(124,92,252,.4);
+}
+#vpanchanga-view .vp-cal-day.vp-cal-day-selected:hover{background:linear-gradient(135deg,var(--vp-violet),#9B7FFF)}
+
+#vpanchanga-view .vp-cal-modal-foot{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-top:14px;padding-top:12px;
+  border-top:1px solid var(--vp-card-edge);
+}
+#vpanchanga-view .vp-cal-today-btn{
+  font-family:inherit;font-size:.66rem;font-weight:800;
+  letter-spacing:.06em;text-transform:uppercase;
+  color:var(--vp-violet);background:rgba(124,92,252,.1);
+  border:none;border-radius:999px;padding:8px 16px;
+  cursor:pointer;transition:background .2s ease;
+}
+#vpanchanga-view .vp-cal-today-btn:hover{background:rgba(124,92,252,.18)}
+#vpanchanga-view .vp-cal-close-btn{
+  font-family:inherit;font-size:.66rem;font-weight:800;
+  letter-spacing:.06em;text-transform:uppercase;
+  color:var(--vp-ink-faint);background:none;
+  border:none;padding:8px 10px;cursor:pointer;
+}
+#vpanchanga-view .vp-cal-close-btn:hover{color:var(--vp-ink)}
+
+/* Horoscope Calculator — form fields inside the modal */
+#vpanchanga-view .vp-horo-modal{max-width:380px}
+#vpanchanga-view .vp-horo-modal-title{cursor:default}
+#vpanchanga-view .vp-horo-modal-title::after{content:''}
+#vpanchanga-view .vp-horo-field{margin-bottom:14px}
+#vpanchanga-view .vp-horo-label{
+  display:block;font-size:.62rem;font-weight:800;
+  letter-spacing:.07em;text-transform:uppercase;
+  color:var(--vp-ink-faint);margin-bottom:6px;
+}
+#vpanchanga-view .vp-horo-input{
+  width:100%;box-sizing:border-box;
+  font-family:inherit;font-size:.9rem;color:var(--vp-ink);
+  background:rgba(124,92,252,.06);
+  border:1.5px solid var(--vp-card-edge);
+  border-radius:12px;padding:10px 12px;
+  transition:border-color .2s ease;
+}
+#vpanchanga-view .vp-horo-input:focus{outline:none;border-color:var(--vp-violet)}
+#vpanchanga-view .vp-horo-latlng-row{display:flex;gap:8px;margin-bottom:8px}
+#vpanchanga-view .vp-horo-input-sm{flex:1;min-width:0}
+#vpanchanga-view .vp-horo-gps-btn{
+  width:100%;display:flex;align-items:center;justify-content:center;gap:6px;
+  font-family:inherit;font-size:.72rem;font-weight:800;
+  letter-spacing:.04em;
+  color:var(--vp-violet);background:rgba(124,92,252,.1);
+  border:none;border-radius:12px;padding:10px 12px;
+  cursor:pointer;transition:background .2s ease;
+}
+#vpanchanga-view .vp-horo-gps-btn:hover{background:rgba(124,92,252,.18)}
+#vpanchanga-view .vp-horo-gps-btn:disabled{opacity:.6;cursor:default}
+#vpanchanga-view .vp-horo-note{
+  font-size:.66rem;line-height:1.45;color:var(--vp-ink-faint);
+  margin-top:8px;
+}
+
+/* Year-picker view */
+#vpanchanga-view .vp-cal-year-nav{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:10px;
+}
+#vpanchanga-view .vp-cal-year-range{
+  font-size:.7rem;font-weight:800;letter-spacing:.06em;
+  color:var(--vp-ink-soft);text-transform:uppercase;
+}
+#vpanchanga-view .vp-cal-year-grid{
+  display:grid;grid-template-columns:repeat(4,1fr);
+  gap:6px;
+  padding-bottom:4px;
+}
+#vpanchanga-view .vp-cal-year-cell{
+  padding:12px 4px;border-radius:11px;
+  text-align:center;font-size:.82rem;font-weight:700;
+  color:var(--vp-ink);background:rgba(124,92,252,.05);
+  border:none;cursor:pointer;font-family:inherit;
+  transition:background .15s ease,transform .15s ease;
+}
+#vpanchanga-view .vp-cal-year-cell:hover{background:rgba(124,92,252,.14)}
+#vpanchanga-view .vp-cal-year-cell:active{transform:scale(.94)}
+#vpanchanga-view .vp-cal-year-cell.vp-cal-year-current{
+  box-shadow:inset 0 0 0 1.5px var(--vp-sun);color:var(--vp-sun);
+}
+#vpanchanga-view .vp-cal-year-cell.vp-cal-year-selected{
+  background:linear-gradient(135deg,var(--vp-violet),#9B7FFF);
+  color:#fff;box-shadow:0 4px 14px rgba(124,92,252,.4);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   SELECTED DATE — Full Panchanga Horoscope result
+   ══════════════════════════════════════════════════════════════ */
+#vpanchanga-view .vp-dateresult-section{
+  border-radius:20px;
+  background:linear-gradient(150deg,#F3EEFF,#FFFFFF 55%);
+  border:1px solid rgba(124,92,252,.22);
+  box-shadow:var(--vp-shadow);
+  padding:16px 16px 18px;
+  margin-top:20px;
+}
+#vpanchanga-view .vp-dateresult-head{
+  display:flex;align-items:flex-start;justify-content:space-between;
+  margin-bottom:14px;
+}
+#vpanchanga-view .vp-dateresult-title{
+  display:flex;align-items:center;gap:10px;
+}
+#vpanchanga-view .vp-dateresult-icon{font-size:1.5rem;line-height:1}
+#vpanchanga-view .vp-dateresult-label{
+  font-size:.6rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--vp-violet);
+}
+#vpanchanga-view .vp-dateresult-date{
+  font-family:'EB Garamond',serif;font-size:1.2rem;font-weight:700;
+  color:var(--vp-ink);line-height:1.25;
+}
+#vpanchanga-view .vp-dateresult-sub{
+  font-size:.62rem;color:var(--vp-ink-faint);margin-top:2px;
+}
+#vpanchanga-view .vp-dateresult-close{
+  width:30px;height:30px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  background:rgba(124,92,252,.1);border:none;
+  color:var(--vp-violet);font-size:.9rem;cursor:pointer;
+  flex-shrink:0;
+  transition:background .2s ease;
+}
+#vpanchanga-view .vp-dateresult-close:hover{background:rgba(124,92,252,.2)}
+
+/* Vaar summary strip */
+#vpanchanga-view .vp-dr-vaar-strip{
+  display:flex;align-items:center;gap:12px;
+  background:linear-gradient(135deg,#FFF3DF,#fff);
+  border:1px solid rgba(255,138,61,.25);
+  border-radius:14px;padding:12px 14px;
+  margin-bottom:14px;
+  box-shadow:0 3px 10px rgba(76,58,150,.06);
+}
+#vpanchanga-view .vp-dr-vaar-planet{
+  width:44px;height:44px;object-fit:contain;
+  filter:drop-shadow(0 2px 8px rgba(0,0,0,.2));
+  flex-shrink:0;
+}
+#vpanchanga-view .vp-dr-vaar-body{flex:1;min-width:0}
+#vpanchanga-view .vp-dr-vaar-label{
+  font-size:.55rem;color:var(--vp-ink-faint);
+  text-transform:uppercase;letter-spacing:.1em;font-weight:800;
+  margin-bottom:3px;
+}
+#vpanchanga-view .vp-dr-vaar-name{
+  font-family:'EB Garamond',serif;font-size:1.06rem;font-weight:700;
+  color:var(--vp-sun);line-height:1.2;
+}
+
+/* Anga timeline cards — one per anga, each showing Previous/Current/Next */
+#vpanchanga-view .vp-dr-anga-list{
+  display:flex;flex-direction:column;gap:12px;
+}
+#vpanchanga-view .vp-dr-anga-card{
+  background:#fff;border-radius:16px;
+  border:1px solid var(--vp-card-edge);
+  box-shadow:0 3px 12px rgba(76,58,150,.07);
+  overflow:hidden;
+}
+#vpanchanga-view .vp-dr-anga-head{
+  display:flex;align-items:center;gap:8px;
+  padding:11px 14px;
+  background:rgba(124,92,252,.06);
+  border-bottom:1px solid var(--vp-card-edge);
+}
+#vpanchanga-view .vp-dr-anga-head-icon{font-size:.95rem}
+#vpanchanga-view .vp-dr-anga-head-label{
+  font-size:.66rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--vp-ink-soft);
+}
+
+/* Timeline rows: Previous / Current / Next */
+#vpanchanga-view .vp-dr-tl-row{
+  display:flex;align-items:flex-start;gap:10px;
+  padding:10px 14px;
+  border-bottom:1px solid var(--vp-card-edge);
+  position:relative;
+}
+#vpanchanga-view .vp-dr-tl-row:last-child{border-bottom:none}
+#vpanchanga-view .vp-dr-tl-row.current{
+  background:linear-gradient(135deg,#FFF9DC,#FFFEF5);
+}
+/* Left timeline rail */
+#vpanchanga-view .vp-dr-tl-marker{
+  flex-shrink:0;width:10px;display:flex;flex-direction:column;align-items:center;
+  padding-top:3px;
+}
+#vpanchanga-view .vp-dr-tl-dot{
+  width:8px;height:8px;border-radius:50%;
+  background:var(--vp-ink-faint);
+}
+#vpanchanga-view .vp-dr-tl-row.current .vp-dr-tl-dot{
+  background:var(--vp-sun);
+  box-shadow:0 0 0 3px rgba(255,138,61,.18);
+}
+#vpanchanga-view .vp-dr-tl-row.prev .vp-dr-tl-dot{background:var(--vp-ink-faint);opacity:.5}
+#vpanchanga-view .vp-dr-tl-row.next .vp-dr-tl-dot{background:var(--vp-violet2)}
+
+#vpanchanga-view .vp-dr-tl-body{flex:1;min-width:0}
+#vpanchanga-view .vp-dr-tl-tag{
+  font-size:.54rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;
+  margin-bottom:3px;display:block;
+}
+#vpanchanga-view .vp-dr-tl-row.prev .vp-dr-tl-tag{color:var(--vp-ink-faint)}
+#vpanchanga-view .vp-dr-tl-row.current .vp-dr-tl-tag{color:var(--vp-sun)}
+#vpanchanga-view .vp-dr-tl-row.next .vp-dr-tl-tag{color:var(--vp-violet)}
+
+#vpanchanga-view .vp-dr-tl-name{
+  font-family:'EB Garamond',serif;font-size:.96rem;font-weight:700;
+  color:var(--vp-ink);line-height:1.2;
+}
+#vpanchanga-view .vp-dr-tl-paksha{
+  font-size:.56rem;color:var(--vp-ink-faint);font-weight:600;
+  margin-left:6px;text-transform:uppercase;letter-spacing:.04em;
+}
+#vpanchanga-view .vp-dr-tl-fx{
+  font-size:.66rem;color:var(--vp-ink-soft);line-height:1.4;margin-top:3px;
+}
+#vpanchanga-view .vp-dr-tl-time{
+  font-size:.62rem;color:var(--vp-ink-soft);font-weight:600;margin-top:5px;
+}
+#vpanchanga-view .vp-dr-tl-dur{
+  display:inline-flex;align-items:center;gap:3px;
+  font-size:.58rem;font-weight:800;
+  color:var(--vp-violet);background:rgba(124,92,252,.09);
+  border-radius:999px;padding:2px 9px;margin-top:5px;
+}
+
+@media(prefers-reduced-motion:reduce){
+  #vpanchanga-view .vp-cal-modal{animation:none}
+}
+
+/* ══════════════════════════════════════════════════════════════
+   MY HOROSCOPE — predictions, save row, Your Day card
+   ══════════════════════════════════════════════════════════════ */
+#vp-horo-predictions{margin:14px 14px 4px}
+.vp-horo-pred{background:var(--vp-card);border:1px solid var(--vp-card-edge);border-radius:18px;padding:14px 16px;box-shadow:var(--vp-shadow)}
+.vp-horo-pred-head{display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--vp-card-edge);padding-bottom:10px;margin-bottom:10px}
+.vp-horo-pred-sym{font-size:2.1rem;line-height:1;color:var(--vp-violet);background:linear-gradient(135deg,#FFF6E0,#F3EEFF);border-radius:14px;padding:8px 12px;border:1px solid var(--vp-card-edge)}
+.vp-horo-pred-label{font-size:.55rem;letter-spacing:.18em;color:var(--vp-ink-faint);text-transform:uppercase;font-weight:700}
+.vp-horo-pred-rashi{font-size:1.05rem;font-weight:800;color:var(--vp-ink)}
+.vp-horo-pred-en{color:var(--vp-ink-soft);font-weight:600;font-size:.85rem}
+.vp-horo-pred-sub{font-size:.7rem;color:var(--vp-ink-soft);margin-top:2px}
+.vp-horo-pred-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px 14px;font-size:.72rem}
+.vp-horo-pred-grid > div{display:flex;justify-content:space-between;gap:8px;border-bottom:1px dashed rgba(36,27,69,.08);padding:4px 0}
+.vp-horo-pred-k{color:var(--vp-ink-faint);font-weight:600}
+.vp-horo-pred-v{color:var(--vp-ink);font-weight:700;text-align:right}
+.vp-horo-pred-para{margin-top:10px}
+.vp-horo-pred-ph{font-size:.6rem;letter-spacing:.14em;text-transform:uppercase;font-weight:800;color:var(--vp-violet);margin-top:8px}
+.vp-horo-pred-para p{font-size:.78rem;color:var(--vp-ink);margin:3px 0 0;line-height:1.5}
+
+.vp-horo-save-row{margin:14px;padding:12px 14px;border-radius:16px;background:linear-gradient(135deg,#FFF6E0,#F3EEFF);border:1px solid var(--vp-ausp-border);text-align:center}
+.vp-horo-save-btn,.vp-horo-forget-btn{font:inherit;font-weight:800;letter-spacing:.04em;border:none;border-radius:999px;padding:9px 16px;cursor:pointer;margin:3px 4px}
+.vp-horo-save-btn{background:linear-gradient(135deg,var(--vp-gold),#E8B441);color:#3a2a06}
+.vp-horo-forget-btn{background:#fff;color:var(--vp-rose);border:1px solid var(--vp-rose)}
+.vp-horo-save-note{font-size:.7rem;color:var(--vp-ink-soft);margin-top:6px}
+
+/* Your Day personalization card (rendered above .rh in the Jap view) */
+.vp-myday{margin:10px 12px 8px;padding:12px 14px;border-radius:16px;background:#fff;border:1px solid rgba(36,27,69,.10);box-shadow:0 6px 18px rgba(76,58,150,.10);font-family:'Inter',sans-serif;color:#241B45}
+.vp-myday-good{background:linear-gradient(135deg,#EAF8EE,#FFFDF5);border-color:rgba(14,166,114,.35)}
+.vp-myday-bad{background:linear-gradient(135deg,#FDEAEC,#FFF6F4);border-color:rgba(225,72,95,.35)}
+.vp-myday-mixed{background:linear-gradient(135deg,#FFF8DC,#F3EEFF);border-color:rgba(200,150,10,.35)}
+.vp-myday-hd{display:flex;align-items:center;gap:10px}
+.vp-myday-sym{font-size:1.7rem;width:42px;height:42px;display:grid;place-items:center;border-radius:50%;background:#fff;border:1px solid rgba(36,27,69,.12);color:#7C5CFC}
+.vp-myday-title{font-size:.85rem;font-weight:800;letter-spacing:.02em}
+.vp-myday-sub{font-size:.72rem;color:#5A4F82;margin-top:2px}
+.vp-myday-rows{margin-top:8px;display:flex;flex-direction:column;gap:6px}
+.vp-myday-row{display:grid;grid-template-columns:auto auto 1fr;gap:6px 10px;align-items:baseline;font-size:.72rem}
+.vp-myday-k{color:#5A4F82;font-weight:700;text-transform:uppercase;letter-spacing:.1em;font-size:.6rem}
+.vp-myday-v{font-weight:800;padding:1px 8px;border-radius:999px;font-size:.7rem}
+.vp-myday-v.good{background:#E7F8F0;color:#0EA672}
+.vp-myday-v.bad{background:#FDEAEC;color:#E1485F}
+.vp-myday-v.mixed{background:#FFF8DC;color:#C8960A}
+.vp-myday-d{color:#3a2f55;line-height:1.45}
+.vp-myday-foot{margin-top:8px;font-size:.62rem;color:#8B81AC;text-align:right}
+.vp-myday-foot a{color:#7C5CFC;text-decoration:none;font-weight:700}
+
+/* Per-window personalization badge on Brahma Muhurta / Sandhya Kal */
+.vp-user-badge{display:inline-block;margin-left:6px;padding:1px 7px;border-radius:999px;font-size:9px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;vertical-align:middle}
+.vp-user-badge-good{background:#E7F8F0;color:#0EA672;border:1px solid rgba(14,166,114,.35)}
+.vp-user-badge-bad{background:#FDEAEC;color:#E1485F;border:1px solid rgba(225,72,95,.35)}
+.vp-user-badge-mixed{background:#FFF8DC;color:#C8960A;border:1px solid rgba(200,150,10,.35)}

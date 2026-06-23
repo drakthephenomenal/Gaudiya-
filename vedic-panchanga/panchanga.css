@@ -45,7 +45,54 @@
 #vpanchanga-view > *{position:relative;z-index:1}
 
 /* ── Header ─────────────────────────────────────────────────── */
-#vpanchanga-view .vp-head{text-align:center;padding:18px 16px 4px}
+#vpanchanga-view .vp-head{text-align:center;padding:18px 16px 8px}
+
+/* ── Janmo Tithin & Rashi split buttons ─────────────────────── */
+#vpanchanga-view .vp-janmo-wrap{
+  display:inline-flex;flex-direction:column;align-items:center;
+  margin-top:10px;gap:7px;
+}
+#vpanchanga-view .vp-janmo-label{
+  font-size:.62rem;font-weight:800;letter-spacing:.06em;
+  color:var(--vp-gold);text-transform:uppercase;
+}
+#vpanchanga-view .vp-janmo-btns{
+  display:inline-flex;gap:8px;
+}
+#vpanchanga-view .vp-janmo-btn{
+  display:inline-flex;align-items:center;gap:5px;
+  font-family:inherit;font-size:.68rem;font-weight:800;
+  letter-spacing:.05em;text-transform:uppercase;
+  border:none;border-radius:999px;
+  padding:9px 18px;cursor:pointer;
+  transition:transform .18s ease,box-shadow .18s ease;
+  position:relative;overflow:hidden;
+}
+#vpanchanga-view .vp-janmo-btn::after{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(to bottom,rgba(255,255,255,.18),transparent);
+  border-radius:inherit;pointer-events:none;
+}
+#vpanchanga-view .vp-janmo-mine{
+  color:#1a0a00;
+  background:linear-gradient(135deg,#FFD700,#F0BE4E,#E8A820);
+  box-shadow:0 6px 18px rgba(216,154,31,.40),0 0 0 1.5px rgba(255,215,0,.35);
+}
+#vpanchanga-view .vp-janmo-mine:hover{
+  transform:translateY(-2px);
+  box-shadow:0 10px 24px rgba(216,154,31,.55),0 0 0 2px rgba(255,215,0,.55);
+}
+#vpanchanga-view .vp-janmo-mine:active{transform:translateY(0) scale(.96)}
+#vpanchanga-view .vp-janmo-others{
+  color:#fff;
+  background:linear-gradient(135deg,var(--vp-violet),#9B7FFF);
+  box-shadow:0 6px 18px rgba(124,92,252,.32);
+}
+#vpanchanga-view .vp-janmo-others:hover{
+  transform:translateY(-2px);
+  box-shadow:0 10px 24px rgba(124,92,252,.45);
+}
+#vpanchanga-view .vp-janmo-others:active{transform:translateY(0) scale(.96)}
 #vpanchanga-view .vp-gaurabda{font-size:.6rem;color:var(--vp-ink-faint);letter-spacing:.18em;text-transform:uppercase;font-weight:700}
 #vpanchanga-view .vp-loc-row{font-size:.58rem;color:var(--vp-ink-soft);letter-spacing:.08em;text-transform:uppercase;margin-top:6px;display:inline-flex;align-items:center;gap:5px;background:rgba(124,92,252,.08);padding:4px 12px;border-radius:999px}
 #vpanchanga-view .vp-loc-dot{width:5px;height:5px;background:var(--vp-violet);border-radius:50%;display:inline-block;box-shadow:0 0 8px rgba(124,92,252,.6)}
@@ -141,7 +188,6 @@
 }
 #vpanchanga-view .vp-orbit-guide[data-vaar="3"]{border-color:rgba(80,210,140,.22)}   /* Mercury */
 #vpanchanga-view .vp-orbit-guide[data-vaar="5"]{border-color:rgba(235,235,255,.22)}  /* Venus */
-#vpanchanga-view .vp-orbit-guide[data-vaar="1"]{border-color:rgba(210,218,248,.22)}  /* Moon */
 #vpanchanga-view .vp-orbit-guide[data-vaar="2"]{border-color:rgba(230,70,70,.20)}    /* Mars */
 #vpanchanga-view .vp-orbit-guide[data-vaar="4"]{border-color:rgba(225,175,50,.22)}   /* Jupiter */
 #vpanchanga-view .vp-orbit-guide[data-vaar="6"]{border-color:rgba(100,150,250,.22)}  /* Saturn */
@@ -156,7 +202,20 @@
   z-index:10;
   display:flex;align-items:center;justify-content:center;
   flex-direction:column;
-  pointer-events:none;
+  pointer-events:all;
+  cursor:pointer;
+}
+/* Rabi Vaar (Sunday) — today pulse matches orbit-planet today glow */
+#vpanchanga-view .vp-orbit-center.rabi-today .vp-orbit-center-planet{
+  animation:vpSunSpin 18s linear infinite, vpRabiTodayPulse 1.8s ease-in-out infinite;
+}
+@keyframes vpRabiTodayPulse{
+  0%,100%{filter:drop-shadow(0 0 14px rgba(255,180,60,.85)) drop-shadow(0 0 30px rgba(255,120,20,.55)) brightness(1.10);}
+  50%{filter:drop-shadow(0 0 26px rgba(255,210,60,1)) drop-shadow(0 0 52px rgba(255,150,30,.90)) brightness(1.30);}
+}
+#vpanchanga-view .vp-orbit-center.rabi-selected::before{
+  border:2.5px solid rgba(255,220,80,.90);
+  box-shadow:0 0 0 6px rgba(255,200,60,.22), 0 0 0 12px rgba(255,180,40,.10);
 }
 /* Inner corona */
 #vpanchanga-view .vp-orbit-center::before{
@@ -249,9 +308,23 @@
 #vpanchanga-view .vp-planet-node[data-vaar="6"] .vp-planet-img{
   width:42px;height:42px;margin:-4px;
 }
+/* Moon — smaller node, fixed offset constant MOON_NODE_HALF in JS must
+   match half of this width/height (24px / 2 = 12) for correct centering.
+   z-index sits above the default planet layer so it's never hidden behind
+   Earth as it swings in front during its orbit. */
+#vpanchanga-view .vp-planet-node.vp-moon-node{
+  width:24px;height:24px;z-index:3;
+}
+#vpanchanga-view .vp-planet-node.vp-moon-node.today,
+#vpanchanga-view .vp-planet-node.vp-moon-node.selected{
+  z-index:7;
+}
+#vpanchanga-view .vp-planet-node.vp-moon-node .vp-planet-img{
+  width:18px;height:18px;
+}
 
 /* Day label — kept upright by JS counter-rotation */
-#vpanchanga-view .vp-planet-day-label{
+#vpanchanga-view .vp-planet-day-label{display:none !important;
   position:absolute;bottom:-14px;left:50%;
   transform:translateX(-50%);
   font-size:.37rem;font-weight:900;letter-spacing:.07em;text-transform:uppercase;
@@ -363,25 +436,68 @@
    ══════════════════════════════════════════════════════════════ */
 #vpanchanga-view .vp-special-yoga-section{margin:18px 16px 0 !important}
 #vpanchanga-view .vp-yoga-card{
-  background:linear-gradient(135deg,#FFF9DC,#FFFFF5);
-  border:1px solid rgba(216,154,31,.45);
+  position:relative;
+  background:linear-gradient(135deg,#FFF4C2 0%,#FFFDF0 50%,#FFE89A 100%);
+  background-size:200% 200%;
+  border:1.5px solid rgba(216,154,31,.6);
   border-radius:16px;padding:16px 18px;
   display:flex;align-items:flex-start;gap:13px;
-  box-shadow:0 4px 20px rgba(216,154,31,.25),0 0 0 1px rgba(216,154,31,.15);
-  animation:vpYogaGlow 3s ease-in-out infinite;
+  box-shadow:
+    0 4px 20px rgba(216,154,31,.35),
+    0 0 0 1px rgba(216,154,31,.2),
+    inset 0 0 18px rgba(255,220,120,.35);
+  animation:vpYogaGlow 2.4s ease-in-out infinite, vpYogaShift 6s ease-in-out infinite;
+  overflow:hidden;
+  isolation:isolate;
+}
+#vpanchanga-view .vp-yoga-card::before{
+  content:"";position:absolute;inset:-2px;border-radius:18px;pointer-events:none;z-index:-1;
+  background:conic-gradient(from 0deg,rgba(255,200,60,0),rgba(255,200,60,.55),rgba(255,235,150,.7),rgba(255,200,60,.55),rgba(255,200,60,0));
+  filter:blur(8px);opacity:.7;
+  animation:vpYogaSpin 5s linear infinite;
+}
+#vpanchanga-view .vp-yoga-card::after{
+  content:"";position:absolute;top:0;left:-60%;width:50%;height:100%;pointer-events:none;
+  background:linear-gradient(110deg,transparent 0%,rgba(255,255,255,.55) 50%,transparent 100%);
+  transform:skewX(-20deg);
+  animation:vpYogaShine 3.2s ease-in-out infinite;
 }
 @keyframes vpYogaGlow{
-  0%,100%{box-shadow:0 4px 20px rgba(216,154,31,.2),0 0 0 1px rgba(216,154,31,.12)}
-  50%{box-shadow:0 6px 28px rgba(216,154,31,.38),0 0 0 1px rgba(216,154,31,.25)}
+  0%,100%{box-shadow:0 4px 20px rgba(216,154,31,.3),0 0 0 1px rgba(216,154,31,.18),inset 0 0 14px rgba(255,220,120,.3)}
+  50%{box-shadow:0 8px 36px rgba(255,180,40,.65),0 0 0 1px rgba(216,154,31,.45),inset 0 0 26px rgba(255,230,140,.55)}
 }
-#vpanchanga-view .vp-yoga-icon{font-size:1.6rem;flex-shrink:0;margin-top:2px}
-#vpanchanga-view .vp-yoga-name{font-family:'EB Garamond',serif;font-size:1.08rem;font-weight:700;color:var(--vp-gold)}
+@keyframes vpYogaShift{
+  0%,100%{background-position:0% 50%}
+  50%{background-position:100% 50%}
+}
+@keyframes vpYogaSpin{
+  to{transform:rotate(360deg)}
+}
+@keyframes vpYogaShine{
+  0%{left:-60%}
+  60%,100%{left:120%}
+}
+#vpanchanga-view .vp-yoga-icon{
+  font-size:1.7rem;flex-shrink:0;margin-top:2px;
+  filter:drop-shadow(0 0 6px rgba(255,200,60,.85));
+  animation:vpYogaIconPulse 1.8s ease-in-out infinite;
+}
+@keyframes vpYogaIconPulse{
+  0%,100%{transform:scale(1) rotate(0deg);filter:drop-shadow(0 0 4px rgba(255,200,60,.6))}
+  50%{transform:scale(1.15) rotate(-4deg);filter:drop-shadow(0 0 12px rgba(255,220,100,1))}
+}
+#vpanchanga-view .vp-yoga-name{font-family:'EB Garamond',serif;font-size:1.12rem;font-weight:700;color:var(--vp-gold);text-shadow:0 0 10px rgba(255,200,60,.5)}
 #vpanchanga-view .vp-yoga-desc{font-size:.74rem;color:var(--vp-ink-soft);margin-top:4px;line-height:1.55}
-#vpanchanga-view .vp-yoga-time{font-size:.68rem;background:rgba(216,154,31,.12);color:var(--vp-gold);border:1px solid rgba(216,154,31,.28);padding:4px 11px;border-radius:8px;margin-top:8px;display:inline-block;font-weight:700}
+#vpanchanga-view .vp-yoga-time{font-size:.68rem;background:rgba(216,154,31,.18);color:var(--vp-gold);border:1px solid rgba(216,154,31,.4);padding:4px 11px;border-radius:8px;margin-top:8px;display:inline-block;font-weight:700;box-shadow:0 0 10px rgba(255,200,60,.3)}
 
 /* ══════════════════════════════════════════════════════════════
    NOW PANEL — 4 Angas in one horizontal row
    ══════════════════════════════════════════════════════════════ */
+/* ── Live Banner — wraps Right Now + Personal Score as one card ── */
+#vpanchanga-view .vp-live-banner{margin:18px 16px 0;border-radius:20px;overflow:hidden;box-shadow:var(--vp-shadow);border:1px solid rgba(255,138,61,.22)}
+#vpanchanga-view .vp-live-banner .vp-now-panel{margin:0;border-radius:0;box-shadow:none;border:none}
+#vpanchanga-view .vp-live-banner #vp-personal-card:not([style*="display:none"]) .vp-personal-card{border-radius:0;box-shadow:none;border-top:1px solid rgba(0,0,0,.07);margin:0}
+
 #vpanchanga-view .vp-now-panel{margin:18px 16px 0;border-radius:20px;background:linear-gradient(150deg,#FFF3DF,#FFFFFF 60%);border:1px solid rgba(255,138,61,.22);box-shadow:var(--vp-shadow);overflow:hidden}
 #vpanchanga-view .vp-now-panel-head{padding:14px 16px 8px;display:flex;align-items:center;gap:7px}
 #vpanchanga-view .vp-pulse{width:7px;height:7px;background:var(--vp-sun);border-radius:50%;animation:vpPulse 1.8s ease-in-out infinite;flex-shrink:0;box-shadow:0 0 8px rgba(255,138,61,.6)}
@@ -969,6 +1085,10 @@
 #vpanchanga-view .vp-dateresult-sub{
   font-size:.62rem;color:var(--vp-ink-faint);margin-top:2px;
 }
+#vpanchanga-view .vp-dateresult-hindu-month{
+  font-size:.66rem;color:var(--vp-sun);letter-spacing:.04em;
+  font-weight:700;margin-top:5px;line-height:1.5;
+}
 #vpanchanga-view .vp-dateresult-close{
   width:30px;height:30px;border-radius:50%;
   display:flex;align-items:center;justify-content:center;
@@ -1087,53 +1207,1239 @@
   #vpanchanga-view .vp-cal-modal{animation:none}
 }
 
+/* ══════════════════════════════════════════
+   PERSONAL HOROSCOPE — opt-in CTA + card
+   ══════════════════════════════════════════ */
+#vpanchanga-view .vp-horo-personal-cta{
+  margin-top:14px;padding-top:14px;
+  border-top:1px dashed var(--vp-card-edge);
+}
+#vpanchanga-view .vp-horo-personal-cta-text{
+  font-size:.66rem;line-height:1.5;color:var(--vp-ink-faint);
+  margin-bottom:10px;
+}
+#vpanchanga-view .vp-horo-save-btn{
+  width:100%;font-family:inherit;font-size:.72rem;font-weight:800;
+  letter-spacing:.03em;color:#fff;
+  background:linear-gradient(135deg,var(--vp-violet),#9B7FFF);
+  border:none;border-radius:12px;padding:11px 12px;
+  cursor:pointer;box-shadow:0 6px 16px rgba(124,92,252,.3);
+  transition:transform .15s ease,box-shadow .15s ease;
+}
+#vpanchanga-view .vp-horo-save-btn:hover{transform:translateY(-1px);box-shadow:0 8px 20px rgba(124,92,252,.4)}
+#vpanchanga-view .vp-horo-save-btn:active{transform:translateY(0)}
+
+#vpanchanga-view .vp-personal-offcard{
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+  background:var(--vp-card);border:1px solid var(--vp-card-edge);
+  border-radius:16px;padding:14px 16px;margin:14px 0;
+  box-shadow:var(--vp-shadow);font-size:.7rem;color:var(--vp-ink-soft);
+}
+#vpanchanga-view .vp-personal-toggle-btn{
+  flex-shrink:0;font-family:inherit;font-size:.62rem;font-weight:800;
+  letter-spacing:.06em;text-transform:uppercase;
+  color:var(--vp-violet);background:rgba(124,92,252,.12);
+  border:none;border-radius:999px;padding:8px 16px;cursor:pointer;
+  transition:background .2s ease;
+}
+#vpanchanga-view .vp-personal-toggle-btn:hover{background:rgba(124,92,252,.2)}
+#vpanchanga-view .vp-personal-toggle-on{
+  color:var(--vp-jade);background:var(--vp-jade-bg);
+}
+
+#vpanchanga-view .vp-personal-card{
+  background:var(--vp-card);border:1px solid var(--vp-card-edge);
+  border-radius:18px;padding:18px;margin:14px 0;
+  box-shadow:var(--vp-shadow);
+}
+#vpanchanga-view .vp-personal-head{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:14px;
+}
+#vpanchanga-view .vp-personal-title{
+  font-family:'EB Garamond',serif;font-size:1.1rem;font-weight:700;
+  color:var(--vp-ink);
+}
+#vpanchanga-view .vp-personal-rashi-row{
+  display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;
+}
+#vpanchanga-view .vp-personal-chip{
+  flex:1;min-width:120px;background:rgba(124,92,252,.07);
+  border-radius:12px;padding:10px 12px;
+}
+#vpanchanga-view .vp-personal-chip-label{
+  display:block;font-size:.58rem;font-weight:800;letter-spacing:.07em;
+  text-transform:uppercase;color:var(--vp-ink-faint);margin-bottom:3px;
+}
+#vpanchanga-view .vp-personal-chip-val{
+  display:block;font-family:'EB Garamond',serif;font-size:1.02rem;
+  font-weight:700;color:var(--vp-violet);
+}
+#vpanchanga-view .vp-personal-outlook{
+  border-radius:14px;padding:12px 14px;margin-bottom:14px;
+}
+#vpanchanga-view .vp-personal-outlook-good{background:var(--vp-jade-bg)}
+#vpanchanga-view .vp-personal-outlook-bad{background:var(--vp-rose-bg)}
+#vpanchanga-view .vp-personal-outlook-neutral{background:var(--vp-gold-bg)}
+#vpanchanga-view .vp-personal-outlook-verdict{
+  font-family:'EB Garamond',serif;font-size:1rem;font-weight:700;
+  margin-bottom:6px;
+}
+#vpanchanga-view .vp-personal-outlook-good .vp-personal-outlook-verdict{color:var(--vp-jade)}
+#vpanchanga-view .vp-personal-outlook-bad .vp-personal-outlook-verdict{color:var(--vp-rose)}
+#vpanchanga-view .vp-personal-outlook-neutral .vp-personal-outlook-verdict{color:var(--vp-gold)}
+#vpanchanga-view .vp-personal-outlook-detail{
+  font-size:.68rem;line-height:1.5;color:var(--vp-ink-soft);margin-top:3px;
+}
+#vpanchanga-view .vp-personal-janmo{
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+  flex-wrap:wrap;background:var(--vp-ausp-bg);
+  border:1px solid var(--vp-ausp-border);border-radius:14px;
+  padding:12px 14px;margin-bottom:10px;
+}
+#vpanchanga-view .vp-personal-janmo-label{
+  font-size:.68rem;font-weight:700;color:var(--vp-ausp-glow);
+}
+#vpanchanga-view .vp-personal-janmo-date{
+  font-family:'EB Garamond',serif;font-size:.95rem;font-weight:700;
+  color:var(--vp-ink);
+}
+#vpanchanga-view .vp-personal-disclaimer{
+  font-size:.6rem;color:var(--vp-ink-faint);text-align:center;
+  font-style:italic;
+}
+
+#vpanchanga-view .vp-personal-chip-sub{
+  display:block;font-size:.58rem;color:var(--vp-ink-faint);
+  margin-top:3px;line-height:1.4;
+}
+#vpanchanga-view .vp-personal-upcoming{
+  border-top:1px dashed var(--vp-card-edge);
+  padding-top:12px;margin-bottom:10px;
+}
+#vpanchanga-view .vp-personal-upcoming-title{
+  font-size:.6rem;font-weight:800;letter-spacing:.06em;
+  text-transform:uppercase;color:var(--vp-ink-faint);margin-bottom:8px;
+}
+#vpanchanga-view .vp-personal-upcoming-item{
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+  flex-wrap:wrap;padding:7px 0;font-size:.66rem;
+  border-bottom:1px solid var(--vp-card-edge);
+}
+#vpanchanga-view .vp-personal-upcoming-item:last-child{border-bottom:none}
+#vpanchanga-view .vp-personal-upcoming-label{color:var(--vp-ink-soft);flex:1;min-width:100%;margin-bottom:2px}
+#vpanchanga-view .vp-upcoming-tara-badges{display:flex;gap:4px;flex-wrap:wrap;flex:1;min-width:100%}
+#vpanchanga-view .vp-personal-upcoming-date{
+  font-weight:700;color:var(--vp-violet);white-space:nowrap;
+}
+
+#vpanchanga-view .vp-personal-janmoyear{
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  background:rgba(124,92,252,.07);border-radius:14px;
+  padding:10px 14px;margin-bottom:14px;
+}
+#vpanchanga-view .vp-personal-janmoyear-label{
+  font-size:.66rem;font-weight:700;color:var(--vp-ink-soft);flex-shrink:0;
+}
+#vpanchanga-view .vp-personal-janmoyear-select{
+  font-family:inherit;font-size:.7rem;font-weight:700;color:var(--vp-violet);
+  background:var(--vp-card);border:1px solid var(--vp-card-edge);
+  border-radius:10px;padding:6px 10px;cursor:pointer;
+}
+#vpanchanga-view .vp-personal-janmoyear-select:focus{outline:none;border-color:var(--vp-violet)}
+#vpanchanga-view .vp-personal-janmoyear-result{
+  font-family:'EB Garamond',serif;font-size:.85rem;font-weight:700;
+  color:var(--vp-ink);flex:1;min-width:140px;text-align:right;
+}
+
+#vpanchanga-view .vp-planet-node[data-vaar="7"]{--pc:90,160,235}
+#vpanchanga-view .vp-orbit-guide[data-vaar="7"]{border-color:rgba(90,160,235,.22)}
+
 /* ══════════════════════════════════════════════════════════════
-   MY HOROSCOPE — predictions, save row, Your Day card
+   PREMIUM HOROSCOPE CALC BUTTON
    ══════════════════════════════════════════════════════════════ */
-#vp-horo-predictions{margin:14px 14px 4px}
-.vp-horo-pred{background:var(--vp-card);border:1px solid var(--vp-card-edge);border-radius:18px;padding:14px 16px;box-shadow:var(--vp-shadow)}
-.vp-horo-pred-head{display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--vp-card-edge);padding-bottom:10px;margin-bottom:10px}
-.vp-horo-pred-sym{font-size:2.1rem;line-height:1;color:var(--vp-violet);background:linear-gradient(135deg,#FFF6E0,#F3EEFF);border-radius:14px;padding:8px 12px;border:1px solid var(--vp-card-edge)}
-.vp-horo-pred-label{font-size:.55rem;letter-spacing:.18em;color:var(--vp-ink-faint);text-transform:uppercase;font-weight:700}
-.vp-horo-pred-rashi{font-size:1.05rem;font-weight:800;color:var(--vp-ink)}
-.vp-horo-pred-en{color:var(--vp-ink-soft);font-weight:600;font-size:.85rem}
-.vp-horo-pred-sub{font-size:.7rem;color:var(--vp-ink-soft);margin-top:2px}
-.vp-horo-pred-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px 14px;font-size:.72rem}
-.vp-horo-pred-grid > div{display:flex;justify-content:space-between;gap:8px;border-bottom:1px dashed rgba(36,27,69,.08);padding:4px 0}
-.vp-horo-pred-k{color:var(--vp-ink-faint);font-weight:600}
-.vp-horo-pred-v{color:var(--vp-ink);font-weight:700;text-align:right}
-.vp-horo-pred-para{margin-top:10px}
-.vp-horo-pred-ph{font-size:.6rem;letter-spacing:.14em;text-transform:uppercase;font-weight:800;color:var(--vp-violet);margin-top:8px}
-.vp-horo-pred-para p{font-size:.78rem;color:var(--vp-ink);margin:3px 0 0;line-height:1.5}
+#vpanchanga-view .vp-horo-calc-btn{
+  font-family:inherit;font-size:.74rem;font-weight:900;
+  letter-spacing:.05em;text-transform:uppercase;
+  color:#1a0a00;
+  background:linear-gradient(135deg,#FFD700 0%,#F0BE4E 45%,#E8A820 100%);
+  border:none;border-radius:12px;
+  padding:11px 18px;cursor:pointer;
+  position:relative;overflow:hidden;
+  box-shadow:
+    0 6px 20px rgba(216,154,31,.45),
+    0 0 0 1.5px rgba(255,215,0,.40),
+    inset 0 1px 0 rgba(255,255,255,.35);
+  transition:transform .18s ease,box-shadow .18s ease;
+}
+#vpanchanga-view .vp-horo-calc-btn::after{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(to bottom,rgba(255,255,255,.22),transparent 55%);
+  border-radius:inherit;pointer-events:none;
+}
+#vpanchanga-view .vp-horo-calc-btn:hover{
+  transform:translateY(-2px);
+  box-shadow:
+    0 10px 28px rgba(216,154,31,.58),
+    0 0 0 2px rgba(255,215,0,.55),
+    inset 0 1px 0 rgba(255,255,255,.35);
+}
+#vpanchanga-view .vp-horo-calc-btn:active{transform:translateY(0) scale(.96)}
 
-.vp-horo-save-row{margin:14px;padding:12px 14px;border-radius:16px;background:linear-gradient(135deg,#FFF6E0,#F3EEFF);border:1px solid var(--vp-ausp-border);text-align:center}
-.vp-horo-save-btn,.vp-horo-forget-btn{font:inherit;font-weight:800;letter-spacing:.04em;border:none;border-radius:999px;padding:9px 16px;cursor:pointer;margin:3px 4px}
-.vp-horo-save-btn{background:linear-gradient(135deg,var(--vp-gold),#E8B441);color:#3a2a06}
-.vp-horo-forget-btn{background:#fff;color:var(--vp-rose);border:1px solid var(--vp-rose)}
-.vp-horo-save-note{font-size:.7rem;color:var(--vp-ink-soft);margin-top:6px}
+/* Premium SAVE button update */
+#vpanchanga-view .vp-horo-save-btn{
+  width:100%;font-family:inherit;font-size:.72rem;font-weight:800;
+  letter-spacing:.04em;color:#1a0a00;
+  background:linear-gradient(135deg,#56d98b 0%,#2bc670 50%,#16a855 100%);
+  border:none;border-radius:12px;padding:12px 12px;
+  cursor:pointer;
+  position:relative;overflow:hidden;
+  box-shadow:0 6px 18px rgba(22,168,85,.38),0 0 0 1.5px rgba(86,217,139,.35),inset 0 1px 0 rgba(255,255,255,.30);
+  transition:transform .15s ease,box-shadow .15s ease;
+}
+#vpanchanga-view .vp-horo-save-btn::after{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(to bottom,rgba(255,255,255,.20),transparent 55%);
+  border-radius:inherit;pointer-events:none;
+}
+#vpanchanga-view .vp-horo-save-btn:hover{
+  transform:translateY(-2px);
+  box-shadow:0 10px 26px rgba(22,168,85,.50),0 0 0 2px rgba(86,217,139,.55),inset 0 1px 0 rgba(255,255,255,.30);
+}
+#vpanchanga-view .vp-horo-save-btn:active{transform:translateY(0) scale(.96)}
 
-/* Your Day personalization card (rendered above .rh in the Jap view) */
-.vp-myday{margin:10px 12px 8px;padding:12px 14px;border-radius:16px;background:#fff;border:1px solid rgba(36,27,69,.10);box-shadow:0 6px 18px rgba(76,58,150,.10);font-family:'Inter',sans-serif;color:#241B45}
-.vp-myday-good{background:linear-gradient(135deg,#EAF8EE,#FFFDF5);border-color:rgba(14,166,114,.35)}
-.vp-myday-bad{background:linear-gradient(135deg,#FDEAEC,#FFF6F4);border-color:rgba(225,72,95,.35)}
-.vp-myday-mixed{background:linear-gradient(135deg,#FFF8DC,#F3EEFF);border-color:rgba(200,150,10,.35)}
-.vp-myday-hd{display:flex;align-items:center;gap:10px}
-.vp-myday-sym{font-size:1.7rem;width:42px;height:42px;display:grid;place-items:center;border-radius:50%;background:#fff;border:1px solid rgba(36,27,69,.12);color:#7C5CFC}
-.vp-myday-title{font-size:.85rem;font-weight:800;letter-spacing:.02em}
-.vp-myday-sub{font-size:.72rem;color:#5A4F82;margin-top:2px}
-.vp-myday-rows{margin-top:8px;display:flex;flex-direction:column;gap:6px}
-.vp-myday-row{display:grid;grid-template-columns:auto auto 1fr;gap:6px 10px;align-items:baseline;font-size:.72rem}
-.vp-myday-k{color:#5A4F82;font-weight:700;text-transform:uppercase;letter-spacing:.1em;font-size:.6rem}
-.vp-myday-v{font-weight:800;padding:1px 8px;border-radius:999px;font-size:.7rem}
-.vp-myday-v.good{background:#E7F8F0;color:#0EA672}
-.vp-myday-v.bad{background:#FDEAEC;color:#E1485F}
-.vp-myday-v.mixed{background:#FFF8DC;color:#C8960A}
-.vp-myday-d{color:#3a2f55;line-height:1.45}
-.vp-myday-foot{margin-top:8px;font-size:.62rem;color:#8B81AC;text-align:right}
-.vp-myday-foot a{color:#7C5CFC;text-decoration:none;font-weight:700}
+/* ══════════════════════════════════════════════════════════════
+   TARA BALA — date-result card
+   ══════════════════════════════════════════════════════════════ */
+#vpanchanga-view .vp-dr-tara-card{
+  border-radius:14px;padding:14px 16px;margin:10px 0;
+  border:1px solid;
+}
+#vpanchanga-view .vp-dr-tara-card.vp-tara-good{background:var(--vp-jade-bg);border-color:rgba(86,217,139,.25)}
+#vpanchanga-view .vp-dr-tara-card.vp-tara-bad{background:var(--vp-rose-bg);border-color:rgba(255,90,110,.22)}
+#vpanchanga-view .vp-dr-tara-card.vp-tara-neutral{background:var(--vp-gold-bg);border-color:rgba(216,154,31,.22)}
+#vpanchanga-view .vp-dr-tara-head{
+  font-size:.62rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--vp-ink-faint);margin-bottom:8px;
+}
+#vpanchanga-view .vp-dr-tara-row{
+  display:flex;justify-content:space-between;align-items:center;
+  font-size:.67rem;padding:3px 0;
+  border-bottom:1px dashed var(--vp-card-edge);
+}
+#vpanchanga-view .vp-dr-tara-label{color:var(--vp-ink-faint)}
+#vpanchanga-view .vp-dr-tara-val{font-weight:700;color:var(--vp-ink)}
+#vpanchanga-view .vp-dr-tara-name{
+  font-family:'EB Garamond',serif;font-size:1.05rem;font-weight:700;
+  margin-top:8px;
+}
+#vpanchanga-view .vp-tara-name-good{color:var(--vp-jade)}
+#vpanchanga-view .vp-tara-name-bad{color:var(--vp-rose)}
+#vpanchanga-view .vp-tara-name-neutral{color:var(--vp-gold)}
+#vpanchanga-view .vp-dr-tara-note{
+  font-size:.67rem;line-height:1.5;color:var(--vp-ink-soft);margin-top:3px;
+}
 
-/* Per-window personalization badge on Brahma Muhurta / Sandhya Kal */
-.vp-user-badge{display:inline-block;margin-left:6px;padding:1px 7px;border-radius:999px;font-size:9px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;vertical-align:middle}
-.vp-user-badge-good{background:#E7F8F0;color:#0EA672;border:1px solid rgba(14,166,114,.35)}
-.vp-user-badge-bad{background:#FDEAEC;color:#E1485F;border:1px solid rgba(225,72,95,.35)}
-.vp-user-badge-mixed{background:#FFF8DC;color:#C8960A;border:1px solid rgba(200,150,10,.35)}
+/* ══════════════════════════════════════════════════════════════
+   MY PANCHANGA — dynamic daily title + Tara Bala timing block
+   ══════════════════════════════════════════════════════════════ */
+#vpanchanga-view .vp-personal-dynamic-title{
+  font-family:'EB Garamond',serif;font-size:1.1rem;font-weight:700;
+  color:var(--vp-ink);line-height:1.3;
+}
+#vpanchanga-view .vp-personal-janmo-tithi{
+  font-size:.66rem;color:var(--vp-ink-faint);margin-top:4px;
+}
+#vpanchanga-view .vp-personal-janmo-tithi span{
+  font-weight:700;color:var(--vp-gold);
+}
+
+/* Tara Bala timing block */
+#vpanchanga-view .vp-personal-tara-block{
+  margin-bottom:14px;
+  border-radius:14px;
+  background:rgba(255,255,255,.03);
+  border:1px solid var(--vp-card-edge);
+  overflow:hidden;
+}
+#vpanchanga-view .vp-personal-tara-title{
+  font-size:.60rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--vp-ink-faint);padding:8px 12px 4px;
+}
+#vpanchanga-view .vp-personal-tara-current,
+#vpanchanga-view .vp-personal-tara-next{
+  padding:10px 12px;
+}
+#vpanchanga-view .vp-personal-tara-current.vp-tara-good,
+#vpanchanga-view .vp-personal-tara-next.vp-tara-good{background:var(--vp-jade-bg)}
+#vpanchanga-view .vp-personal-tara-current.vp-tara-bad,
+#vpanchanga-view .vp-personal-tara-next.vp-tara-bad{background:var(--vp-rose-bg)}
+#vpanchanga-view .vp-personal-tara-current.vp-tara-neutral,
+#vpanchanga-view .vp-personal-tara-next.vp-tara-neutral{background:var(--vp-gold-bg)}
+#vpanchanga-view .vp-personal-tara-nak-name{
+  font-size:.60rem;font-weight:800;letter-spacing:.04em;text-transform:uppercase;
+  color:var(--vp-ink-faint);margin-bottom:2px;
+}
+#vpanchanga-view .vp-personal-tara-name{
+  font-family:'EB Garamond',serif;font-size:.98rem;font-weight:700;
+  color:var(--vp-ink);
+}
+#vpanchanga-view .vp-personal-tara-current.vp-tara-good .vp-personal-tara-name{color:var(--vp-jade)}
+#vpanchanga-view .vp-personal-tara-current.vp-tara-bad .vp-personal-tara-name{color:var(--vp-rose)}
+#vpanchanga-view .vp-personal-tara-next.vp-tara-good .vp-personal-tara-name{color:var(--vp-jade)}
+#vpanchanga-view .vp-personal-tara-next.vp-tara-bad .vp-personal-tara-name{color:var(--vp-rose)}
+#vpanchanga-view .vp-personal-tara-note{
+  font-size:.64rem;line-height:1.5;color:var(--vp-ink-soft);margin:2px 0 3px;
+}
+#vpanchanga-view .vp-personal-tara-time{
+  font-size:.60rem;font-weight:700;color:var(--vp-violet);
+  background:rgba(124,92,252,.08);border-radius:999px;
+  display:inline-block;padding:2px 9px;margin-top:4px;
+}
+#vpanchanga-view .vp-personal-tara-arrow{
+  text-align:center;font-size:.62rem;color:var(--vp-ink-faint);
+  padding:4px 0;border-top:1px dashed var(--vp-card-edge);
+  border-bottom:1px dashed var(--vp-card-edge);
+  letter-spacing:.05em;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   CONSOLIDATED SCORE CARD — 5-factor verdict
+   ══════════════════════════════════════════════════════════════ */
+#vpanchanga-view .vp-cscore-card{
+  border-radius:18px;padding:16px;margin-bottom:14px;
+  border:1px solid;position:relative;overflow:hidden;
+}
+#vpanchanga-view .vp-cscore-card::before{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(135deg,rgba(255,255,255,.04),transparent 60%);
+  pointer-events:none;
+}
+#vpanchanga-view .vp-cscore-best   {background:linear-gradient(135deg,rgba(86,217,139,.20),rgba(86,217,139,.08));border-color:rgba(86,217,139,.45)}
+#vpanchanga-view .vp-cscore-good   {background:rgba(86,217,139,.09);border-color:rgba(86,217,139,.25)}
+#vpanchanga-view .vp-cscore-neutral{background:rgba(216,154,31,.08);border-color:rgba(216,154,31,.25)}
+#vpanchanga-view .vp-cscore-bad    {background:rgba(255,90,110,.08);border-color:rgba(255,90,110,.25)}
+#vpanchanga-view .vp-cscore-worst  {background:rgba(255,50,80,.13);border-color:rgba(255,50,80,.38)}
+
+#vpanchanga-view .vp-cscore-head{
+  font-size:.58rem;font-weight:900;letter-spacing:.10em;text-transform:uppercase;
+  color:var(--vp-ink-faint);margin-bottom:8px;
+}
+#vpanchanga-view .vp-cscore-verdict{
+  font-family:'EB Garamond',serif;font-size:1.18rem;font-weight:700;
+  margin-bottom:10px;letter-spacing:.01em;
+}
+#vpanchanga-view .vp-cscore-best    .vp-cscore-verdict{color:#56d98b}
+#vpanchanga-view .vp-cscore-good    .vp-cscore-verdict{color:var(--vp-jade)}
+#vpanchanga-view .vp-cscore-neutral .vp-cscore-verdict{color:var(--vp-gold)}
+#vpanchanga-view .vp-cscore-bad     .vp-cscore-verdict{color:var(--vp-rose)}
+#vpanchanga-view .vp-cscore-worst   .vp-cscore-verdict{color:#ff3c5a}
+
+/* Score bar */
+#vpanchanga-view .vp-cscore-bar-row{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+#vpanchanga-view .vp-cscore-bar{
+  flex:1;height:8px;border-radius:999px;
+  background:rgba(255,255,255,.10);overflow:hidden;
+}
+#vpanchanga-view .vp-cscore-fill{height:100%;border-radius:999px;transition:width .6s ease}
+#vpanchanga-view .vp-cscore-fill-best    {background:linear-gradient(90deg,#2bc670,#56d98b)}
+#vpanchanga-view .vp-cscore-fill-good    {background:linear-gradient(90deg,#20a860,#3dce80)}
+#vpanchanga-view .vp-cscore-fill-neutral {background:linear-gradient(90deg,#c88b10,#f0be4e)}
+#vpanchanga-view .vp-cscore-fill-bad     {background:linear-gradient(90deg,#d03050,#ff6080)}
+#vpanchanga-view .vp-cscore-fill-worst   {background:linear-gradient(90deg,#b01030,#e02050)}
+#vpanchanga-view .vp-cscore-num{
+  font-size:.68rem;font-weight:900;white-space:nowrap;
+  color:var(--vp-ink-soft);
+}
+
+/* Factor rows */
+#vpanchanga-view .vp-cscore-factors{
+  border-radius:12px;overflow:hidden;
+  border:1px solid rgba(255,255,255,.07);
+  margin-bottom:10px;
+}
+#vpanchanga-view .vp-cscore-row{
+  display:flex;align-items:center;gap:8px;
+  padding:7px 10px;border-bottom:1px solid rgba(255,255,255,.06);
+  font-size:.66rem;
+}
+#vpanchanga-view .vp-cscore-row:last-child{border-bottom:none}
+#vpanchanga-view .vp-cscore-icon{font-size:.78rem;flex-shrink:0}
+#vpanchanga-view .vp-cscore-label{
+  font-weight:700;color:var(--vp-ink-faint);flex:0 0 80px;
+  font-size:.62rem;letter-spacing:.02em;
+}
+#vpanchanga-view .vp-cscore-name{flex:1;font-weight:700}
+#vpanchanga-view .vp-cscore-name.vp-tara-good   {color:var(--vp-jade)}
+#vpanchanga-view .vp-cscore-name.vp-tara-bad    {color:var(--vp-rose)}
+#vpanchanga-view .vp-cscore-name.vp-tara-neutral{color:var(--vp-gold)}
+#vpanchanga-view .vp-cscore-pts{
+  font-size:.72rem;font-weight:900;flex-shrink:0;
+  border-radius:999px;padding:1px 8px;
+}
+#vpanchanga-view .vp-cscore-pts-good    {background:var(--vp-jade-bg);color:var(--vp-jade)}
+#vpanchanga-view .vp-cscore-pts-bad     {background:var(--vp-rose-bg);color:var(--vp-rose)}
+#vpanchanga-view .vp-cscore-pts-neutral {background:rgba(255,255,255,.07);color:var(--vp-ink-faint)}
+#vpanchanga-view .vp-cscore-timer{
+  font-size:.62rem;font-weight:700;color:var(--vp-violet);
+  background:rgba(124,92,252,.09);border-radius:999px;
+  padding:4px 12px;text-align:center;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   BEST WINDOWS — 7-day outlook
+   ══════════════════════════════════════════════════════════════ */
+#vpanchanga-view .vp-best-windows{
+  border-radius:14px;overflow:hidden;
+  border:1px solid rgba(86,217,139,.25);
+  margin-bottom:14px;
+  background:rgba(86,217,139,.04);
+}
+#vpanchanga-view .vp-best-windows-head{
+  font-size:.62rem;font-weight:900;letter-spacing:.07em;text-transform:uppercase;
+  color:var(--vp-jade);padding:9px 12px;
+  background:rgba(86,217,139,.08);border-bottom:1px solid rgba(86,217,139,.18);
+}
+#vpanchanga-view .vp-best-win-row{
+  padding:10px 12px;border-bottom:1px solid rgba(86,217,139,.10);
+}
+#vpanchanga-view .vp-best-win-row:last-child{border-bottom:none}
+#vpanchanga-view .vp-best-win-when{
+  font-size:.67rem;font-weight:700;color:var(--vp-ink);margin-bottom:5px;
+}
+#vpanchanga-view .vp-best-win-arrow{
+  color:var(--vp-jade);font-size:.75rem;margin:0 4px;
+}
+#vpanchanga-view .vp-best-win-badges{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:4px}
+#vpanchanga-view .vp-best-win-dur{
+  font-size:.60rem;color:var(--vp-ink-faint);font-style:italic;
+}
+#vpanchanga-view .vp-best-windows-empty{
+  font-size:.66rem;color:var(--vp-ink-faint);padding:12px 14px;
+  font-style:italic;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   COMBINED TARA + CHANDRA BALA — Active Now + Timeline
+   ══════════════════════════════════════════════════════════════ */
+
+/* ── Active Now block ─────────────────────────────────────────── */
+#vpanchanga-view .vp-combined-active{
+  border-radius:16px;padding:14px;margin-bottom:12px;
+  border:1px solid;
+}
+#vpanchanga-view .vp-combined-best  {background:linear-gradient(135deg,rgba(86,217,139,.18),rgba(86,217,139,.08));border-color:rgba(86,217,139,.35)}
+#vpanchanga-view .vp-combined-good  {background:rgba(86,217,139,.08);border-color:rgba(86,217,139,.20)}
+#vpanchanga-view .vp-combined-neutral{background:rgba(216,154,31,.07);border-color:rgba(216,154,31,.20)}
+#vpanchanga-view .vp-combined-bad   {background:rgba(255,90,110,.07);border-color:rgba(255,90,110,.20)}
+#vpanchanga-view .vp-combined-worst {background:rgba(255,60,90,.12);border-color:rgba(255,60,90,.30)}
+
+#vpanchanga-view .vp-combined-active-head{
+  font-size:.58rem;font-weight:900;letter-spacing:.10em;text-transform:uppercase;
+  color:var(--vp-rose);margin-bottom:10px;display:flex;align-items:center;gap:5px;
+}
+#vpanchanga-view .vp-combined-active-row{
+  display:flex;gap:8px;margin-bottom:10px;
+}
+#vpanchanga-view .vp-combined-half{
+  flex:1;border-radius:12px;padding:10px 10px 8px;
+  min-width:0;
+}
+#vpanchanga-view .vp-combined-half.vp-tara-good   {background:var(--vp-jade-bg)}
+#vpanchanga-view .vp-combined-half.vp-tara-bad    {background:var(--vp-rose-bg)}
+#vpanchanga-view .vp-combined-half.vp-tara-neutral{background:var(--vp-gold-bg)}
+#vpanchanga-view .vp-combined-half-label{
+  font-size:.56rem;font-weight:900;letter-spacing:.07em;text-transform:uppercase;
+  color:var(--vp-ink-faint);margin-bottom:3px;
+}
+#vpanchanga-view .vp-combined-half-name{
+  font-family:'EB Garamond',serif;font-size:.95rem;font-weight:700;
+  color:var(--vp-ink);line-height:1.2;
+}
+#vpanchanga-view .vp-combined-half.vp-tara-good  .vp-combined-half-name{color:var(--vp-jade)}
+#vpanchanga-view .vp-combined-half.vp-tara-bad   .vp-combined-half-name{color:var(--vp-rose)}
+#vpanchanga-view .vp-combined-half-sub{
+  font-size:.58rem;font-weight:700;color:var(--vp-violet);margin:2px 0;
+}
+#vpanchanga-view .vp-combined-half-note{
+  font-size:.60rem;line-height:1.45;color:var(--vp-ink-soft);margin-top:3px;
+}
+#vpanchanga-view .vp-combined-verdict-bar{
+  font-family:'EB Garamond',serif;font-size:1.02rem;font-weight:700;
+  text-align:center;letter-spacing:.02em;padding:7px 10px;
+  border-radius:10px;background:rgba(255,255,255,.06);
+  border:1px solid rgba(255,255,255,.10);margin-bottom:8px;
+}
+#vpanchanga-view .vp-combined-best   .vp-combined-verdict-bar{color:#56d98b}
+#vpanchanga-view .vp-combined-good   .vp-combined-verdict-bar{color:var(--vp-jade)}
+#vpanchanga-view .vp-combined-neutral .vp-combined-verdict-bar{color:var(--vp-gold)}
+#vpanchanga-view .vp-combined-bad    .vp-combined-verdict-bar{color:var(--vp-rose)}
+#vpanchanga-view .vp-combined-worst  .vp-combined-verdict-bar{color:#ff3c5a}
+#vpanchanga-view .vp-combined-active-time{
+  font-size:.62rem;font-weight:700;color:var(--vp-violet);text-align:center;
+  background:rgba(124,92,252,.09);border-radius:999px;padding:4px 12px;
+}
+
+/* ── Upcoming Timeline ────────────────────────────────────────── */
+#vpanchanga-view .vp-combined-timeline{
+  border-radius:14px;overflow:hidden;
+  border:1px solid var(--vp-card-edge);
+  margin-bottom:14px;
+}
+#vpanchanga-view .vp-combined-tl-head{
+  font-size:.60rem;font-weight:900;letter-spacing:.07em;text-transform:uppercase;
+  color:var(--vp-ink-faint);padding:9px 12px;
+  background:rgba(255,255,255,.03);border-bottom:1px solid var(--vp-card-edge);
+}
+#vpanchanga-view .vp-tl-row{
+  padding:10px 12px;border-bottom:1px solid var(--vp-card-edge);
+}
+#vpanchanga-view .vp-tl-row:last-child{border-bottom:none}
+/* Left-border accent by combined score */
+#vpanchanga-view .vp-tl-row.vp-combined-best,
+#vpanchanga-view .vp-tl-row.vp-combined-good   {border-left:3px solid var(--vp-jade)}
+#vpanchanga-view .vp-tl-row.vp-combined-neutral {border-left:3px solid var(--vp-gold)}
+#vpanchanga-view .vp-tl-row.vp-combined-bad,
+#vpanchanga-view .vp-tl-row.vp-combined-worst   {border-left:3px solid var(--vp-rose)}
+
+#vpanchanga-view .vp-tl-when{
+  font-size:.66rem;font-weight:700;color:var(--vp-violet);margin-bottom:3px;
+}
+#vpanchanga-view .vp-tl-change{
+  font-size:.68rem;font-weight:700;color:var(--vp-ink);margin-bottom:5px;
+}
+#vpanchanga-view .vp-tl-badges{
+  display:flex;flex-wrap:wrap;gap:5px;margin-bottom:5px;
+}
+#vpanchanga-view .vp-tl-badge{
+  font-size:.60rem;font-weight:800;letter-spacing:.03em;
+  border-radius:999px;padding:2px 9px;
+}
+#vpanchanga-view .vp-tl-badge.vp-tara-good   {background:var(--vp-jade-bg);color:var(--vp-jade)}
+#vpanchanga-view .vp-tl-badge.vp-tara-bad    {background:var(--vp-rose-bg);color:var(--vp-rose)}
+#vpanchanga-view .vp-tl-badge.vp-tara-neutral{background:var(--vp-gold-bg);color:var(--vp-gold)}
+#vpanchanga-view .vp-tl-combined{
+  font-size:.72rem;font-weight:700;margin-bottom:3px;
+}
+#vpanchanga-view .vp-tl-row.vp-combined-best   .vp-tl-combined,
+#vpanchanga-view .vp-tl-row.vp-combined-good   .vp-tl-combined{color:var(--vp-jade)}
+#vpanchanga-view .vp-tl-row.vp-combined-neutral .vp-tl-combined{color:var(--vp-gold)}
+#vpanchanga-view .vp-tl-row.vp-combined-bad    .vp-tl-combined,
+#vpanchanga-view .vp-tl-row.vp-combined-worst  .vp-tl-combined{color:var(--vp-rose)}
+#vpanchanga-view .vp-tl-dur{
+  font-size:.58rem;color:var(--vp-ink-faint);font-style:italic;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   NEW UI IMPROVEMENTS — 6 features
+   ══════════════════════════════════════════════════════════════ */
+
+/* ── 4-box birth row ─────────────────────────────────────────── */
+#vpanchanga-view .vp-personal-rashi-row-4{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:8px;
+}
+
+/* ── Scorecard factor row with progress bar ──────────────────── */
+#vpanchanga-view .vp-cscore-row-rich{
+  display:flex;flex-direction:column;gap:0;
+  padding:8px 0;
+  border-bottom:1px solid var(--vp-card-edge);
+}
+#vpanchanga-view .vp-cscore-row-rich:last-child{border-bottom:none}
+#vpanchanga-view .vp-cscore-row-top{
+  display:flex;align-items:center;gap:6px;flex-wrap:wrap;
+}
+#vpanchanga-view .vp-cscore-row-desc{
+  font-size:.60rem;color:var(--vp-ink-soft);font-style:italic;
+  line-height:1.45;margin:3px 0 4px 22px;
+}
+#vpanchanga-view .vp-cscore-row-timeline{
+  display:flex;justify-content:space-between;align-items:center;
+  font-size:.55rem;color:var(--vp-ink-faint);margin:3px 0 2px;
+  padding:0 2px;
+}
+#vpanchanga-view .vp-cscore-tl-left{
+  font-size:.55rem;color:var(--vp-violet);font-weight:700;
+}
+#vpanchanga-view .vp-cscore-row-bar{
+  height:4px;border-radius:4px;background:rgba(0,0,0,.07);overflow:hidden;
+  margin-bottom:2px;
+}
+#vpanchanga-view .vp-cscore-row-fill{
+  height:100%;border-radius:4px;transition:width .4s ease;
+}
+#vpanchanga-view .vp-cscore-fill-good   {background:var(--vp-jade)}
+#vpanchanga-view .vp-cscore-fill-bad    {background:var(--vp-rose)}
+#vpanchanga-view .vp-cscore-fill-neutral{background:var(--vp-gold)}
+
+/* Special yoga badge in scorecard */
+#vpanchanga-view .vp-cscore-special-yoga{
+  margin:6px 0 4px;padding:6px 10px;
+  background:linear-gradient(135deg,#FFF9E0,#FFFDF5);
+  border:1px solid rgba(200,150,10,.35);border-radius:10px;
+  font-size:.65rem;font-weight:700;color:var(--vp-gold);
+}
+
+/* ── Collapsible sections ────────────────────────────────────── */
+#vpanchanga-view .vp-collapsible-section{
+  margin-bottom:12px;
+  border-radius:14px;
+  border:1px solid var(--vp-card-edge);
+  overflow:hidden;
+  background:var(--vp-card);
+}
+#vpanchanga-view .vp-collapsible-toggle{
+  width:100%;display:flex;align-items:center;justify-content:space-between;
+  background:none;border:none;font-family:inherit;
+  font-size:.68rem;font-weight:800;letter-spacing:.04em;text-transform:uppercase;
+  color:var(--vp-ink-soft);padding:12px 14px;cursor:pointer;
+  transition:background .18s;text-align:left;
+}
+#vpanchanga-view .vp-collapsible-toggle:hover{background:rgba(124,92,252,.06)}
+#vpanchanga-view .vp-chevron{
+  font-size:.85rem;transition:transform .22s ease;color:var(--vp-violet);
+}
+#vpanchanga-view .vp-collapsible-body{
+  max-height:0;overflow:hidden;transition:max-height .35s cubic-bezier(.4,0,.2,1);
+}
+#vpanchanga-view .vp-collapsible-body.open{
+  max-height:9999px;
+}
+
+/* ── Best windows range selector ─────────────────────────────── */
+#vpanchanga-view .vp-best-windows-head{
+  display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+  font-size:.62rem;font-weight:900;letter-spacing:.07em;text-transform:uppercase;
+  color:var(--vp-ink-faint);padding:9px 12px;
+  border-bottom:1px solid var(--vp-card-edge);
+}
+#vpanchanga-view .vp-best-win-range-wrap{
+  display:inline-flex;align-items:center;gap:5px;
+}
+#vpanchanga-view .vp-best-win-range-label{
+  font-size:.60rem;color:var(--vp-ink-faint);text-transform:none;font-weight:600;
+}
+#vpanchanga-view .vp-best-win-range-select{
+  font-family:inherit;font-size:.62rem;font-weight:700;
+  border:1px solid rgba(124,92,252,.30);border-radius:8px;
+  background:rgba(124,92,252,.06);color:var(--vp-violet);
+  padding:3px 8px;cursor:pointer;
+}
+
+/* Special yoga badges in best-windows */
+#vpanchanga-view .vp-best-win-special{
+  display:flex;flex-wrap:wrap;gap:5px;margin:4px 0 2px;
+}
+#vpanchanga-view .vp-best-win-yoga-badge{
+  position:relative;
+  font-size:.60rem;font-weight:800;letter-spacing:.02em;
+  padding:2px 9px;border-radius:999px;
+  background:linear-gradient(135deg,#FFF3C4,#FFF9E0,#FFE89A);
+  background-size:200% 200%;
+  border:1px solid rgba(200,150,10,.55);
+  display:inline-flex;align-items:center;flex-wrap:wrap;gap:3px;
+  box-shadow:0 0 8px rgba(255,200,60,.45),inset 0 0 6px rgba(255,230,140,.5);
+  animation:vpBadgeGlow 2s ease-in-out infinite, vpYogaShift 5s ease-in-out infinite;
+}
+#vpanchanga-view .vp-best-win-yoga-badge,
+#vpanchanga-view .vp-best-win-yoga-badge *{
+  color:#0a3a8c !important;
+  -webkit-text-fill-color:#0a3a8c !important;
+  background-clip:initial !important;
+  -webkit-background-clip:initial !important;
+  text-shadow:none !important;
+}
+@keyframes vpBadgeGlow{
+  0%,100%{box-shadow:0 0 6px rgba(255,200,60,.35),inset 0 0 5px rgba(255,230,140,.4)}
+  50%{box-shadow:0 0 16px rgba(255,200,60,.85),inset 0 0 10px rgba(255,230,140,.7)}
+}
+#vpanchanga-view .vp-best-win-yoga-why{
+  font-size:.58rem;font-weight:600;opacity:.85;
+}
+
+/* "Now" badge in timeline */
+#vpanchanga-view .vp-now-badge{
+  display:inline-block;font-size:.52rem;font-weight:900;letter-spacing:.06em;
+  text-transform:uppercase;background:var(--vp-violet);color:#fff;
+  border-radius:999px;padding:1px 7px;margin-right:3px;vertical-align:middle;
+}
+
+/* Tara/Chandra rows tinted by combined score */
+#vpanchanga-view .vp-tl-row.vp-tara-good   {background:rgba(14,166,114,.05)}
+#vpanchanga-view .vp-tl-row.vp-tara-bad    {background:rgba(225,72,95,.05)}
+#vpanchanga-view .vp-tl-row.vp-tara-neutral{background:rgba(216,154,31,.04)}
+
+/* Coming Up & Right Now collapsibles — allow tall content */
+#vpanchanga-view #vp-upcoming-wrap.open,
+#vpanchanga-view #vp-now-wrap.open { max-height: 9999px; }
+/* #vp-now-toggle uses the shared golden collapsible-toggle style */
+
+/* ══════════════════════════════════════════════════════════════
+   PREMIUM DARK · v2 — Deep blue night sky + golden glow
+   Overrides applied at the end so they win without touching
+   the original token layer.
+   ══════════════════════════════════════════════════════════════ */
+#vpanchanga-view{
+  /* Sky → deep cosmic blue */
+  --vp-sky-top:#04081f;
+  --vp-sky-bot:#0a1640;
+  /* Ink → luminous */
+  --vp-ink:#F5F1E4;
+  --vp-ink-soft:#CFD3E8;
+  --vp-ink-faint:#8C93B8;
+  /* Surfaces → glass-on-midnight */
+  --vp-card:rgba(18,28,64,.78);
+  --vp-card-edge:rgba(212,175,55,.22);
+  /* Accents → gold + jewel tones */
+  --vp-sun:#F5C24A;
+  --vp-sun2:#FFE08A;
+  --vp-violet:#9B7CFF;
+  --vp-violet2:#C7B3FF;
+  --vp-jade:#34D6A4;
+  --vp-jade-bg:rgba(52,214,164,.12);
+  --vp-rose:#FF6B86;
+  --vp-rose-bg:rgba(255,107,134,.12);
+  --vp-gold:#F5C24A;
+  --vp-gold-bg:rgba(245,194,74,.10);
+  --vp-ausp-glow:#FFD96B;
+  --vp-ausp-bg:linear-gradient(135deg,rgba(245,194,74,.16),rgba(245,194,74,.04));
+  --vp-ausp-border:rgba(245,194,74,.45);
+  --vp-inaup-color:#C7B3FF;
+  --vp-inaup-bg:linear-gradient(135deg,rgba(155,124,255,.18),rgba(155,124,255,.04));
+  --vp-inaup-border:rgba(155,124,255,.4);
+  --vp-shadow:0 10px 30px rgba(0,0,0,.55);
+  --vp-shadow-lift:0 20px 50px rgba(0,0,0,.7);
+  background:
+    radial-gradient(1200px 600px at 50% -10%, rgba(155,124,255,.22), transparent 60%),
+    radial-gradient(900px 500px at 90% 110%, rgba(245,194,74,.18), transparent 60%),
+    linear-gradient(180deg,#04081f 0%, #060e2c 35%, #0a1640 75%, #050a22 100%);
+  background-attachment: fixed;
+  color:var(--vp-ink);
+  font-size: 17px;
+  letter-spacing: .01em;
+}
+
+/* Starfield veil */
+#vpanchanga-view::after{
+  content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+  background-image:
+    radial-gradient(1.5px 1.5px at 12% 22%, rgba(255,255,255,.55), transparent 60%),
+    radial-gradient(1px 1px at 78% 14%, rgba(255,255,255,.45), transparent 60%),
+    radial-gradient(1.2px 1.2px at 33% 78%, rgba(255,255,255,.5), transparent 60%),
+    radial-gradient(1px 1px at 62% 52%, rgba(255,255,255,.35), transparent 60%),
+    radial-gradient(1.4px 1.4px at 88% 72%, rgba(255,255,255,.4), transparent 60%),
+    radial-gradient(1px 1px at 6% 60%, rgba(255,255,255,.3), transparent 60%),
+    radial-gradient(1.2px 1.2px at 48% 30%, rgba(255,255,255,.4), transparent 60%);
+}
+
+/* Override the warm sunrise overlay with cool nebula tones */
+#vpanchanga-view::before{
+  background:
+    radial-gradient(circle at 18% 8%,rgba(155,124,255,.35),transparent 45%),
+    radial-gradient(circle at 82% 2%,rgba(245,194,74,.22),transparent 42%);
+  height:560px;
+}
+
+/* ── Typography scale-up ─────────────────────────────────────── */
+#vpanchanga-view .vp-head{padding:28px 16px 14px}
+#vpanchanga-view .vp-head *{color:var(--vp-ink) !important}
+#vpanchanga-view h1, #vpanchanga-view h2, #vpanchanga-view h3{
+  letter-spacing:.01em;
+}
+#vpanchanga-view .vp-sec-head,
+#vpanchanga-view .vp-now-panel-head,
+#vpanchanga-view .vp-collapsible-toggle > span:first-child{
+  font-size:.95rem !important;
+  letter-spacing:.12em;
+  background:linear-gradient(90deg,#FFE9A8,#F5C24A 55%,#FFE9A8);
+  -webkit-background-clip:text;background-clip:text;
+  -webkit-text-fill-color:transparent;
+  text-shadow:0 0 18px rgba(245,194,74,.25);
+}
+#vpanchanga-view .vp-anga-card-toggle,
+#vpanchanga-view .vp-best-win-when,
+#vpanchanga-view .vp-personal-chip-val,
+#vpanchanga-view .vp-personal-janmo-tithi{
+  font-size:1.05rem !important;
+}
+#vpanchanga-view .vp-personal-chip-label,
+#vpanchanga-view .vp-best-win-range-label{
+  font-size:.72rem !important;
+  color:#E8C97A !important;
+}
+
+/* ── Cards → glass with golden hairline ──────────────────────── */
+#vpanchanga-view .vp-card,
+#vpanchanga-view .vp-m-section,
+#vpanchanga-view .vp-now-panel,
+#vpanchanga-view .vp-personal-card,
+#vpanchanga-view .vp-anga-card,
+#vpanchanga-view .vp-best-windows,
+#vpanchanga-view .vp-cscore,
+#vpanchanga-view .vp-collapsible-section,
+#vpanchanga-view .vp-db-grid,
+#vpanchanga-view .vp-month-grid{
+  background:linear-gradient(180deg, rgba(20,30,70,.85), rgba(10,18,48,.85)) !important;
+  border:1px solid var(--vp-card-edge) !important;
+  border-radius:20px !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.06),
+    inset 0 0 0 1px rgba(245,194,74,.08),
+    0 12px 36px rgba(0,0,0,.55) !important;
+  color:var(--vp-ink) !important;
+  backdrop-filter: blur(12px) saturate(120%);
+  -webkit-backdrop-filter: blur(12px) saturate(120%);
+}
+
+/* Upcoming items + day boundary tiles inherit luminous text */
+#vpanchanga-view .vp-upcoming-item,
+#vpanchanga-view .vp-db-cell,
+#vpanchanga-view .vp-tl-row,
+#vpanchanga-view .vp-best-win-row,
+#vpanchanga-view .vp-personal-chip,
+#vpanchanga-view .vp-personal-upcoming-item{
+  background:linear-gradient(180deg, rgba(28,38,80,.75), rgba(14,22,55,.75)) !important;
+  border:1px solid rgba(245,194,74,.22) !important;
+  border-radius:14px !important;
+  color:var(--vp-ink) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.04), 0 6px 18px rgba(0,0,0,.4);
+}
+#vpanchanga-view .vp-upcoming-item *,
+#vpanchanga-view .vp-db-cell *,
+#vpanchanga-view .vp-personal-chip *,
+#vpanchanga-view .vp-personal-upcoming-item *{
+  color:var(--vp-ink) !important;
+}
+#vpanchanga-view .vp-upcoming-name,
+#vpanchanga-view .vp-best-win-when{
+  color:#FFE9A8 !important;
+  text-shadow:0 0 14px rgba(245,194,74,.35);
+  font-weight:800 !important;
+}
+
+/* ── Dynamic golden buttons ──────────────────────────────────── */
+#vpanchanga-view .vp-tithi-toggle,
+#vpanchanga-view .vp-collapsible-toggle,
+#vpanchanga-view .vp-janmo-btn,
+#vpanchanga-view .vp-personal-toggle-btn,
+#vpanchanga-view .vp-anga-card-toggle,
+#vpanchanga-view .vp-cta,
+#vpanchanga-view button.vp-btn,
+#vpanchanga-view .vp-best-win-range-select,
+#vpanchanga-view select.vp-personal-janmoyear-select{
+  position:relative;
+  background:linear-gradient(135deg, #F5C24A 0%, #FFE08A 45%, #C9881A 100%) !important;
+  color:#1a1330 !important;
+  border:1px solid rgba(255,224,138,.7) !important;
+  border-radius:14px !important;
+  font-weight:800 !important;
+  letter-spacing:.06em;
+  text-transform:uppercase;
+  padding:14px 18px !important;
+  box-shadow:
+    0 0 0 1px rgba(245,194,74,.35),
+    0 0 24px rgba(245,194,74,.45),
+    0 12px 28px rgba(0,0,0,.5),
+    inset 0 1px 0 rgba(255,255,255,.55) !important;
+  transition: transform .25s cubic-bezier(.2,.8,.2,1), box-shadow .25s, filter .25s;
+  overflow:hidden;
+  cursor:pointer;
+  -webkit-tap-highlight-color:transparent;
+}
+#vpanchanga-view .vp-tithi-toggle > span:first-child,
+#vpanchanga-view .vp-collapsible-toggle > span:first-child{
+  -webkit-text-fill-color:#1a1330 !important;
+  background:none !important;
+  color:#1a1330 !important;
+  text-shadow:none !important;
+}
+#vpanchanga-view .vp-tithi-toggle .vp-chevron,
+#vpanchanga-view .vp-collapsible-toggle .vp-chevron{
+  color:#1a1330 !important;
+}
+
+/* Animated sheen sweep */
+#vpanchanga-view .vp-tithi-toggle::before,
+#vpanchanga-view .vp-collapsible-toggle::before,
+#vpanchanga-view .vp-janmo-btn::before,
+#vpanchanga-view .vp-personal-toggle-btn::before,
+#vpanchanga-view .vp-cta::before,
+#vpanchanga-view button.vp-btn::before{
+  content:'';
+  position:absolute; inset:0;
+  background:linear-gradient(115deg,
+    transparent 0%, transparent 38%,
+    rgba(255,255,255,.55) 48%, rgba(255,255,255,.55) 52%,
+    transparent 62%, transparent 100%);
+  transform:translateX(-120%);
+  pointer-events:none;
+  animation: vpSheen 4.2s ease-in-out infinite;
+}
+@keyframes vpSheen{
+  0%, 18% { transform:translateX(-120%); }
+  35%     { transform:translateX(120%); }
+  100%    { transform:translateX(120%); }
+}
+
+/* Soft pulsing aura around toggles */
+#vpanchanga-view .vp-tithi-toggle,
+#vpanchanga-view .vp-collapsible-toggle{
+  animation: vpAura 3.6s ease-in-out infinite;
+}
+@keyframes vpAura{
+  0%,100% { box-shadow:
+      0 0 0 1px rgba(245,194,74,.35),
+      0 0 22px rgba(245,194,74,.38),
+      0 12px 26px rgba(0,0,0,.5),
+      inset 0 1px 0 rgba(255,255,255,.55);}
+  50%     { box-shadow:
+      0 0 0 1px rgba(255,224,138,.6),
+      0 0 38px rgba(245,194,74,.65),
+      0 18px 36px rgba(0,0,0,.6),
+      inset 0 1px 0 rgba(255,255,255,.7);}
+}
+
+#vpanchanga-view .vp-tithi-toggle:hover,
+#vpanchanga-view .vp-collapsible-toggle:hover,
+#vpanchanga-view .vp-janmo-btn:hover,
+#vpanchanga-view .vp-personal-toggle-btn:hover,
+#vpanchanga-view .vp-cta:hover,
+#vpanchanga-view button.vp-btn:hover{
+  transform: translateY(-2px) scale(1.01);
+  filter:saturate(1.1) brightness(1.05);
+}
+
+/* Lunar month toggle uses the same golden bar as the other toggles
+   (violet override removed per user request — keep all bars consistent) */
+
+
+/* Selects/inputs inside cards */
+#vpanchanga-view select,
+#vpanchanga-view input[type="text"],
+#vpanchanga-view input[type="date"],
+#vpanchanga-view input[type="time"]{
+  background:rgba(10,18,48,.85) !important;
+  color:#FFE9A8 !important;
+  border:1px solid rgba(245,194,74,.45) !important;
+  border-radius:10px !important;
+  padding:8px 12px !important;
+  font-weight:700;
+}
+
+/* Bottom nav contrast (already dark in screenshot) — gilded active state */
+#vpanchanga-view .vp-nav-item.active,
+#vpanchanga-view .vp-nav-item[aria-selected="true"]{
+  color:#F5C24A !important;
+  text-shadow:0 0 12px rgba(245,194,74,.7);
+}
+
+/* Tara/Chandra polarity tints over the new dark base */
+#vpanchanga-view .vp-tara-good,
+#vpanchanga-view .vp-tl-badge.vp-tara-good{
+  background:linear-gradient(135deg, rgba(52,214,164,.25), rgba(52,214,164,.08)) !important;
+  border:1px solid rgba(52,214,164,.5) !important;
+  color:#9BF3D2 !important;
+}
+#vpanchanga-view .vp-tara-bad,
+#vpanchanga-view .vp-tl-badge.vp-tara-bad{
+  background:linear-gradient(135deg, rgba(255,107,134,.25), rgba(255,107,134,.06)) !important;
+  border:1px solid rgba(255,107,134,.5) !important;
+  color:#FFB7C4 !important;
+}
+#vpanchanga-view .vp-tara-neutral,
+#vpanchanga-view .vp-tl-badge.vp-tara-neutral{
+  background:linear-gradient(135deg, rgba(245,194,74,.20), rgba(245,194,74,.05)) !important;
+  border:1px solid rgba(245,194,74,.45) !important;
+  color:#FFE9A8 !important;
+}
+
+/* Make every readable surface lighten its text by default */
+#vpanchanga-view .vp-m-section *,
+#vpanchanga-view .vp-now-panel *,
+#vpanchanga-view .vp-personal-card *{
+  color:var(--vp-ink);
+}
+#vpanchanga-view .vp-m-section .vp-collapsible-toggle > span:first-child{
+  /* keep gold-on-dark on the OUTSIDE section toggle that we didn't restyle as a button */
+}
+
+/* ============== FIX PACK v2 ============== */
+
+/* 1) Vaishnav month — large & glowing gold */
+#vpanchanga-view #vp-vaishnav-line{
+  font-size:1.35rem !important;
+  font-style:italic;
+  font-family:'EB Garamond', serif;
+  text-align:center;
+  margin-top:10px !important;
+  font-weight:600;
+  background:linear-gradient(90deg,#FFE9A8,#F5C24A 55%,#FFD27A);
+  -webkit-background-clip:text;background-clip:text;
+  -webkit-text-fill-color:transparent;
+  color:transparent;
+  text-shadow:0 0 22px rgba(245,194,74,.55);
+  filter:drop-shadow(0 0 14px rgba(245,194,74,.45));
+  letter-spacing:.02em;
+  animation: vpVaishnavGlow 3.2s ease-in-out infinite;
+}
+@keyframes vpVaishnavGlow{
+  0%,100%{filter:drop-shadow(0 0 10px rgba(245,194,74,.35));}
+  50%   {filter:drop-shadow(0 0 22px rgba(245,194,74,.75));}
+}
+
+/* 2) Do NOT turn the small "+2" anga card toggle into a giant gold button.
+      Keep it a compact violet pill. */
+#vpanchanga-view .vp-anga-card-toggle{
+  background:rgba(124,92,252,.18) !important;
+  color:#C7B3FF !important;
+  border:1px solid rgba(155,124,255,.45) !important;
+  border-radius:999px !important;
+  padding:4px 10px !important;
+  font-size:.78rem !important;
+  font-weight:700 !important;
+  letter-spacing:.04em;
+  text-transform:none !important;
+  box-shadow:none !important;
+  animation:none !important;
+}
+#vpanchanga-view .vp-anga-card-toggle::before{display:none !important;}
+#vpanchanga-view .vp-anga-card-toggle .vp-chevron-sm{color:#C7B3FF !important;}
+
+/* 3) Yoga icon — make sure emoji is readable on dark, not hidden by a violet
+      disk. Strip heavy background, keep a soft halo. */
+#vpanchanga-view .vp-anga-icon,
+#vpanchanga-view .vp-anga-card-icon,
+#vpanchanga-view .vp-anga-card .vp-anga-icon{
+  background:transparent !important;
+  box-shadow:0 0 14px rgba(155,124,255,.35);
+  filter:drop-shadow(0 0 6px rgba(245,194,74,.45));
+}
+
+/* 4) Collapsible bars overflowing the screen — constrain width and clip.
+      The big golden toggles were taking full padding + heavy box-shadow
+      and overflowing on narrow viewports. */
+#vpanchanga-view .vp-collapsible-toggle,
+#vpanchanga-view .vp-tithi-toggle,
+#vpanchanga-view .vp-cta,
+#vpanchanga-view button.vp-btn{
+  width:100% !important;
+  max-width:100% !important;
+  box-sizing:border-box !important;
+  display:flex !important;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  padding:14px 16px !important;
+}
+#vpanchanga-view .vp-m-section,
+#vpanchanga-view .vp-collapsible-section,
+#vpanchanga-view #vp-upcoming-wrap,
+#vpanchanga-view #vp-now-wrap{
+  max-width:100%;
+  box-sizing:border-box;
+  overflow:hidden;
+}
+#vpanchanga-view{overflow-x:hidden;}
+
+/* Allow toggle text to wrap instead of pushing the bar wider */
+#vpanchanga-view .vp-collapsible-toggle > span:first-child,
+#vpanchanga-view .vp-tithi-toggle > span:first-child{
+  white-space:normal;
+  text-align:left;
+  flex:1 1 auto;
+  min-width:0;
+}
+
+/* Even-out the golden collapsible bar so it fills the card edges cleanly */
+#vpanchanga-view .vp-collapsible-section,
+#vpanchanga-view #vp-now-wrap,
+#vpanchanga-view #vp-upcoming-wrap{
+  border-radius:14px !important;
+  overflow:hidden;
+}
+#vpanchanga-view .vp-collapsible-section > .vp-collapsible-toggle,
+#vpanchanga-view #vp-now-toggle,
+#vpanchanga-view #vp-upcoming-toggle{
+  border-radius:14px !important;
+  border:none !important;
+  margin:0 !important;
+  width:100% !important;
+  box-sizing:border-box !important;
+}
+/* When body is open, square the bottom so the bar joins the body */
+#vpanchanga-view .vp-collapsible-section:has(> .vp-collapsible-body.open) > .vp-collapsible-toggle,
+#vpanchanga-view #vp-now-wrap.open ~ #vp-now-toggle,
+#vpanchanga-view #vp-now-toggle.open,
+#vpanchanga-view #vp-upcoming-toggle.open{
+  border-radius:14px 14px 0 0 !important;
+}
+
+/* Same golden-bar treatment for Lunar Month (Tithi grid) & Day Boundaries */
+#vpanchanga-view #vp-tithi-toggle,
+#vpanchanga-view #vp-db-toggle{
+  border-radius:14px !important;
+  border:none !important;
+  margin:0 !important;
+  width:100% !important;
+  box-sizing:border-box !important;
+}
+#vpanchanga-view #vp-month-grid-wrap,
+#vpanchanga-view #vp-db-wrap{
+  border-radius:0 0 14px 14px !important;
+  overflow:hidden;
+}
+#vpanchanga-view #vp-tithi-toggle.open,
+#vpanchanga-view #vp-db-toggle.open{
+  border-radius:14px 14px 0 0 !important;
+}
+
+/* ── Janmo / Rashi calculator becomes a full-screen page ── */
+#vpanchanga-view #vp-horo-overlay{padding:0 !important;background:rgba(15,10,35,.85) !important;backdrop-filter:blur(6px)}
+#vpanchanga-view #vp-horo-overlay .vp-horo-modal{
+  max-width:100% !important;
+  width:100% !important;
+  height:100% !important;
+  min-height:100vh;
+  border-radius:0 !important;
+  padding:18px 18px 28px !important;
+  overflow-y:auto;
+  display:flex;flex-direction:column;
+}
+#vpanchanga-view #vp-horo-overlay .vp-cal-modal-head{
+  position:sticky;top:0;background:var(--vp-card);
+  z-index:5;padding:6px 0 10px;
+  border-bottom:1px solid var(--vp-card-edge);
+  margin-bottom:18px;
+}
+#vpanchanga-view #vp-horo-overlay .vp-cal-nav-btn{
+  width:40px;height:40px;font-size:1.4rem;
+  background:rgba(124,92,252,.14);
+}
+
+
+/* ── Lunar Month toggle: force same golden gradient as Tara/Chandra ── */
+#vpanchanga-view #vp-tithi-toggle{
+  background:linear-gradient(135deg,#F5C24A 0%, #FFE08A 50%, #C9961A 100%) !important;
+  color:#1a1100 !important;
+  border:1px solid rgba(200,150,10,.55) !important;
+}
+#vpanchanga-view #vp-tithi-toggle > span:first-child,
+#vpanchanga-view #vp-tithi-toggle .vp-chevron{
+  color:#1a1100 !important; -webkit-text-fill-color:#1a1100 !important;
+}
+
+/* ── Favorable windows / days / periods: dark-blue card, gold border,
+       black text, larger font, dynamic glowing pulse ── */
+@keyframes vpFavPulse{
+  0%,100%{
+    box-shadow:
+      0 0 0 1px rgba(245,194,74,.55),
+      0 0 18px rgba(245,194,74,.45),
+      inset 0 0 12px rgba(255,224,138,.25);
+  }
+  50%{
+    box-shadow:
+      0 0 0 2px rgba(255,224,138,.85),
+      0 0 36px rgba(245,194,74,.85),
+      inset 0 0 18px rgba(255,224,138,.45);
+  }
+}
+#vpanchanga-view .vp-best-windows{
+  background:linear-gradient(160deg,#0a1a4a 0%, #0e2566 55%, #081538 100%) !important;
+  border:2px solid #F5C24A !important;
+  border-radius:16px !important;
+  padding:14px !important;
+  animation:vpFavPulse 2.4s ease-in-out infinite;
+}
+#vpanchanga-view .vp-best-windows-head,
+#vpanchanga-view .vp-best-windows-head *{
+  color:#FFE08A !important; -webkit-text-fill-color:#FFE08A !important;
+  font-size:1.05rem !important; font-weight:800 !important;
+}
+#vpanchanga-view .vp-best-win-row{
+  background:rgba(255,224,138,.92) !important;
+  border:2px solid #F5C24A !important;
+  border-radius:12px !important;
+  padding:12px 14px !important;
+  margin:10px 0 !important;
+  animation:vpFavPulse 2.6s ease-in-out infinite;
+}
+#vpanchanga-view .vp-best-win-row *{
+  color:#000 !important; -webkit-text-fill-color:#000 !important;
+}
+#vpanchanga-view .vp-best-win-when{
+  font-size:1.05rem !important; font-weight:800 !important;
+}
+#vpanchanga-view .vp-best-win-dur,
+#vpanchanga-view .vp-best-win-arrow{
+  font-size:.95rem !important; font-weight:700 !important;
+}
+#vpanchanga-view .vp-best-win-yoga-badge{
+  background:linear-gradient(135deg,#FFE08A,#F5C24A) !important;
+  border:1.5px solid #8a5a00 !important;
+  color:#0a3a8c !important; -webkit-text-fill-color:#0a3a8c !important;
+  font-size:.95rem !important; font-weight:800 !important;
+  padding:6px 10px !important;
+}
+#vpanchanga-view .vp-best-win-yoga-badge *{
+  color:#0a3a8c !important; -webkit-text-fill-color:#0a3a8c !important;
+}
+
+/* ── Maha Yoga & Maha Dasha section ─────────────────────────────── */
+#vpanchanga-view .vp-mahasection{margin-top:14px}
+#vpanchanga-view .vp-maha-sub{
+  font-size:.95rem;font-weight:800;color:#FFE08A;
+  padding:10px 14px 6px;letter-spacing:.02em;
+}
+#vpanchanga-view .vp-mahayoga-list{
+  display:grid;gap:8px;padding:4px 14px 8px;
+}
+#vpanchanga-view .vp-mahayoga-card{
+  background:linear-gradient(160deg,#0a1a4a 0%, #0e2566 60%, #081538 100%);
+  border:2px solid #F5C24A;border-radius:12px;
+  padding:10px 12px;
+  box-shadow:0 0 14px rgba(245,194,74,.35), inset 0 0 10px rgba(255,224,138,.18);
+  animation:vpFavPulse 3s ease-in-out infinite;
+}
+#vpanchanga-view .vp-mahayoga-name{
+  font-size:1rem;font-weight:800;color:#FFE08A;
+  display:flex;align-items:center;gap:8px;margin-bottom:4px;
+}
+#vpanchanga-view .vp-mahayoga-desc{
+  font-size:.86rem;color:#E9ECF7;line-height:1.4;
+}
+#vpanchanga-view .vp-mahayoga-empty{
+  font-size:.85rem;color:#cfd3e6;padding:6px 14px;font-style:italic;
+}
+#vpanchanga-view .vp-dasha-list{
+  display:flex;flex-direction:column;gap:6px;padding:4px 14px 8px;
+}
+#vpanchanga-view .vp-dasha-row{
+  display:grid;grid-template-columns:1fr auto;gap:4px 10px;
+  padding:9px 12px;border-radius:10px;border:1px solid rgba(245,194,74,.35);
+  background:rgba(10,18,48,.7);
+}
+#vpanchanga-view .vp-dasha-row .vp-dasha-lord{
+  font-size:.95rem;color:#FFE9A8;display:flex;align-items:center;gap:8px;
+}
+#vpanchanga-view .vp-dasha-row .vp-dasha-emoji{font-size:1.1rem}
+#vpanchanga-view .vp-dasha-row .vp-dasha-when{
+  font-size:.78rem;color:#cfd3e6;grid-column:1/-1;
+}
+#vpanchanga-view .vp-dasha-row .vp-dasha-tag{
+  font-size:.72rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;
+  color:#cfd3e6;
+}
+#vpanchanga-view .vp-dasha-row.vp-dasha-active{
+  background:linear-gradient(135deg,#0a1a4a,#103380);
+  border:2px solid #FFE08A;
+  box-shadow:0 0 18px rgba(245,194,74,.6), inset 0 0 12px rgba(255,224,138,.25);
+  animation:vpFavPulse 2.4s ease-in-out infinite;
+}
+#vpanchanga-view .vp-dasha-row.vp-dasha-active .vp-dasha-tag{color:#34D6A4}
+#vpanchanga-view .vp-dasha-row.vp-dasha-past{opacity:.55}
+#vpanchanga-view .vp-maha-note{
+  font-size:.74rem;color:#a8acc0;padding:4px 14px 14px;font-style:italic;
+}

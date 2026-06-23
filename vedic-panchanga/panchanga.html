@@ -7,14 +7,23 @@
         <span class="vp-loc-dot"></span>
         <span id="vp-loc-text">Locating…</span>
       </div>
-      <button class="vp-cal-trigger" id="vp-cal-trigger" onclick="vpOpenCalendar()" aria-label="Pick a date">
+      <button class="vp-cal-trigger" id="vp-cal-trigger" onclick="vpOpenCalendar()" aria-label="Go to a Date's Panchanga">
         <span class="vp-cal-trigger-icon">📅</span>
-        <span>Pick a Date</span>
+        <span>Go to a Date's Panchnga</span>
       </button>
-      <button class="vp-cal-trigger vp-horo-trigger" id="vp-horo-trigger" onclick="vpHoroOpen()" aria-label="My Horoscope">
-        <span class="vp-cal-trigger-icon">🪐</span>
-        <span id="vp-horo-trigger-label">My Horoscope</span>
-      </button>
+
+      <!-- Janmo Tithin & Rashi — two sub-options -->
+      <div class="vp-janmo-wrap">
+        <div class="vp-janmo-label">🪐 Calculate Your Janmo Tithin &amp; Rashi</div>
+        <div class="vp-janmo-btns">
+          <button class="vp-janmo-btn vp-janmo-mine" onclick="vpHoroOpenMine()" aria-label="Your Rashi">
+            <span>🌕</span><span>Your Rashi</span>
+          </button>
+          <button class="vp-janmo-btn vp-janmo-others" onclick="vpHoroOpen()" aria-label="Others Rashi">
+            <span>👥</span><span>Others</span>
+          </button>
+        </div>
+      </div>
     </div>
 
     <!-- Clock -->
@@ -32,7 +41,7 @@
         <div class="vp-orbit-stars"></div>
       </div>
       <div class="vp-orbit-ring"></div>
-      <div class="vp-orbit-center" id="vp-orbit-center">
+      <div class="vp-orbit-center" id="vp-orbit-center" onclick="vpSelectVaar(0)" title="Rabi Vaar (Sunday)">
         <div class="vp-orbit-center-icon" id="vp-orbit-center-icon"></div>
         <div class="vp-orbit-center-label" id="vp-orbit-center-label"></div>
         <div class="vp-orbit-center-sub" id="vp-orbit-center-sub"></div>
@@ -89,7 +98,7 @@
     <div class="vp-cal-overlay" id="vp-horo-overlay" onclick="vpHoroCloseBackdrop(event)">
       <div class="vp-cal-modal vp-horo-modal" id="vp-horo-modal">
         <div class="vp-cal-modal-head">
-          <span class="vp-cal-modal-title vp-horo-modal-title">🪐 My Horoscope</span>
+          <span class="vp-cal-modal-title vp-horo-modal-title" id="vp-horo-modal-title">🪐 Janmo Tithin &amp; Rashi Calculator</span>
           <button class="vp-cal-nav-btn" onclick="vpHoroClose()" aria-label="Close">✕</button>
         </div>
 
@@ -117,11 +126,15 @@
 
         <div class="vp-cal-modal-foot">
           <button class="vp-cal-close-btn" onclick="vpHoroClose()">Cancel</button>
-          <button class="vp-cal-today-btn" onclick="vpHoroCalculate()">Calculate</button>
+          <button class="vp-horo-calc-btn" onclick="vpHoroCalculate()">✨ Calculate Rashi</button>
+        </div>
+
+        <div class="vp-horo-personal-cta">
+          <div class="vp-horo-personal-cta-text">Save your birth details to unlock <b>My Panchanga</b> — see your Janmo Tithi, personalized Tara Bala timing &amp; daily outlook. Fully optional &amp; only visible to you.</div>
+          <button class="vp-horo-save-btn" onclick="vpPersonalSave()">💾 Save &amp; Enable My Panchanga</button>
         </div>
       </div>
     </div>
-
 
     <!-- ══════════════════════════════════════════
          SELECTED DATE — Full Panchanga Horoscope
@@ -135,6 +148,7 @@
               <div class="vp-dateresult-label">Panchanga for</div>
               <div class="vp-dateresult-date" id="vp-dateresult-date"></div>
               <div class="vp-dateresult-sub" id="vp-dateresult-sub"></div>
+              <div class="vp-dateresult-hindu-month" id="vp-dateresult-hindu-month"></div>
             </div>
           </div>
           <button class="vp-dateresult-close" onclick="vpClearDateResult()" aria-label="Close">✕</button>
@@ -142,6 +156,9 @@
 
         <!-- Vaar summary strip -->
         <div id="vp-dr-vaar-strip"></div>
+
+        <!-- Tara Bala for this date (shown when birth profile saved) -->
+        <div id="vp-dr-tara-wrap" style="display:none"></div>
 
         <!-- Anga timeline cards: Tithi, Nakshatra, Yoga, Karana —
              each with Previous / Current / Next + durations -->
@@ -161,6 +178,7 @@
               <div class="vp-dateresult-label">Horoscope for</div>
               <div class="vp-dateresult-date" id="vp-horo-result-date"></div>
               <div class="vp-dateresult-sub" id="vp-horo-result-sub"></div>
+              <div class="vp-dateresult-hindu-month" id="vp-horo-result-hindu-month"></div>
             </div>
           </div>
           <button class="vp-dateresult-close" onclick="vpHoroClearResult()" aria-label="Close">✕</button>
@@ -168,16 +186,6 @@
 
         <!-- Vaar summary strip -->
         <div class="vp-dr-vaar-strip" id="vp-horo-vaar-strip"></div>
-
-        <!-- Rashi / Janma predictions (Moon sign + Nakshatra-derived) -->
-        <div id="vp-horo-predictions"></div>
-
-        <!-- Save / Forget My Horoscope -->
-        <div class="vp-horo-save-row" id="vp-horo-save-row">
-          <button class="vp-horo-save-btn" id="vp-horo-save-btn" onclick="vpHoroSaveMine()">⭐ Save as My Horoscope</button>
-          <button class="vp-horo-forget-btn" id="vp-horo-forget-btn" onclick="vpHoroForgetMine()" style="display:none">✕ Forget My Horoscope</button>
-          <div class="vp-horo-save-note" id="vp-horo-save-note">Saving lets the app personalize today's auspicious/inauspicious windows for you (Tara Bala & Chandra Bala).</div>
-        </div>
 
         <!-- Anga timeline cards: Tithi, Nakshatra, Yoga, Karana —
              each with Previous / Current / Next + durations,
@@ -197,17 +205,24 @@
     </div>
 
     <!-- ══════════════════════════════════════════
-         PANCHANGA NOW — 4 Angas in one row
-         with collapsible upcoming rows under each
+         LIVE BANNER — Right Now + Personal Score
+         Wraps both panels so they share one card.
          ══════════════════════════════════════════ -->
-    <div class="vp-now-panel" id="vp-now-panel">
-      <div class="vp-now-panel-head">
-        <div class="vp-pulse"></div>
-        <span id="vp-now-panel-title">Right Now &amp; Coming Soon</span>
+    <div class="vp-live-banner">
+      <div class="vp-now-panel" id="vp-now-panel">
+        <button class="vp-now-panel-head vp-collapsible-toggle open" id="vp-now-toggle" onclick="vpToggleRightNow()" type="button" style="width:100%;">
+          <span style="display:inline-flex;align-items:center;gap:8px;"><span class="vp-pulse"></span><span id="vp-now-panel-title">Right Now &amp; Coming Soon</span></span>
+          <span class="vp-chevron" id="vp-now-chevron">▾</span>
+        </button>
+
+        <!-- 4 Anga Cards in a row -->
+        <div class="vp-collapsible-wrap open" id="vp-now-wrap">
+          <div class="vp-anga-row-cards" id="vp-anga-row-cards"></div>
+        </div>
       </div>
 
-      <!-- 4 Anga Cards in a row -->
-      <div class="vp-anga-row-cards" id="vp-anga-row-cards"></div>
+      <!-- MY PANCHANGA scorecard attaches here when a profile is active -->
+      <div id="vp-personal-card" style="display:none"></div>
     </div>
 
     <!-- ══════════════════════════════════════════
@@ -216,11 +231,16 @@
     <div id="vp-current-muhurta-wrap"></div>
 
     <!-- ══════════════════════════════════════════
-         UPCOMING — serial order, color-coded
+         UPCOMING — serial order, color-coded, collapsible
          ══════════════════════════════════════════ -->
     <section class="vp-m-section" id="vp-upcoming-section">
-      <div class="vp-sec-head vp-sec-head-upcoming">Coming Up</div>
-      <div class="vp-upcoming-list" id="vp-upcoming-list"></div>
+      <button class="vp-collapsible-toggle open" id="vp-upcoming-toggle" onclick="vpToggleUpcoming()" type="button">
+        <span>🔮 &nbsp;Coming Up</span>
+        <span class="vp-chevron" id="vp-upcoming-chevron">▾</span>
+      </button>
+      <div class="vp-collapsible-wrap open" id="vp-upcoming-wrap">
+        <div class="vp-upcoming-list" id="vp-upcoming-list"></div>
+      </div>
     </section>
 
     <!-- Tithi grid toggle -->

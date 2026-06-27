@@ -1,141 +1,965 @@
 /* ════════════════════════════════════════════════════════════
-   style-stotram.css  v87 — Premium Golden Page, Blue Text
-   Full-page lyrics view. Title pinned at top margin.
-   Page stretches edge-to-edge (max side-to-side width).
+     style-stotram.css  v86 — transparent player buttons, even sizing
+     Frame image referenced as external file (base64 stripped).
+     Frame fills the FULL SCREEN edge-to-edge.
+     Title / nav / close overlaid on the dark frame edges.
+     Short lyrics: centred in the golden area.
+     Long  lyrics: scrolls inside the golden area; frame static.
+  ════════════════════════════════════════════════════════════ */
+
+  /* ── Full-screen modal overlay ── */
+  .lmo {
+    position: fixed; inset: 0;
+    background: #030a14;
+    z-index: 400; display: none;
+    align-items: center; justify-content: center;
+    overflow: hidden;
+  }
+  .lmo.show { display: flex; }
+  .lmo-ripple { display: none; }
+
+  /* ── Layout column — fills the overlay ── */
+  .lmd {
+    position: absolute; inset: 0;
+    /* no flex column — card-wrap and UI are all absolute */
+  }
+
+  /* ── Close button — overlaid top-right on dark frame ── */
+  .lmx {
+    position: absolute;
+    top: max(env(safe-area-inset-top), 10px); right: 10px;
+    background: rgba(4,10,30,0.70);
+    border: 1px solid rgba(255,215,0,0.50);
+    border-radius: 50%;
+    width: 34px; height: 34px;
+    color: #ffd700; font-size: 13px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    z-index: 20; font-family: 'Inter',sans-serif;
+    transition: background 0.15s;
+  }
+  .lmx:active { background: rgba(255,215,0,0.20); }
+
+  /* ── Title — immediately below Krishna's flute ── */
+  .lmt {
+    position: absolute;
+    left: 50%; transform: translateX(-50%);
+    white-space: nowrap;
+    font-family: 'Hind Siliguri','Tiro Devanagari Hindi',serif;
+    font-size: 14px; font-weight: 700;
+    color: rgba(255,215,0,0.97);
+    letter-spacing: 1.5px; text-transform: uppercase;
+    text-shadow: 0 2px 10px rgba(0,0,0,1);
+    z-index: 20;
+  }
+  /* Portrait phones (aspect < 2/3): cover → image fills HEIGHT (100dvh)
+     Flute is at ~10% from top → title below it at 10dvh               */
+  @media (max-aspect-ratio: 2/3) {
+    .lmt { top: 10dvh; }
+  }
+  /* iPad / wider (aspect > 2/3): cover → image fills WIDTH (100vw)
+     image_height = 150.25vw, image_top = 50dvh - 75.125vw
+     10% from image top = 50dvh - 75.125vw + 0.10×150.25vw = 50dvh - 60.1vw */
+  @media (min-aspect-ratio: 2/3) {
+    .lmt { top: calc(50dvh - 60.1vw); }
+  }
+
+  /* ── Verse counter — hidden to maximise frame space ── */
+  .lm-vctr { display: none; }
+
+  /* ── Card wrapper — fills the whole overlay ── */
+  .lm-card-wrap {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    padding: 0; overflow: hidden;
+  }
+
+  /* ════════════════════════════════════════════════════════════
+     THE FRAME — full-screen, square, embedded image
+     min(100vw, 100dvh) makes it fill the shorter dimension
+     so the image is always as large as possible without overflow.
+     background-size: cover fills even if screen is not square.
+  ════════════════════════════════════════════════════════════ */
+  .lm-water-card {
+    /* Size: fill the SHORTER dimension so no black bars on either axis */
+    width: 100vw;
+    height: 100dvh;
+
+    /* Embedded frame image */
+    background-image: url("./asset.png");
+    background-size: cover;
+    background-position: center center;
+    background-repeat: no-repeat;
+    background-color: #030a14;
+
+    /* Gentle float */
+    animation: none;
+
+    position: relative;
+    overflow: hidden;
+
+    /* Reset old decorative styles */
+    border: none; border-radius: 0;
+    box-shadow: 0 0 120px 30px rgba(3,10,20,0.95);
+    aspect-ratio: unset;
+  }
+  @keyframes cardFloat {
+    0%,100% { transform: translateY(0);   }
+    50%      { transform: translateY(-4px); }
+  }
+
+  /* Hide all old pseudo-elements */
+  .lm-water-card::before,
+  .lm-water-card::after              { display: none !important; }
+  .lm-water-card[data-theme]::before,
+  .lm-water-card[data-theme]::after  { display: none !important; }
+  .lm-theme-top, .lm-theme-bottom    { display: none !important; }
+
+  /* ════════════════════════════════════════════════════════════
+     GOLDEN CENTRE TEXT AREA
+     Absolutely positioned over the parchment of the frame.
+
+     Frame anatomy (% of the square image):
+       Top band (ornament circle + scrollwork): ~18 %
+       Bottom band (lotus scroll + bottom orn): ~13 %
+       Left band (conch + frame edge):          ~17 %
+       Right band (chakra + frame edge):        ~17 %
+
+     SHORT LYRICS → centred vertically via flex spacers.
+     LONG  LYRICS → scrolls; spacers compress to zero.
+  ════════════════════════════════════════════════════════════ */
+  /* ═══ GOLDEN TEXT AREA — layout depends on screen aspect ratio ═══
+     Image is 1023×1537 (aspect 0.6656 ≈ 2/3).
+
+     Portrait phones  (aspect < 2/3): image fills 100vw, height = 150.25vw
+       image_top = (100dvh - 150.25vw) / 2 = 50dvh - 75.125vw
+       top    = image_top + 18% × 150.25vw = 50dvh - 48.1vw
+       bottom = 100dvh − (image_top + 87% × 150.25vw) = 50dvh - 55.6vw
+       left/right = 18vw  (18% of image width = 18% of 100vw)
+
+     Wider screens / iPad (aspect > 2/3): image fills 100dvh, width = 66.56dvh
+       image_left = (100vw − 66.56dvh) / 2 = 50vw − 33.28dvh
+       top    = 18dvh   (18% of image height = 18% of 100dvh)
+       bottom = 13dvh
+       left   = image_left + 18% × 66.56dvh = 50vw − 21.3dvh
+       right  = 50vw − 21.3dvh  (symmetric)
+  ═══════════════════════════════════════════════════════════════ */
+  .lm-card-inner {
+    position: absolute;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    background: transparent;
+    /* padding-top guards first-line ascenders from frame border clip */
+    padding: 16px 8px 8px;
+    z-index: 2;
+  }
+  /* Portrait phones (aspect < 2/3): cover → image fills HEIGHT (100dvh)
+     New image: top border ~11%, bottom border ~12%, side borders ~9%.
+     With cover the image is wider than the screen, so side decorations
+     crop off — use small screen-edge margins instead of image-% calc.
+     top    = 11dvh
+     bottom = 12dvh
+     left/right = 5vw (side ornaments are cropped off-screen by cover) */
+  @media (max-aspect-ratio: 2/3) {
+    .lm-card-inner {
+      top:    11dvh;
+      bottom: 12dvh;
+      left:   5vw;
+      right:  5vw;
+    }
+  }
+  /* iPad / wider (aspect > 2/3): cover → image fills WIDTH (100vw)
+     image_height = 150.25vw, image_top = 50dvh - 75.125vw
+     top    = image_top + 11% × 150.25vw = 50dvh - 58.6vw
+     bottom = 100dvh − (image_top + 88% × 150.25vw) = 50dvh - 57.1vw
+     left/right = 9% of image width = 9vw                             */
+  @media (min-aspect-ratio: 2/3) {
+    .lm-card-inner {
+      top:    calc(50dvh - 58.6vw);
+      bottom: calc(50dvh - 57.1vw);
+      left:   9vw;
+      right:  9vw;
+    }
+  }
+
+  /* Spacer BEFORE lyrics — grows when there's free space,
+     compresses to 0 when content overflows (long lyrics) */
+  .lm-card-inner::before {
+    content: '';
+    display: block;
+    flex: 1 1 0;
+    min-height: 0;
+    max-height: 40%; /* don't push short content too far down */
+  }
+  /* Spacer AFTER lyrics */
+  .lm-card-inner::after {
+    content: '';
+    display: block;
+    flex: 1 1 0;
+    min-height: 0;
+    max-height: 40%;
+  }
+
+  /* Override old rule that hid ::before on themed cards */
+  .lm-water-card[data-theme] .lm-card-inner::before { display: block !important; }
+  .lm-water-card[data-theme] .lm-card-inner::after  { display: block !important; }
+
+  .lm-card-inner::-webkit-scrollbar { width: 2px; }
+  .lm-card-inner::-webkit-scrollbar-track { background: transparent; }
+  .lm-card-inner::-webkit-scrollbar-thumb {
+    background: rgba(100,55,0,0.30); border-radius: 4px;
+  }
+
+  /* ── Lyrics text — warm brown on parchment ── */
+  .lyr {
+    font-family: 'Hind Siliguri','Tiro Devanagari Hindi',serif;
+    color: #1a0800;
+    text-align: center;
+    width: 100%;
+    display: flex; flex-direction: column; align-items: center;
+    flex-shrink: 0; /* don't let the lyr itself shrink */
+  }
+  .lyr-line {
+    display: block;
+    white-space: normal;
+    overflow-wrap: break-word;
+    word-break: break-word;
+    /* 3.6vw = 14px on 390px phone, caps at 20px on large screens */
+    font-size: clamp(12px, 3.6vw, 20px);
+    line-height: 1.9;
+    width: 100%; text-align: center; color: #1a0800;
+  }
+  .lyr-prose {
+    display: block; white-space: pre-wrap;
+    overflow-wrap: break-word; word-break: break-word;
+    font-size: clamp(11px, 3.2vw, 17px);
+    line-height: 1.75; width: 100%; text-align: left; color: #1a0800;
+  }
+  .lyr-artha {
+    color: #780000 !important; font-style: italic;
+    margin: 3px 0; text-align: center !important;
+    white-space: normal; overflow-wrap: break-word; word-break: break-word;
+  }
+  .lyr-line-empty { display: block; height: 0.45em; width: 100%; }
+  .lyr-footer {
+    display: flex; align-items: center; justify-content: center;
+    gap: 8px; padding: 10px 0 2px; width: 100%;
+    opacity: 0.45; font-size: 14px; letter-spacing: 5px;
+    color: #5a2800; user-select: none; flex-shrink: 0;
+  }
+
+  /* Override any old theme text colours */
+  .lm-water-card[data-theme] .lyr-line   { color: #1a0800 !important; }
+  .lm-water-card[data-theme] .lyr-artha  { color: #780000 !important; }
+  .lm-water-card[data-theme] .lyr-footer { color: #5a2800 !important; }
+  .lm-water-card[data-theme] .lyr-prose  { color: #1a0800 !important; }
+
+  /* ── Translation toggle — pinned top-right of reader, clear of close X & Sudarshan Chakra ── */
+  .lm-translate-wrap {
+    position: absolute;
+    top: max(env(safe-area-inset-top) + 14px, 18px);
+    right: 72px;            /* leave room for close (×) button at top-right corner */
+    left: auto; bottom: auto; transform: none;
+    display: flex; align-items: center; justify-content: flex-end;
+    gap: 8px; white-space: nowrap;
+    padding: 6px 10px;
+    background: rgba(0,0,0,0.35);
+    border: 1px solid rgba(255,215,0,0.35);
+    border-radius: 999px;
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    z-index: 60;
+  }
+  .lm-toggle-label {
+    font-family: 'Hind Siliguri','Inter',sans-serif;
+    font-size: 13px; color: rgba(255,255,255,0.80);
+    letter-spacing: 0.5px; user-select: none;
+  }
+  .lm-toggle-sw {
+    position: relative; width: 44px; height: 26px;
+    border-radius: 13px; background: rgba(255,255,255,0.18);
+    border: 1.5px solid rgba(255,255,255,0.22);
+    cursor: pointer; transition: background 0.25s, border-color 0.25s;
+    padding: 0; flex-shrink: 0;
+  }
+  .lm-toggle-sw.on { background: rgba(46,204,113,0.75); border-color: rgba(46,204,113,0.9); }
+  .lm-toggle-thumb {
+    position: absolute; top: 3px; left: 3px;
+    width: 18px; height: 18px; border-radius: 50%;
+    background: #fff; box-shadow: 0 1px 4px rgba(0,0,0,0.35);
+    transition: transform 0.25s; display: block;
+  }
+  .lm-toggle-sw.on .lm-toggle-thumb { transform: translateX(18px); }
+
+  /* ── Verse dots — overlaid ── */
+  .lm-dots {
+    position: absolute;
+    bottom: max(env(safe-area-inset-bottom) + 100px, 118px);
+    left: 50%; transform: translateX(-50%);
+    display: flex; justify-content: center; gap: 6px;
+    flex-wrap: wrap; z-index: 20;
+  }
+  .lm-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: rgba(255,255,255,0.20); cursor: pointer;
+    transition: all 0.2s; flex-shrink: 0;
+  }
+  .lm-dot.active { background: rgba(255,215,0,0.85); transform: scale(1.4); }
+
+  /* ── Nav arrows — overlaid at bottom ── */
+  .lm-nav {
+    position: absolute;
+    bottom: max(env(safe-area-inset-bottom), 10px);
+    left: 50%; transform: translateX(-50%);
+    display: flex; gap: 52px; z-index: 20;
+  }
+  .lm-nav-btn {
+    width: auto; height: auto; border: none; background: transparent;
+    color: rgba(255,215,0,0.90);
+    font-size: 28px; padding: 6px 16px; line-height: 1;
+    border-radius: 0; box-shadow: none; backdrop-filter: none;
+    text-shadow: 0 2px 10px rgba(0,0,0,0.8);
+    transition: opacity 0.15s, transform 0.15s, color 0.15s;
+    cursor: pointer;
+  }
+  .lm-nav-btn:active { background: transparent; transform: scale(0.85); color: #fff; }
+  .lm-nav-btn:disabled { opacity: 0.20; cursor: default; }
+
+  /* ── Slide animations ── */
+  .lyr-slide-enter-left  { animation: slideInLeft  0.22s ease; }
+  .lyr-slide-enter-right { animation: slideInRight 0.22s ease; }
+  @keyframes slideInLeft  { from{opacity:0;transform:translateX(36px)}  to{opacity:1;transform:translateX(0)} }
+  @keyframes slideInRight { from{opacity:0;transform:translateX(-36px)} to{opacity:1;transform:translateX(0)} }
+  
+  /* ── HCJ audio player — pin to bottom of overlay
+       TRANSPARENT so the gada & padma symbols on the frame stay visible ── */
+  #hcj-player-wrap {
+    position: absolute !important;
+    left: 0; right: 0;
+    bottom: 0;
+    top: auto !important;
+    margin: 0 !important;
+    padding: 8px 10px calc(8px + env(safe-area-inset-bottom, 0px)) !important;
+    background: transparent !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    border-top: none !important;
+    box-shadow: none !important;
+    z-index: 25;
+  }
+  #hcj-player-wrap .hcj-prog-row {
+    max-width: 520px;
+    margin: 0 auto 6px;
+  }
+  #hcj-player-wrap .hcj-player {
+    max-width: 520px;
+    margin: 0 auto;
+    display: flex !important;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    flex-wrap: nowrap;
+  }
+
+  /* ── Player buttons: transparent pill, gada/padma visible through them ── */
+  #hcj-player-wrap button,
+  #hcj-player-wrap .hcj-btn,
+  #hcj-player-wrap select,
+  #hcj-player-wrap input[type="number"],
+  #hcj-player-wrap input[type="text"] {
+    background: rgba(0,0,0,0.18) !important;
+    border: 1px solid rgba(255,215,0,0.35) !important;
+    color: rgba(255,215,0,0.92) !important;
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
+    box-shadow: none !important;
+    text-shadow: 0 1px 4px rgba(0,0,0,0.7);
+    transition: background 0.15s, transform 0.12s;
+  }
+  #hcj-player-wrap button:active,
+  #hcj-player-wrap .hcj-btn:active {
+    /* darker transparent on press — not colourful */
+    background: rgba(0,0,0,0.45) !important;
+    color: rgba(255,215,0,0.95) !important;
+    transform: scale(0.94);
+  }
+  #hcj-player-wrap button:hover,
+  #hcj-player-wrap .hcj-btn:hover {
+    background: rgba(0,0,0,0.30) !important;
+  }
+  #hcj-player-wrap button:disabled {
+    opacity: 0.35;
+  }
+
+  /* ── Even sizing: stop the verse-entry input from being giant
+       while the other buttons stay congested ── */
+  #hcj-player-wrap .hcj-player > * {
+    flex: 0 0 auto;
+    height: 36px;
+    min-width: 36px;
+    padding: 0 10px;
+    font-size: 14px;
+    line-height: 1;
+    border-radius: 10px;
+    box-sizing: border-box;
+  }
+  /* The verse-entry field was overflowing — clamp it to a sensible width */
+  #hcj-player-wrap input[type="number"],
+  #hcj-player-wrap input[type="text"],
+  #hcj-player-wrap select,
+  #hcj-player-wrap .hcj-verse-input,
+  #hcj-player-wrap .hcj-verse,
+  #hcj-player-wrap .hcj-jump {
+    width: 56px !important;
+    max-width: 64px !important;
+    min-width: 0 !important;
+    text-align: center;
+    padding: 0 6px !important;
+    -moz-appearance: textfield;
+  }
+  #hcj-player-wrap input::-webkit-outer-spin-button,
+  #hcj-player-wrap input::-webkit-inner-spin-button {
+    -webkit-appearance: none; margin: 0;
+  }
+
+  /* Progress bar stays subtle on the transparent strip */
+  #hcj-player-wrap .hcj-prog-row,
+  #hcj-player-wrap progress,
+  #hcj-player-wrap input[type="range"] {
+    filter: drop-shadow(0 1px 3px rgba(0,0,0,0.6));
+  }
+
+  /* ════════════════════════════════════════════════════════════
+     ANDROID / TALL-PHONE FRAME OVERRIDE
+     Default frame image is 1023×1537 (aspect 0.6656 ≈ 2/3) — perfect
+     for iPad. On tall phones (e.g. 9:19.5 Android, aspect ≈ 0.46)
+     background-size: cover crops the side ornaments off-screen.
+     Swap in a taller frame (578×1280, aspect 0.4516 ≈ 9:20) that
+     matches a tall phone's aspect ratio so nothing important is cut.
+  ════════════════════════════════════════════════════════════ */
+  @media (max-aspect-ratio: 3/5) {
+    .lm-water-card {
+      background-image: url("./asset.jpg");
+    }
+    /* New image frame anatomy (% of 578×1280):
+         top band:    ~12%
+         bottom band: ~10%
+         left/right:  ~4% (slim side bezels)
+       Image aspect 0.4516 — on a phone of aspect ~0.46, cover fills
+       width (100vw) and image_height ≈ 100vw / 0.4516 = 221.4vw.
+       image_top = (100dvh - 221.4vw) / 2 = 50dvh - 110.7vw
+         top    = image_top + 12% × 221.4vw = 50dvh - 84.1vw
+         bottom = 100dvh − (image_top + 90% × 221.4vw) = 50dvh - 88.6vw
+         left/right = 4% of 100vw = 4vw                              */
+    .lm-card-inner {
+      top:    calc(50dvh - 84.1vw);
+      bottom: calc(50dvh - 88.6vw);
+      left:   4vw;
+      right:  4vw;
+    }
+  }
+
+
+/* ════════════════════════════════════════════════════════════
+   v87  (2026-05-25) — merged from stotram-patch.css
+   • Stronger press feedback on every HCJ audio-player button
+     (so you can SEE which one you tapped: gold flip + scale + ring).
+   • Narrow-screen layout for the HCJ row: smaller buttons, tighter
+     gap, smaller verse-seek input, horizontal scroll fallback so the
+     right-side  →  arrow is always reachable on Android phones.
+   • Text-size pill restyled for step labels (T 6/10 etc.).
    ════════════════════════════════════════════════════════════ */
 
-/* ── Full-screen modal overlay ── */
-.lmo {
-  position: fixed; inset: 0;
-  background: #0a0600;
-  z-index: 400; display: none;
-  align-items: stretch; justify-content: stretch;
-  overflow: hidden;
-}
-.lmo.show { display: flex; }
-.lmo-ripple { display: none; }
-
-/* ── Layout column — fills the overlay edge-to-edge ── */
-.lmd {
-  position: absolute; inset: 0;
-  width: 100vw; height: 100vh;
-  display: flex; flex-direction: column;
+/* Frame: always show full image, never crop */
+.lm-water-card {
+  background-size:     contain !important;
+  background-position: center center !important;
 }
 
-/* ── Premium Golden Page (the lyrics surface) ── */
-.lmc-wrap {
-  position: absolute; inset: 0;
-  width: 100%; height: 100%;
-  background:
-    radial-gradient(ellipse at top, #fff4c2 0%, transparent 55%),
-    radial-gradient(ellipse at bottom, #d4a017 0%, transparent 60%),
-    linear-gradient(135deg, #f7d774 0%, #e6b422 35%, #d4a017 65%, #b8860b 100%);
-  box-shadow:
-    inset 0 0 0 6px rgba(255, 235, 150, 0.55),
-    inset 0 0 0 10px rgba(120, 80, 0, 0.45),
-    inset 0 0 80px rgba(140, 90, 10, 0.35);
-  overflow: hidden;
+/* Portrait phones (aspect < 2/3) */
+@media (max-aspect-ratio: 2/3) {
+  .lmt { top: calc(50dvh - 60vw); }
+  .lm-card-inner {
+    top:    calc(50dvh - 58.5vw);
+    bottom: calc(50dvh - 57vw);
+    left:   9vw;
+    right:  9vw;
+  }
+  .lm-dots {
+    bottom: max(calc(50dvh - 68vw), calc(env(safe-area-inset-bottom) + 6px));
+  }
+  .lm-translate-wrap {
+    top: max(env(safe-area-inset-top) + 10px, 14px);
+    right: 60px;
+    bottom: auto; left: auto; transform: none;
+  }
+  .lm-nav {
+    bottom: max(calc(50dvh - 75vw), env(safe-area-inset-bottom));
+  }
 }
 
-/* Subtle gold-leaf shimmer texture */
-.lmc-wrap::before {
-  content: "";
-  position: absolute; inset: 0;
-  background:
-    repeating-linear-gradient(45deg,
-      rgba(255,255,255,0.04) 0 2px,
-      transparent 2px 6px),
-    radial-gradient(circle at 20% 30%, rgba(255,255,255,0.18), transparent 40%),
-    radial-gradient(circle at 80% 70%, rgba(255,200,80,0.18), transparent 40%);
+/* iPad / desktop (aspect >= 2/3) */
+@media (min-aspect-ratio: 2/3) {
+  .lmt { top: 10dvh; }
+  .lm-card-inner {
+    top:    11dvh;
+    bottom: 12dvh;
+    left:   calc(50vw - 27.33dvh);
+    right:  calc(50vw - 27.33dvh);
+  }
+  .lm-dots {
+    bottom: max(calc(env(safe-area-inset-bottom) + 100px), 118px);
+  }
+  .lm-translate-wrap {
+    top: max(env(safe-area-inset-top) + 14px, 18px);
+    right: 80px;
+    bottom: auto; left: auto; transform: none;
+  }
+  .lm-nav {
+    bottom: max(env(safe-area-inset-bottom), 10px);
+  }
+}
+
+/* Adaptive font-size variable used by the JS sizer */
+.lyr { --lyr-fs: clamp(12px, 3.6vw, 20px); }
+.lyr-line { font-size: var(--lyr-fs) !important; }
+
+/* Scroll fixes */
+.lm-card-inner {
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+}
+#lmo .lm-water-card {
+  animation: none !important;
+  transform: none !important;
+  will-change: auto !important;
+}
+/* ── Scroll container ────────────────────────────────────────
+   IMPORTANT: use flex (NOT block) and center the lyric child via
+   `margin: auto`. This is the only centering technique that lets
+   overflowing content remain fully reachable in BOTH directions
+   on iOS Safari and Android Chrome.
+
+   Why the previous version failed:
+     • `display: block` + `#lmo .lyr { min-height:100%; justify-content:center }`
+       → on iPad the centered flex child snapped scroll back to the
+         middle every time the finger lifted.
+     • `contain: layout paint` on the scroller killed iOS momentum
+       scrolling and on Android made the scroller ignore short drags. */
+#lmo .lm-card-inner {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
+  justify-content: flex-start !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  touch-action: pan-y !important;
+  overscroll-behavior-y: contain !important;
+  -webkit-overflow-scrolling: touch !important;
+  overflow-anchor: none !important;
+  scroll-behavior: auto !important;
+  /* contain: layout paint — REMOVED; broke momentum scroll on iOS */
+}
+#lmo .lm-card-inner::before,
+#lmo .lm-card-inner::after {
+  content: none !important;
+  display: none !important;
+}
+#lmo .lyr {
+  /* margin:auto centers when content is shorter than the scroller,
+     and packs naturally at the top when content overflows — so the
+     full text is reachable by dragging in either direction. */
+  margin: auto !important;
+  width: 100%;
+  flex-shrink: 0 !important;
+  min-height: 0 !important;
+  justify-content: flex-start !important;
+  transform: none !important;
+  backface-visibility: visible !important;
+}
+#lmo .lyr-slide-enter-left,
+#lmo .lyr-slide-enter-right {
+  animation: none !important;
+}
+
+/* ── HCJ audio-player — fit & feedback fixes ─────────────── */
+#hcj-player-wrap {
+  position: absolute !important;
+  bottom:   0        !important;
+  left:     0        !important;
+  right:    0        !important;
+  top:      auto     !important;
+}
+
+/* Center-justify, tighter gap, horizontal scroll fallback so the
+   right-side → arrow can never get clipped on narrow Android. */
+#hcj-player-wrap .hcj-player {
+  justify-content: center !important;
+  gap: 4px !important;
+  flex-wrap: nowrap !important;
+  overflow-x: auto !important;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  padding: 0 4px;
+}
+#hcj-player-wrap .hcj-player::-webkit-scrollbar { display: none; }
+
+/* Compact buttons on phones — arrows always visible */
+@media (max-width: 480px) {
+  #hcj-player-wrap .hcj-player > * {
+    height: 34px !important;
+    min-width: 34px !important;
+    padding: 0 6px !important;
+    font-size: 13px !important;
+    border-radius: 9px !important;
+  }
+  #hcj-player-wrap input[type="number"],
+  #hcj-player-wrap .hcj-seek-input {
+    width: 42px !important;
+    max-width: 46px !important;
+    padding: 0 2px !important;
+  }
+  #hcj-player-wrap .hcj-seek-total {
+    font-size: 11px !important;
+    padding: 0 2px !important;
+  }
+  #hcj-prev-btn,
+  #hcj-next-btn {
+    font-size: 18px !important;
+    font-weight: 700 !important;
+    color: #FFD700 !important;
+    min-width: 38px !important;
+    flex: 0 0 38px !important;
+  }
+}
+
+/* Tiny-phone (≤360px) — one notch smaller */
+@media (max-width: 360px) {
+  #hcj-player-wrap .hcj-player > * {
+    height: 32px !important;
+    min-width: 30px !important;
+    padding: 0 4px !important;
+    font-size: 12px !important;
+  }
+  #hcj-player-wrap input[type="number"],
+  #hcj-player-wrap .hcj-seek-input {
+    width: 36px !important;
+    max-width: 38px !important;
+  }
+}
+
+/* STRONG press feedback — thick golden border + glow (no yellow fill) */
+#hcj-player-wrap button {
+  border: 2px solid transparent !important;
+  transition: border-color 0.08s ease,
+              box-shadow   0.10s ease,
+              transform    0.10s ease !important;
+}
+#hcj-player-wrap button:active,
+#hcj-player-wrap button.hcj-pressed,
+#hcj-player-wrap button:focus-visible {
+  border: 4px solid #FFD700 !important;
+  box-shadow: 0 0 0 2px rgba(255, 215, 0, 0.55),
+              0 0 16px  rgba(255, 215, 0, 0.65) !important;
+  transform: scale(0.96) !important;
+  outline: none !important;
+}
+
+/* Dimmed = currently unavailable */
+.hcj-btn-dim {
+  opacity: 0.32 !important;
+  pointer-events: none;
+  filter: grayscale(0.4);
+}
+
+/* Pause button retains its teal tint when active */
+.hcj-pause-btn {
+  background: linear-gradient(180deg, #103a38 0%, #071f1e 100%) !important;
+  border-color: rgba(80,220,200,0.22) !important;
+  color: #7af0e0 !important;
+}
+.hcj-pause-btn:hover {
+  background: linear-gradient(180deg, #165250 0%, #0c2e2d 100%) !important;
+}
+.hcj-pause-btn.hcj-btn-dim {
+  background: linear-gradient(180deg, #0F2350 0%, #081639 100%) !important;
+  border-color: rgba(120,170,255,0.18) !important;
+  color: #cfe1ff !important;
+}
+
+/* Mode buttons (loop / continue) — show active selection clearly.
+   When ON: solid golden fill + dark icon + glow. Stays until toggled OFF. */
+#hcj-player-wrap .hcj-mode-btn.hcj-mode-active,
+#hcj-player-wrap .hcj-mode-btn.hcj-mode-active:hover,
+#hcj-player-wrap .hcj-mode-btn.hcj-mode-active:focus,
+#hcj-player-wrap .hcj-mode-btn.hcj-mode-active:focus-visible {
+  background: linear-gradient(180deg, #FFE066 0%, #FFC300 55%, #E6A700 100%) !important;
+  border: 2px solid #FFD700 !important;
+  color: #1a1200 !important;
+  text-shadow: none !important;
+  box-shadow: 0 0 0 2px rgba(255, 215, 0, 0.55),
+              0 0 18px rgba(255, 215, 0, 0.75),
+              inset 0 1px 0 rgba(255, 255, 255, 0.55) !important;
+  outline: none !important;
+  transform: none !important;
+}
+/* When the active mode button is pressed again (to toggle OFF),
+   keep the golden fill visible during the press instead of flashing. */
+#hcj-player-wrap .hcj-mode-btn.hcj-mode-active:active {
+  background: linear-gradient(180deg, #FFD24D 0%, #E6A700 100%) !important;
+  border: 2px solid #FFD700 !important;
+  color: #1a1200 !important;
+  transform: scale(0.96) !important;
+}
+
+/* ── Text-size pill  #lyr-fs-ctrl  (right edge of stotram modal, vertical) ── */
+#lyr-fs-ctrl {
+  position:  absolute;
+  top:       50%;
+  right:     max(env(safe-area-inset-right, 0px) + 6px, 8px);
+  transform: translateY(-50%);
+  z-index:   30;
+  display:   flex;
+  flex-direction: column;
+  align-items: center;
+  gap:       2px;
+
+  background:          transparent;
+  backdrop-filter:     none;
+  -webkit-backdrop-filter: none;
+
+  border:        none;
+  border-radius: 24px;
+  padding:       2px 0;
+
+  white-space:    nowrap;
+  box-shadow:     none;
+  touch-action:   manipulation;
+  user-select:    none;
   pointer-events: none;
 }
 
-/* ── Close button ── */
-.lmx {
-  position: absolute;
-  top: max(env(safe-area-inset-top), 14px); right: 14px;
-  background: rgba(10, 30, 80, 0.85);
-  border: 1.5px solid #ffd700;
-  border-radius: 50%;
-  width: 38px; height: 38px;
-  color: #ffd700; font-size: 15px; cursor: pointer;
-  display: flex; align-items: center; justify-content: center;
-  z-index: 30; font-family: 'Inter', sans-serif;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.4);
-  transition: transform 0.15s, background 0.15s;
+#lyr-fs-ctrl button {
+  pointer-events: auto;
+  background:     rgba(10, 8, 26, 0.55);
+  border:         1px solid rgba(255, 255, 255, 0.12);
+  border-radius:  50%;
+  color:          #fff;
+  font-size:      14px;
+  font-weight:    700;
+  font-family:    'Inter', system-ui, sans-serif;
+  line-height:    1;
+  padding:        0;
+  width:          30px;
+  height:         30px;
+  min-width:      30px;
+  display:        inline-flex;
+  align-items:    center;
+  justify-content:center;
+  cursor:         pointer;
+  -webkit-tap-highlight-color: transparent;
+  text-shadow:    0 1px 2px rgba(0,0,0,0.6);
+  box-shadow:     0 1px 4px rgba(0,0,0,0.35);
+  transition:     background 0.13s, color 0.13s, transform 0.10s;
 }
-.lmx:hover { transform: scale(1.05); }
-.lmx:active { background: rgba(255,215,0,0.25); }
-
-/* ── Title — at top margin of the display, centred ── */
-.lmt {
-  position: absolute;
-  top: max(env(safe-area-inset-top), 18px);
-  left: 50%; transform: translateX(-50%);
-  z-index: 25;
-  max-width: calc(100vw - 120px);
-  text-align: center;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-  font-family: 'Tiro Devanagari Hindi', 'Hind Siliguri', 'Cinzel', serif;
-  font-size: clamp(18px, 3.2vw, 30px);
+#lyr-fs-ctrl button:active {
+  background: rgba(255, 215, 0, 0.9);
+  color:      #1a0d00;
+  transform:  scale(0.90);
+}
+#lyr-fs-label {
+  color:       #fff;
+  font-size:   11px;
   font-weight: 700;
-  color: #0b2a6b;
-  letter-spacing: 2px;
-  text-transform: uppercase;
-  text-shadow:
-    0 1px 0 rgba(255, 245, 200, 0.9),
-    0 2px 6px rgba(120, 80, 0, 0.35);
-  padding: 6px 18px;
-  border-bottom: 2px solid rgba(11, 42, 107, 0.35);
+  min-width:   34px;
+  text-align:  center;
+  font-family: 'Inter', system-ui, sans-serif;
+  pointer-events: none;
+  padding:     2px 4px;
+  letter-spacing: 0.2px;
+  background:  rgba(10, 8, 26, 0.55);
+  border-radius: 10px;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.6);
+}
+#lyr-fs-down,
+#lyr-fs-up {
+  font-size:   16px;
+  font-weight: 700;
+}
+#lyr-fs-pause {
+  color:       #60C4FF !important;
+  font-size:   13px !important;
+  font-weight: 400 !important;
+}
+/* On wide screens (iPad/desktop, aspect ≥ 2/3) the card inner has
+   right: calc(50vw − 27.33dvh). Shift the control inward so it sits
+   on the golden parchment rather than the dark frame border. */
+@media (min-aspect-ratio: 2/3) {
+  #lyr-fs-ctrl {
+    right: calc(50vw - 27.33dvh + 4px);
+  }
 }
 
-/* ── Lyrics card — fills the full width side-to-side ── */
-.lmc {
+/* ═══════════════════════════════════════════════════════════
+   SECTIONED-STOTRAM PICKER (svb, blv, …)
+   Styles for the section-picker grid shown when opening a
+   stotram that has numbered sub-sections. Logic in stotrams.js.
+   ═══════════════════════════════════════════════════════════ */
+
+@keyframes stsGlowPulse {
+  0%,100% {
+    box-shadow: 0 0 6px 1px var(--gc, #ffd700),
+                inset 0 0 8px rgba(255,215,0,0.06);
+    border-color: rgba(255,215,0,0.35);
+  }
+  50% {
+    box-shadow: 0 0 18px 4px var(--gc, #ffd700),
+                inset 0 0 16px rgba(255,215,0,0.13);
+    border-color: rgba(255,215,0,0.75);
+  }
+}
+@keyframes stsColorShift {
+  0%   { --gc: #ffd700; color: #ffd700; }
+  20%  { --gc: #ff9d00; color: #ffb830; }
+  40%  { --gc: #ff6bff; color: #ffaaff; }
+  60%  { --gc: #00e5ff; color: #80f0ff; }
+  80%  { --gc: #7dff6b; color: #b8ffb0; }
+  100% { --gc: #ffd700; color: #ffd700; }
+}
+@keyframes stsTitleShimmer {
+  0%,100% { background-position: -200% center; }
+  100%    { background-position:  200% center; }
+}
+@keyframes stsFadeUp {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Container */
+.sts-picker {
   position: absolute;
-  top: clamp(70px, 10vh, 110px);
-  left: 0; right: 0; bottom: 0;
-  width: 100%;
-  padding: 24px clamp(16px, 5vw, 64px) max(env(safe-area-inset-bottom), 24px);
+  inset: 0;
   overflow-y: auto;
-  overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
-  scrollbar-width: thin;
-  scrollbar-color: #0b2a6b transparent;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 48px 14px 28px;
+  box-sizing: border-box;
 }
-.lmc::-webkit-scrollbar { width: 8px; }
-.lmc::-webkit-scrollbar-thumb {
-  background: linear-gradient(#0b2a6b, #1e3a8a);
-  border-radius: 4px;
-}
+.sts-picker.sts-wide { padding-left: 24px; padding-right: 24px; }
 
-/* ── Lyrics text — blue, readable, centred, generous line gap ── */
-.lml {
-  font-family: 'Tiro Devanagari Hindi', 'Hind Siliguri', Georgia, serif;
-  font-size: clamp(19px, 2.7vw, 26px);
-  line-height: 2.4;
-  color: #0b2a6b;
+/* Shimmering title */
+.sts-picker-title {
+  font-family: "Hind Siliguri", serif;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 3px;
+  margin-bottom: 6px;
   text-align: center;
+  background: linear-gradient(90deg,
+    #ffd700 0%, #fff8dc 30%, #ffaa00 50%, #fff8dc 70%, #ffd700 100%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: stsTitleShimmer 3s linear infinite;
+}
+.sts-picker.sts-wide .sts-picker-title { font-size: 22px; }
+
+.sts-picker-subtitle {
+  font-family: "Hind Siliguri", serif;
+  font-size: 11px;
+  color: rgba(255,215,0,0.50);
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  margin-bottom: 18px;
+  text-align: center;
+}
+.sts-picker.sts-wide .sts-picker-subtitle { font-size: 12px; }
+
+/* Two-column grid */
+.sts-picker-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-auto-flow: column;
+  gap: 10px;
+  width: 100%;
+  max-width: 600px;
+}
+.sts-picker.sts-wide .sts-picker-grid {
+  gap: 12px;
+  max-width: 860px;
+}
+
+/* Buttons */
+.sts-btn {
+  background: rgba(0,0,0,0.45);
+  border: 1px solid rgba(255,215,0,0.35);
+  border-radius: 13px;
+  padding: 13px 12px;
+  color: #ffd700;
+  font-family: "Hind Siliguri", serif;
+  font-size: 14px;
+  text-align: left;
+  cursor: pointer;
+  line-height: 1.45;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  width: 100%;
+  box-sizing: border-box;
+  transition: transform 0.1s, filter 0.1s;
+  -webkit-tap-highlight-color: transparent;
+  animation:
+    stsGlowPulse var(--pd, 3s) ease-in-out infinite,
+    stsColorShift var(--cd, 9s) ease-in-out infinite,
+    stsFadeUp 0.4s ease both;
+  animation-delay: var(--ad, 0s), var(--od, 0s), var(--fd, 0s);
+}
+.sts-picker.sts-wide .sts-btn {
+  font-size: 16px;
+  padding: 16px 14px;
+}
+.sts-btn:active {
+  transform: scale(0.96);
+  filter: brightness(1.3);
+}
+.sts-btn-num {
+  opacity: 0.38;
+  font-size: 11px;
+  min-width: 16px;
+  flex-shrink: 0;
   font-weight: 600;
-  letter-spacing: 0.3px;
-  text-shadow: 0 1px 0 rgba(255, 245, 200, 0.55);
-  max-width: 1100px;
-  margin: 0 auto;
-  white-space: pre-wrap;
-  word-break: break-word;
+  letter-spacing: 0.5px;
+}
+.sts-btn-name { display: inline-block; }
+
+/* Back-to-sections button */
+.sts-back-btn {
+  position: absolute;
+  top: max(env(safe-area-inset-top), 10px);
+  left: 10px;
+  background: rgba(4,10,30,0.70);
+  border: 1px solid rgba(255,215,0,0.50);
+  border-radius: 999px;
+  padding: 6px 12px;
+  color: #ffd700;
+  font-size: 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  z-index: 20;
+  font-family: "Hind Siliguri", sans-serif;
 }
 
-.lml p { margin: 0 0 1.4em; }
-.lml strong, .lml b { color: #07194a; font-weight: 700; }
-
-/* Verse separators */
-.lml hr {
-  border: none;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(11,42,107,0.45), transparent);
-  margin: 1.6em auto;
-  max-width: 60%;
+/* Back button inside picker (not absolute) */
+.sts-picker .sts-back-btn {
+  position: static;
+  margin-bottom: 8px;
+  align-self: flex-start;
 }
-
-/* Nav arrows removed — player section in lower part handles navigation */
-.lmn { display: none !important; }
-

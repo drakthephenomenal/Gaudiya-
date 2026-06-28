@@ -50,18 +50,18 @@
     letter-spacing: 1.5px; text-transform: uppercase;
     text-shadow: 0 2px 10px rgba(0,0,0,1);
     z-index: 20;
+    height: 34px;
+    line-height: 34px;
+    display: flex; align-items: center;
   }
-  /* Portrait phones (aspect < 2/3): cover → image fills HEIGHT (100dvh)
-     Flute is at ~10% from top → title below it at 10dvh               */
+  /* Align title vertically with the close (×) button on the same horizontal line */
   @media (max-aspect-ratio: 2/3) {
-    .lmt { top: calc(env(safe-area-inset-top, 0px) + 2px); }
+    .lmt { top: max(env(safe-area-inset-top, 0px), 10px); }
   }
-  /* iPad / wider (aspect > 2/3): cover → image fills WIDTH (100vw)
-     image_height = 150.25vw, image_top = 50dvh - 75.125vw
-     10% from image top = 50dvh - 75.125vw + 0.10×150.25vw = 50dvh - 60.1vw */
   @media (min-aspect-ratio: 2/3) {
-    .lmt { top: calc(env(safe-area-inset-top, 0px) + 2px); }
+    .lmt { top: max(env(safe-area-inset-top, 0px), 10px); }
   }
+
 
   /* ── Verse counter — hidden to maximise frame space ── */
   .lm-vctr { display: none; }
@@ -153,7 +153,8 @@
     -webkit-overflow-scrolling: touch;
     background: transparent;
     /* padding-top guards first-line ascenders from frame border clip */
-    padding: 12px 2px 8px;
+    padding: 8px 0px 8px;
+
     z-index: 2;
   }
   /* Portrait phones (aspect < 2/3): cover → image fills HEIGHT (100dvh)
@@ -165,25 +166,21 @@
      left/right = 5vw (side ornaments are cropped off-screen by cover) */
   @media (max-aspect-ratio: 2/3) {
     .lm-card-inner {
-      top:    calc(env(safe-area-inset-top, 0px) + 36px);
+      top:    calc(env(safe-area-inset-top, 0px) + 48px);
       bottom: calc(env(safe-area-inset-bottom, 0px) + 48px);
-      left:   2px;
-      right:  2px;
+      left:   0px;
+      right:  0px;
     }
   }
-  /* iPad / wider (aspect > 2/3): cover → image fills WIDTH (100vw)
-     image_height = 150.25vw, image_top = 50dvh - 75.125vw
-     top    = image_top + 11% × 150.25vw = 50dvh - 58.6vw
-     bottom = 100dvh − (image_top + 88% × 150.25vw) = 50dvh - 57.1vw
-     left/right = 9% of image width = 9vw                             */
   @media (min-aspect-ratio: 2/3) {
     .lm-card-inner {
-      top:    calc(env(safe-area-inset-top, 0px) + 36px);
+      top:    calc(env(safe-area-inset-top, 0px) + 48px);
       bottom: calc(env(safe-area-inset-bottom, 0px) + 48px);
-      left:   2px;
-      right:  2px;
+      left:   0px;
+      right:  0px;
     }
   }
+
 
   /* Spacer BEFORE lyrics — grows when there's free space,
      compresses to 0 when content overflows (long lyrics) */
@@ -719,7 +716,8 @@
 #lyr-fs-ctrl {
   position:  absolute;
   top:       50%;
-  right:     max(env(safe-area-inset-right, 0px) + 6px, 8px);
+  right:     max(env(safe-area-inset-right, 0px) + 1px, 2px);
+
   transform: translateY(-50%);
   z-index:   30;
   display:   flex;

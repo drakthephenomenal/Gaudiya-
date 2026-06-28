@@ -54,13 +54,13 @@
   /* Portrait phones (aspect < 2/3): cover → image fills HEIGHT (100dvh)
      Flute is at ~10% from top → title below it at 10dvh               */
   @media (max-aspect-ratio: 2/3) {
-    .lmt { top: 10dvh; }
+    .lmt { top: calc(env(safe-area-inset-top, 0px) + 8px); }
   }
   /* iPad / wider (aspect > 2/3): cover → image fills WIDTH (100vw)
      image_height = 150.25vw, image_top = 50dvh - 75.125vw
      10% from image top = 50dvh - 75.125vw + 0.10×150.25vw = 50dvh - 60.1vw */
   @media (min-aspect-ratio: 2/3) {
-    .lmt { top: calc(50dvh - 60.1vw); }
+    .lmt { top: calc(env(safe-area-inset-top, 0px) + 8px); }
   }
 
   /* ── Verse counter — hidden to maximise frame space ── */
@@ -165,10 +165,10 @@
      left/right = 5vw (side ornaments are cropped off-screen by cover) */
   @media (max-aspect-ratio: 2/3) {
     .lm-card-inner {
-      top:    11dvh;
-      bottom: 12dvh;
-      left:   5vw;
-      right:  5vw;
+      top:    calc(env(safe-area-inset-top, 0px) + 40px);
+      bottom: calc(env(safe-area-inset-bottom, 0px) + 48px);
+      left:   8px;
+      right:  8px;
     }
   }
   /* iPad / wider (aspect > 2/3): cover → image fills WIDTH (100vw)
@@ -178,10 +178,10 @@
      left/right = 9% of image width = 9vw                             */
   @media (min-aspect-ratio: 2/3) {
     .lm-card-inner {
-      top:    calc(50dvh - 58.6vw);
-      bottom: calc(50dvh - 57.1vw);
-      left:   9vw;
-      right:  9vw;
+      top:    calc(env(safe-area-inset-top, 0px) + 40px);
+      bottom: calc(env(safe-area-inset-bottom, 0px) + 48px);
+      left:   12px;
+      right:  12px;
     }
   }
 

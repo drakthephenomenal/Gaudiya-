@@ -85,11 +85,11 @@
     height: 100dvh;
 
     /* Embedded frame image */
-    background-image: url("./asset.png");
+    background-image: none;
     background-size: cover;
     background-position: center center;
     background-repeat: no-repeat;
-    background-color: #030a14;
+    background-color: #ffffff;
 
     /* Gentle float */
     animation: none;
@@ -216,7 +216,7 @@
   /* ── Lyrics text — warm brown on parchment ── */
   .lyr {
     font-family: 'Hind Siliguri','Tiro Devanagari Hindi',serif;
-    color: #1a0800;
+    color: #000000;
     text-align: center;
     width: 100%;
     display: flex; flex-direction: column; align-items: center;
@@ -230,16 +230,16 @@
     /* 3.6vw = 14px on 390px phone, caps at 20px on large screens */
     font-size: clamp(12px, 3.6vw, 20px);
     line-height: 1.9;
-    width: 100%; text-align: center; color: #1a0800;
+    width: 100%; text-align: center; color: #000000;
   }
   .lyr-prose {
     display: block; white-space: pre-wrap;
     overflow-wrap: break-word; word-break: break-word;
     font-size: clamp(11px, 3.2vw, 17px);
-    line-height: 1.75; width: 100%; text-align: left; color: #1a0800;
+    line-height: 1.75; width: 100%; text-align: left; color: #000000;
   }
   .lyr-artha {
-    color: #780000 !important; font-style: italic;
+    color: #000000 !important; font-style: italic;
     margin: 3px 0; text-align: center !important;
     white-space: normal; overflow-wrap: break-word; word-break: break-word;
   }
@@ -248,14 +248,14 @@
     display: flex; align-items: center; justify-content: center;
     gap: 8px; padding: 10px 0 2px; width: 100%;
     opacity: 0.45; font-size: 14px; letter-spacing: 5px;
-    color: #5a2800; user-select: none; flex-shrink: 0;
+    color: #000000; user-select: none; flex-shrink: 0;
   }
 
   /* Override any old theme text colours */
-  .lm-water-card[data-theme] .lyr-line   { color: #1a0800 !important; }
-  .lm-water-card[data-theme] .lyr-artha  { color: #780000 !important; }
-  .lm-water-card[data-theme] .lyr-footer { color: #5a2800 !important; }
-  .lm-water-card[data-theme] .lyr-prose  { color: #1a0800 !important; }
+  .lm-water-card[data-theme] .lyr-line   { color: #000000 !important; }
+  .lm-water-card[data-theme] .lyr-artha  { color: #000000 !important; }
+  .lm-water-card[data-theme] .lyr-footer { color: #000000 !important; }
+  .lm-water-card[data-theme] .lyr-prose  { color: #000000 !important; }
 
   /* ── Translation toggle — pinned top-right of reader, clear of close X & Sudarshan Chakra ── */
   .lm-translate-wrap {
@@ -442,7 +442,7 @@
   ════════════════════════════════════════════════════════════ */
   @media (max-aspect-ratio: 3/5) {
     .lm-water-card {
-      background-image: url("./asset.jpg");
+      background-image: none;
     }
     /* New image frame anatomy (% of 578×1280):
          top band:    ~12%

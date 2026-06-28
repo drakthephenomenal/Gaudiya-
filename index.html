@@ -25,7 +25,7 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <link rel="stylesheet" href="./style.css?v=124">
   <link rel="stylesheet" href="./style-stotram.css?v=124">
-  <link rel="stylesheet" href="./vedic-panchanga/panchanga.css?v=156">
+  <link rel="stylesheet" href="./vedic-panchanga/panchanga.css?v=155">
 <script src="https://unpkg.com/suncalc@1.9.0/suncalc.js"></script>
 </head>
 <body>
@@ -190,7 +190,7 @@
     Stats
   </button>
 
-  <button class="nb" id="navLb" onclick="sv('vlb',this);loadLeaderboard(window._lbPeriod||'alltime')" style="position:relative;">
+  <button class="nb" id="navLb" onclick="sv('vlb',this);loadLeaderboard(window._lbPeriod||'today')" style="position:relative;">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
     Community
 
@@ -330,6 +330,61 @@
       </button>
     </div>
   </div>
+  <div class="sk-panel" id="n28StatsCollapse">
+    <div class="sk-panel-inner" style="padding:10px 14px 14px">
+
+      <!-- a) Cycle Counts -->
+      <div class="n28sp-section">
+        <div class="n28sp-title">🔄 Cycle Counts</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:4px">
+          <div class="ns"><div class="nv" id="sp28CyclesTod" style="font-size:18px">0</div><div class="nl">Today</div></div>
+          <div class="ns"><div class="nv" id="sp28CyclesAll" style="font-size:18px">0</div><div class="nl">All Time</div></div>
+        </div>
+      </div>
+
+      <!-- b) Cycle Time -->
+      <div class="n28sp-section">
+        <div class="n28sp-title">⏱ 28 Names Time</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
+          <div class="ns"><div class="nv" id="sp28TimeTod" style="font-size:18px">0m</div><div class="nl">Today</div></div>
+          <div class="ns"><div class="nv" id="sp28TimeAll" style="font-size:18px">0m</div><div class="nl">All Time</div></div>
+        </div>
+
+        <!-- Manual time adjust — new labelled layout -->
+        <div class="n28-adj">
+          <div class="n28-adj-head">
+            <div class="n28-adj-title">Adjust Today's 28 Names Time</div>
+            <div class="n28-adj-desc">Enter the minutes &amp; seconds you want to <b style="color:var(--green)">add</b> to or <b style="color:var(--rl)">deduct</b> from today's 28 Names timer. Useful if you chanted offline or want to correct a mistake.</div>
+          </div>
+          <div class="n28-adj-inputs">
+            <label class="n28-adj-field">
+              <span class="n28-adj-lbl">Minutes</span>
+              <input type="number" class="n28sp-in" id="sp28TimeMin" min="0" placeholder="0" oninput="prev28Time()">
+            </label>
+            <label class="n28-adj-field">
+              <span class="n28-adj-lbl">Seconds</span>
+              <input type="number" class="n28sp-in" id="sp28TimeSec" min="0" max="59" placeholder="0" oninput="prev28Time()">
+            </label>
+          </div>
+          <div class="n28-adj-actions">
+            <button class="n28sp-btn add" onclick="adj28Time(1)" title="Add the entered time to today's 28 Names timer">＋ Add Time</button>
+            <button class="n28sp-btn ded" onclick="adj28Time(-1)" title="Deduct the entered time from today's 28 Names timer">－ Deduct Time</button>
+          </div>
+          <div class="n28-adj-preview"><span id="sp28TimePreview"></span></div>
+        </div>
+      </div>
+
+      <!-- d) Reset Options -->
+      <div class="n28sp-section n28sp-reset">
+        <div class="n28sp-title" style="color:var(--gold)">↺ Reset Options</div>
+        <div class="n28-reset-stack">
+          <button type="button" class="n28-gold-btn" onclick="cr2('28today')">↺ Reset Today's Jap &amp; Time</button>
+          <button type="button" class="n28-gold-btn n28-gold-btn-danger" onclick="cr2('28all')">⚠️ Reset All 28 Names Data &amp; Time</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
   <div class="sk-panel" id="skCollapse">
     <div class="sk-panel-inner">
       <div class="sk-form" style="margin-bottom:10px">
@@ -386,75 +441,31 @@
       <div style="display:flex;align-items:center;gap:10px;">
         <div style="flex:1;min-width:0;">
           <div style="font-size:9px;color:rgba(189,147,249,0.6);letter-spacing:1.5px;text-transform:uppercase;font-weight:700;margin-bottom:4px;">Daily Progress</div>
-          <div style="height:6px;background:rgba(189,147,249,0.12);border-radius:10px;overflow:hidden;box-shadow:inset 0 1px 3px rgba(0,0,0,0.4);">
-            <div id="n28ProgressBar" style="height:100%;width:0%;background:linear-gradient(90deg,rgba(189,147,249,0.8),rgba(150,80,255,0.9));border-radius:10px;transition:width 0.5s ease;box-shadow:0 0 8px rgba(189,147,249,0.5);"></div>
+          <div style="height:6px;background:rgba(189,147,249,0.12);border-radius:10px;overflow:visible;position:relative;box-shadow:inset 0 1px 3px rgba(0,0,0,0.4);">
+            <div id="n28ProgressBar" style="height:100%;width:0%;max-width:100%;background:linear-gradient(90deg,rgba(189,147,249,0.8),rgba(150,80,255,0.9));border-radius:10px;transition:width 0.5s ease;box-shadow:0 0 8px rgba(189,147,249,0.5);"></div>
           </div>
         </div>
         <div id="n28ProgressLabel" style="text-align:right;font-size:11px;color:#BD93F9;font-weight:700;white-space:nowrap;">0 cycles · 0/28</div>
       </div>
-            <div style="display:flex;align-items:center;justify-content:center;gap:10px;">
-        <div style="font-size:13px;color:var(--gold);font-family:'EB Garamond',serif;letter-spacing:0.5px;white-space:nowrap;">
-          Today’s Jap Time : <span id="n28TotalTimer">00:00:00</span>
+      <div class="timer-row" style="margin-top:6px;">
+        <div class="timer-box">
+          <div class="timer-box-lbl">Session</div>
+          <div class="timer-box-main">
+            <div class="timer-display" id="n28SessionDisplay">00:00:00</div>
+            <button id="n28PauseBtn" class="tbtn start" onclick="App.toggle28Pause()" style="display:none;">⏸ Pause</button>
+          </div>
         </div>
-        <button id="n28PauseBtn" onclick="App.toggle28Pause()" style="display:none;">⏸ Pause</button>
+        <div class="timer-box">
+          <div class="timer-box-lbl">Today's Jap Time</div>
+          <div class="timer-box-main timer-box-main--solo">
+            <div class="timer-display timer-display--today" id="n28TotalTimer">00:00:00</div>
+          </div>
+        </div>
       </div>
     </div>
 
 
     <!-- 28 NAMES STATS PANEL -->
-    <div id="n28StatsPanel" style="display:none;margin-top:10px">
-
-      <!-- a) Cycle Counts -->
-      <div class="n28sp-section">
-        <div class="n28sp-title">🔄 Cycle Counts</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:4px">
-          <div class="ns"><div class="nv" id="sp28CyclesTod" style="font-size:18px">0</div><div class="nl">Today</div></div>
-          <div class="ns"><div class="nv" id="sp28CyclesAll" style="font-size:18px">0</div><div class="nl">All Time</div></div>
-        </div>
-      </div>
-
-      <!-- b) Cycle Time -->
-      <div class="n28sp-section">
-        <div class="n28sp-title">⏱ 28 Names Time</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
-          <div class="ns"><div class="nv" id="sp28TimeTod" style="font-size:18px">0m</div><div class="nl">Today</div></div>
-          <div class="ns"><div class="nv" id="sp28TimeAll" style="font-size:18px">0m</div><div class="nl">All Time</div></div>
-        </div>
-
-        <!-- Manual time adjust — new labelled layout -->
-        <div class="n28-adj">
-          <div class="n28-adj-head">
-            <div class="n28-adj-title">Adjust Today's 28 Names Time</div>
-            <div class="n28-adj-desc">Enter the minutes &amp; seconds you want to <b style="color:var(--green)">add</b> to or <b style="color:var(--rl)">deduct</b> from today's 28 Names timer. Useful if you chanted offline or want to correct a mistake.</div>
-          </div>
-          <div class="n28-adj-inputs">
-            <label class="n28-adj-field">
-              <span class="n28-adj-lbl">Minutes</span>
-              <input type="number" class="n28sp-in" id="sp28TimeMin" min="0" placeholder="0" oninput="prev28Time()">
-            </label>
-            <label class="n28-adj-field">
-              <span class="n28-adj-lbl">Seconds</span>
-              <input type="number" class="n28sp-in" id="sp28TimeSec" min="0" max="59" placeholder="0" oninput="prev28Time()">
-            </label>
-          </div>
-          <div class="n28-adj-actions">
-            <button class="n28sp-btn add" onclick="adj28Time(1)" title="Add the entered time to today's 28 Names timer">＋ Add Time</button>
-            <button class="n28sp-btn ded" onclick="adj28Time(-1)" title="Deduct the entered time from today's 28 Names timer">－ Deduct Time</button>
-          </div>
-          <div class="n28-adj-preview"><span id="sp28TimePreview"></span></div>
-        </div>
-      </div>
-
-      <!-- d) Reset Options -->
-      <div class="n28sp-section n28sp-reset">
-        <div class="n28sp-title" style="color:var(--gold)">↺ Reset Options</div>
-        <div class="n28-reset-stack">
-          <button type="button" class="n28-gold-btn" onclick="cr2('28today')">↺ Reset Today's Jap &amp; Time</button>
-          <button type="button" class="n28-gold-btn n28-gold-btn-danger" onclick="cr2('28all')">⚠️ Reset All 28 Names Data &amp; Time</button>
-        </div>
-      </div>
-
-    </div>
   </div>
 </div>
 
@@ -1072,13 +1083,13 @@
   <!-- LEADERBOARD SETTINGS (Moved from Settings tab) -->
   <div class="sc" id="lbSettingCard" style="background:rgba(255,215,0,0.04);border-color:rgba(255,215,0,0.25);margin:16px 16px 8px 16px;padding-bottom:8px;">
     <!-- Opt-in toggle -->
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:4px 0;margin-bottom:12px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:6px 0 10px;margin-bottom:12px;border-bottom:1px solid rgba(255,215,0,0.15);flex-wrap:nowrap;">
       <div style="font-size:14px;color:var(--gold);font-weight:600">🪷 Join Community Board</div>
       <div class="tg" id="tgLbOptIn" onclick="toggleLbOptIn()"></div>
     </div>
 
     <!-- Display name -->
-    <div id="lbNameRow" style="display:none;">
+    <div id="lbNameRow" style="display:none;margin-top:6px;padding-top:4px;">
       <div style="font-size:11px;color:var(--gold);letter-spacing:1px;text-transform:uppercase;font-weight:600;margin-bottom:7px">Display Name</div>
       <div style="display:flex;gap:8px;align-items:center">
         <input type="text" id="lbNameIn" autocomplete="off" spellcheck="false" maxlength="30" placeholder="Keep original name or type custom name…" style="flex:1;background:rgba(0,0,0,0.35);border:1px solid rgba(255,215,0,0.3);border-radius:10px;padding:9px 12px;color:var(--tl);font-size:13px;font-family:'Inter',sans-serif;outline:none">
@@ -1090,10 +1101,10 @@
 
   <!-- Period Tabs -->
   <div class="lb-tabs" id="lbTabs">
-    <button class="lb-tab" id="lbTabToday" onclick="lbSwitchPeriod('today')">Today</button>
+    <button class="lb-tab active" id="lbTabToday" onclick="lbSwitchPeriod('today')">Today</button>
     <button class="lb-tab" id="lbTabWeek" onclick="lbSwitchPeriod('week')">This week</button>
     <button class="lb-tab" id="lbTabMonth" onclick="lbSwitchPeriod('month')">This month</button>
-    <button class="lb-tab active" id="lbTabAlltime" onclick="lbSwitchPeriod('alltime')">Lifetime</button>
+    <button class="lb-tab" id="lbTabAlltime" onclick="lbSwitchPeriod('alltime')">Lifetime</button>
   </div>
 
   <!-- Your rank card (shown when opted in and ranked) -->
@@ -1127,7 +1138,7 @@
 
   <!-- Refresh button -->
   <div style="display:flex;justify-content:center;padding:10px 0 16px">
-    <button id="lbRefreshBtn" onclick="loadLeaderboard(window._lbPeriod||'alltime')" style="background:rgba(255,215,0,0.08);border:1px solid rgba(255,215,0,0.3);border-radius:20px;color:var(--gold);font-size:12px;font-weight:600;padding:8px 22px;cursor:pointer;font-family:'Inter',sans-serif;letter-spacing:0.5px;transition:all 0.2s">↻ Refresh</button>
+    <button id="lbRefreshBtn" onclick="loadLeaderboard(window._lbPeriod||'today')" style="background:rgba(255,215,0,0.08);border:1px solid rgba(255,215,0,0.3);border-radius:20px;color:var(--gold);font-size:12px;font-weight:600;padding:8px 22px;cursor:pointer;font-family:'Inter',sans-serif;letter-spacing:0.5px;transition:all 0.2s">↻ Refresh</button>
   </div>
 
 
@@ -1723,12 +1734,13 @@
 // ═══ B&C Sub-tab switcher ════════════════════════════════════
 function vpSwitchTab(tab) {
   const bnc = document.getElementById('vp-bnc-content');
-  const pan = document.getElementById('vpanchanga-view');
   const btnBnC = document.getElementById('vpTabBnC');
   const btnPan = document.getElementById('vpTabPan');
   if (tab === 'bnc') {
     bnc.style.display = '';
-    pan.style.display = 'none';
+    // Guard: pan fragment may not be injected yet
+    const pan = document.getElementById('vpanchanga-view');
+    if (pan) pan.style.display = 'none';
     btnBnC.style.background = 'rgba(245,209,122,0.12)';
     btnBnC.style.borderColor = 'rgba(245,209,122,0.4)';
     btnBnC.style.color = 'var(--gold)';
@@ -1739,24 +1751,60 @@ function vpSwitchTab(tab) {
     window.vpStopRefresh && window.vpStopRefresh();
   } else {
     bnc.style.display = 'none';
-    pan.style.display = 'block';
-    btnPan.style.background = 'rgba(184,196,245,0.12)';
+
+    // Active-state styling for the tab buttons
+    btnPan.style.background  = 'rgba(184,196,245,0.12)';
     btnPan.style.borderColor = 'rgba(184,196,245,0.4)';
-    btnPan.style.color = 'var(--a2)';
-    btnBnC.style.background = 'transparent';
+    btnPan.style.color       = 'var(--a2)';
+    btnBnC.style.background  = 'transparent';
     btnBnC.style.borderColor = 'rgba(245,209,122,0.3)';
-    btnBnC.style.color = 'var(--td)';
-    // Update location label + (re)try GPS fetch from the Panchanga engine itself
-    window.vpUpdateLocLabel && window.vpUpdateLocLabel();
-    window.vpEnsureGps && window.vpEnsureGps();
-    window.vpActivate && window.vpActivate();
-    window.vpStartClock && window.vpStartClock();
-    window.vpStartRefresh && window.vpStartRefresh();
+    btnBnC.style.color       = 'var(--td)';
+
+    let pan = document.getElementById('vpanchanga-view');
+    if (pan) {
+      // Fragment already in DOM — activate immediately
+      pan.style.display = 'block';
+      window.vpUpdateLocLabel && window.vpUpdateLocLabel();
+      window.vpEnsureGps      && window.vpEnsureGps();
+      window.vpActivate       && window.vpActivate();
+      window.vpStartClock     && window.vpStartClock();
+      window.vpStartRefresh   && window.vpStartRefresh();
+    } else {
+      // Fragment not injected yet (fetch in-flight or failed).
+      // Show a placeholder and poll until it appears.
+      const mount = document.getElementById('vpanchanga-mount');
+      if (mount && !mount.dataset.retry) {
+        mount.dataset.retry = '1';
+        mount.innerHTML =
+          '<div style="padding:24px;text-align:center;color:#b8c4f5">Loading Vedic Panchanga\u2026</div>';
+        // Re-trigger the loader if the engine exposed one
+        window.vpReload && window.vpReload();
+      }
+      let tries = 0;
+      const iv = setInterval(() => {
+        pan = document.getElementById('vpanchanga-view');
+        if (pan) {
+          clearInterval(iv);
+          pan.style.display = 'block';
+          window.vpUpdateLocLabel && window.vpUpdateLocLabel();
+          window.vpEnsureGps      && window.vpEnsureGps();
+          window.vpActivate       && window.vpActivate();
+          window.vpStartClock     && window.vpStartClock();
+          window.vpStartRefresh   && window.vpStartRefresh();
+        } else if (++tries > 100) {          // ~20s — allows for slow JS parse on mobile
+          clearInterval(iv);
+          const m = document.getElementById('vpanchanga-mount');
+          if (m) m.innerHTML =
+            '<div style="padding:24px;text-align:center;color:#f87171">' +
+            'Vedic Panchanga module failed to load. Pull down to refresh.</div>';
+        }
+      }, 200);
+    }
   }
 }
 </script>
 
 <!-- Vedic Panchanga engine (moved to ./vedic-panchanga/panchanga.js) -->
-<script defer src="./vedic-panchanga/panchanga.js?v=156"></script>
+<script defer src="./vedic-panchanga/panchanga.js?v=159"></script>
 </body>
 </html>

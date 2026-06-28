@@ -690,6 +690,13 @@ const App = {
     // Mirror the SAME total on the 28 Names tab
     const te28 = document.getElementById("n28TotalTimer");
     if (te28) te28.textContent = this.fmtTime(combinedSec);
+    // Mirror the SESSION timer (identical to main jap Session display) on 28 Names tab
+    const se28 = document.getElementById("n28SessionDisplay");
+    if (se28) {
+      se28.textContent = this.fmtTime(this.timerSeconds);
+      if (this.timerSeconds > 0) se28.classList.add("running");
+      else se28.classList.remove("running");
+    }
   },
 
   // ── UNIFIED TIME: sync timerHistory[today] = sum of mala log entries ──
@@ -745,18 +752,46 @@ const App = {
     }
     const mtotEl = document.getElementById("mtot");
     if (mtotEl) mtotEl.textContent = md + " mala" + (md !== 1 ? "s" : "");
-    const dP = curDt > 0 ? Math.min(100, Math.round((tod / curDt) * 100)) : 0;
-    const lP = curLt > 0 ? Math.min(100, Math.round((tot / curLt) * 100)) : 0;
+    const dP = curDt > 0 ? Math.round((tod / curDt) * 100) : 0;
+    const lP = curLt > 0 ? Math.round((tot / curLt) * 100) : 0;
+    const dBarPct = Math.min(100, dP);
+    const lBarPct = Math.min(100, lP);
     // Daily bar (blue) — mode-specific
-    document.getElementById("dPct").textContent = dP + "%";
-    document.getElementById("dbarFill").style.width = dP + "%";
+    const dPctEl = document.getElementById("dPct");
+    const dFill  = document.getElementById("dbarFill");
+    dPctEl.textContent = dP + "%";
+    dFill.style.width = dBarPct + "%";
+    if (dP >= 100) {
+      dPctEl.style.color = "#FFD700";
+      dFill.style.background = "linear-gradient(90deg,var(--a2),#FFD700,var(--a2))";
+      dFill.style.backgroundSize = "200% 100%";
+      dFill.style.animation = "barOverflow 1.8s ease-in-out infinite";
+    } else {
+      dPctEl.style.color = "";
+      dFill.style.background = "linear-gradient(90deg,var(--a2),var(--a))";
+      dFill.style.backgroundSize = "";
+      dFill.style.animation = "none";
+    }
     document.getElementById("dbarDone").textContent = fmtIN(tod);
     document.getElementById("dbarTarget").textContent =
       "/ " + (curDt ? fmtIN(curDt) : "—");
     document.getElementById("dDet").textContent = md + " malas done";
     // Lifetime bar (gold) — COMBINED total, shared target
-    document.getElementById("lPct").textContent = lP + "%";
-    document.getElementById("lbarFill").style.width = lP + "%";
+    const lPctEl = document.getElementById("lPct");
+    const lFill  = document.getElementById("lbarFill");
+    lPctEl.textContent = lP + "%";
+    lFill.style.width = lBarPct + "%";
+    if (lP >= 100) {
+      lPctEl.style.color = "#FFD700";
+      lFill.style.background = "linear-gradient(90deg,var(--gold),#fff,var(--gold))";
+      lFill.style.backgroundSize = "200% 100%";
+      lFill.style.animation = "barOverflow 1.8s ease-in-out infinite";
+    } else {
+      lPctEl.style.color = "";
+      lFill.style.background = "linear-gradient(90deg,var(--gold),#FFB700)";
+      lFill.style.backgroundSize = "";
+      lFill.style.animation = "none";
+    }
     document.getElementById("lbarDone").textContent = fmtIN(tot);
     document.getElementById("lbarTarget").textContent =
       "/ " + (curLt ? fmtIN(curLt) : "—");
@@ -1136,8 +1171,8 @@ const App = {
     // Show frozen cycle value; n28TotalTimer shows unified Today's Jap Time
     const fmt = (s) =>
       Math.floor(s / 60) + ":" + (s % 60 < 10 ? "0" : "") + (s % 60);
-    const ce = document.getElementById("n28CycleTimer");
-    if (ce) ce.textContent = fmt(this._n28PausedCycleSec);
+    const ce = document.getElementById("n28CycleTimer"); const _ceVis = document.getElementById("n28CycleTimerDisplay");
+    if (ce) ce.textContent = fmt(this._n28PausedCycleSec); if (_ceVis) _ceVis.textContent = fmt(this._n28PausedCycleSec);
     this.updateTimerToday();
 
   },
@@ -1185,12 +1220,7 @@ const App = {
       if (this._n28Paused) return;
       const fmt = (s) =>
         Math.floor(s / 60) + ":" + (s % 60 < 10 ? "0" : "") + (s % 60);
-      const cycSec = this._n28CycleStart
-        ? Math.floor((Date.now() - this._n28CycleStart) / 1000)
-        : 0;
-      const ce = document.getElementById("n28CycleTimer");
-      if (ce) ce.textContent = fmt(cycSec);
-      // Keep the unified "Total Jap Time" mirror in sync every second
+      // Keep the unified "Total Jap Time" mirror and Session display in sync every second
       this.updateTimerToday();
     }, 1000);
     this._upd28PauseBtn();
@@ -1214,12 +1244,12 @@ const App = {
     // Reset cycle anchor — if paused, reset frozen cycle sec too
     if (this._n28Paused) {
       this._n28PausedCycleSec = 0;
-      const ce = document.getElementById("n28CycleTimer");
-      if (ce) ce.textContent = "0:00";
+      const ce = document.getElementById("n28CycleTimer"); const _ceVis = document.getElementById("n28CycleTimerDisplay");
+      if (ce) ce.textContent = "0:00"; if (_ceVis) _ceVis.textContent = "0:00";
     } else {
       this._n28CycleStart = Date.now();
-      const ce = document.getElementById("n28CycleTimer");
-      if (ce) ce.textContent = "0:00";
+      const ce = document.getElementById("n28CycleTimer"); const _ceVis = document.getElementById("n28CycleTimerDisplay");
+      if (ce) ce.textContent = "0:00"; if (_ceVis) _ceVis.textContent = "0:00";
     }
   },
 
@@ -1238,8 +1268,8 @@ const App = {
     this._n28Paused = false;
     this._n28PausedCycleSec = 0;
     this._n28PausedTotalSec = 0;
-    const ce = document.getElementById("n28CycleTimer");
-    if (ce) ce.textContent = "0:00";
+    const ce = document.getElementById("n28CycleTimer"); const _ceVis = document.getElementById("n28CycleTimerDisplay");
+    if (ce) ce.textContent = "0:00"; if (_ceVis) _ceVis.textContent = "0:00";
     // Show unified Today's Jap Time
     this.updateTimerToday();
 
@@ -1636,6 +1666,22 @@ setInterval(() => {
     App.S.malaLog = [];
     App.S.malaLogRV = [];
     App.S.malaLogHK = [];
+    // ── Fix: discard any incomplete in-progress mala at midnight ──
+    // Partial beads (< full mala) must not bleed into the new day or
+    // create a ghost mala entry. Completed mala data is already saved
+    // in history[previousTk] and is completely untouched.
+    App.S.ms = 0;
+    App.malaWallStart = 0;
+    App._currentMalaStartTs = null;
+    App.currentMalaSeconds = 0;
+    App.S.malaStartTk = "";
+    App.S.malaStartMode = "";
+    try {
+      localStorage.removeItem("rjap_currentMalaStartTs");
+      localStorage.setItem("rjap_malaWallStart", "0");
+      localStorage.setItem("rjap_currentMalaSeconds", "0");
+      localStorage.removeItem("rjap_malaStartTk");
+    } catch(_) {}
     if (!App.S.history[App.S.tk]) App.S.history[App.S.tk] = 0;
     if (!App.S.h28[App.S.tk]) App.S.h28[App.S.tk] = 0;
     if (!App.S.timerHistory[App.S.tk]) App.S.timerHistory[App.S.tk] = 0;
@@ -4827,6 +4873,44 @@ async function fbSyncServerTime() {
   }
 }
 
+// ── Narrow Firestore accessor for the opt-in personal-horoscope feature ──
+// (vedic-panchanga/panchanga.js runs as a separate <script>, scoped in its
+// own IIFE, so it cannot reach this file's private fbDb/fbUser/fbInit.
+// This object is the ONLY bridge — deliberately minimal.)
+window.vpFirestore = {
+  // Ensures Firebase is initialized; returns true/false like fbInit().
+  ensureInit() { return fbInit(); },
+  // Current signed-in uid, or null if signed out / not yet resolved.
+  currentUid() { return fbUser ? fbUser.uid : null; },
+  // Read users/{uid}/horoscope/profile — resolves to the data or null.
+  async getProfile() {
+    if (!fbInit() || !fbUser) return null;
+    try {
+      const snap = await fbDb.collection('users').doc(fbUser.uid)
+        .collection('horoscope').doc('profile').get();
+      return snap.exists ? snap.data() : null;
+    } catch (e) {
+      console.warn('[vpFirestore] getProfile failed:', e && e.message);
+      return null;
+    }
+  },
+  // Write/merge users/{uid}/horoscope/profile — returns true/false.
+  async saveProfile(data) {
+    if (!fbInit() || !fbUser) return false;
+    try {
+      await fbDb.collection('users').doc(fbUser.uid)
+        .collection('horoscope').doc('profile')
+        .set(Object.assign({}, data, {
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+        }), { merge: true });
+      return true;
+    } catch (e) {
+      console.warn('[vpFirestore] saveProfile failed:', e && e.message);
+      return false;
+    }
+  },
+};
+
 function fbInit() {
   if (fbApp) return true;
   if (typeof firebase === "undefined") {
@@ -4974,6 +5058,17 @@ function fbInit() {
           // Direct cloud pull — overwrites local cache with authoritative Firebase data
           await fbAutoSync();
 
+          // ── Refresh Rashi / personal-horoscope card after sign-in ──
+          // vpPersonalLoad() caches a null result when it fires before auth
+          // resolves. Reset that cache now so the card re-fetches the saved
+          // birth profile from Firestore under the authenticated UID.
+          if (typeof window.vpPersonalResetCache === 'function') {
+            window.vpPersonalResetCache();
+          }
+          if (typeof window.vpPersonalRender === 'function') {
+            window.vpPersonalRender();
+          }
+
           if (isDeveloper()) {
             const devOptionsPanel = document.getElementById("devOptionsPanel");
             if (devOptionsPanel) devOptionsPanel.style.display = "block";
@@ -4995,6 +5090,13 @@ function fbInit() {
         if (fbListener) {
           fbListener();
           fbListener = null;
+        }
+        // ── Sign-out: clear Rashi / personal-horoscope card ──
+        if (typeof window.vpPersonalResetCache === 'function') {
+          window.vpPersonalResetCache();
+        }
+        if (typeof window.vpPersonalRender === 'function') {
+          window.vpPersonalRender();
         }
         // ── Sign-out: reset in-memory jap state so the device shows a clean
         // slate. Any jap done while signed out then accumulates in the
@@ -6144,32 +6246,47 @@ function _update28ProgressBar(todJaps) {
   const bar  = document.getElementById("n28ProgressBar");
   const lbl  = document.getElementById("n28ProgressLabel");
   if (!wrap) return;
-  // Always show the bottom bar (it holds the unified Today's Jap Time + cycles label).
   wrap.style.display = "flex";
   const todCycles = Math.floor(todJaps / 28);
   const inCycle = todJaps % 28;
   if (target) {
-    const pct = Math.min(100, Math.round((todJaps / target) * 100));
+    const rawPct = Math.round((todJaps / target) * 100);
+    const barPct = Math.min(100, rawPct); // bar fill capped at 100% visually
     if (bar) {
-      bar.style.width = pct + "%";
-      bar.style.background = pct >= 100
-        ? "linear-gradient(90deg,rgba(46,204,113,0.8),rgba(0,200,100,0.95))"
-        : "linear-gradient(90deg,rgba(189,147,249,0.8),rgba(150,80,255,0.9))";
-      bar.style.boxShadow = pct >= 100 ? "0 0 10px rgba(46,204,113,0.6)" : "0 0 8px rgba(189,147,249,0.5)";
+      bar.style.width = barPct + "%";
+      if (rawPct >= 100) {
+        bar.style.background = "linear-gradient(90deg,#FFD700,rgba(46,204,113,0.95),#FFD700)";
+        bar.style.backgroundSize = "200% 100%";
+        bar.style.boxShadow = "0 0 14px rgba(255,215,0,0.7), 0 0 6px rgba(46,204,113,0.5)";
+        bar.style.animation = "barOverflow 1.8s ease-in-out infinite";
+      } else {
+        bar.style.background = "linear-gradient(90deg,rgba(189,147,249,0.8),rgba(150,80,255,0.9))";
+        bar.style.backgroundSize = "";
+        bar.style.boxShadow = "0 0 8px rgba(189,147,249,0.5)";
+        bar.style.animation = "none";
+      }
+    }
+    if (lbl) {
+      lbl.textContent = todCycles + " cycle" + (todCycles === 1 ? "" : "s") + " · " + inCycle + "/28 · " + rawPct + "%";
+      lbl.style.color = rawPct >= 100 ? "#FFD700" : "#BD93F9";
+      lbl.style.fontWeight = rawPct >= 100 ? "800" : "700";
     }
   } else {
-    // No daily target set — show current cycle progress (full bar when a cycle just completed).
     const num = inCycle === 0 && todCycles > 0 ? 28 : inCycle;
     const pct = Math.round((num / 28) * 100);
     if (bar) {
-      bar.style.width = pct + "%";
+      bar.style.width = Math.min(100, pct) + "%";
       bar.style.background = "linear-gradient(90deg,rgba(189,147,249,0.8),rgba(150,80,255,0.9))";
+      bar.style.backgroundSize = "";
       bar.style.boxShadow = "0 0 8px rgba(189,147,249,0.5)";
+      bar.style.animation = "none";
+    }
+    if (lbl) {
+      lbl.textContent = todCycles + " cycle" + (todCycles === 1 ? "" : "s") + " · " + inCycle + "/28";
+      lbl.style.color = "#BD93F9";
+      lbl.style.fontWeight = "700";
     }
   }
-
-  // Always render label as "{cycles} cycles · {N}/28"
-  if (lbl) lbl.textContent = todCycles + " cycle" + (todCycles === 1 ? "" : "s") + " · " + inCycle + "/28";
 }
 
 function u28() {
@@ -6206,6 +6323,22 @@ function u28() {
           nameEl.style.position = "relative";
         }
       }
+
+      // Auto-fit: shrink font until name fits on one line
+      function _fitN28FontSize(el) {
+        const containerW = el.parentNode ? el.parentNode.getBoundingClientRect().width - 20 : 300;
+        const baseSize = Math.min(300, Math.max(120, containerW * 0.38));
+        el.style.whiteSpace = "nowrap";
+        el.style.wordBreak = "normal";
+        el.style.overflowX = "visible";
+        el.style.fontSize = baseSize + "px";
+        let sz = baseSize;
+        while (el.scrollWidth > containerW && sz > 40) {
+          sz -= 2;
+          el.style.fontSize = sz + "px";
+        }
+      }
+      requestAnimationFrame(() => _fitN28FontSize(nameEl));
 
       if (oldName && oldName !== newName && !window.__bbTakeover28) {
         // Ghost clone removed — coin pod carries the old name visually.
@@ -6326,9 +6459,10 @@ function cycleDone28() {
 
   // Show cycle time floating animation
   if (cycleTimeSec > 0) {
-    const te = document.getElementById("n28CycleTimer");
-    if (te) {
-      const rect = te.getBoundingClientRect();
+    const te = document.getElementById("n28CycleTimer"); const _teVis = document.getElementById("n28CycleTimerDisplay");
+    const _teAnchor = _teVis || te;
+    if (_teAnchor) {
+      const rect = _teAnchor.getBoundingClientRect();
       const el = document.createElement("div");
       el.className = "mala-time-float";
       el.textContent = "📿 " + fmtCyc(cycleTimeSec);
@@ -6352,8 +6486,8 @@ function cycleDone28() {
   App._n28Paused = false;
   App._n28PausedCycleSec = 0;
   App._n28PausedTotalSec = 0;
-  const ce = document.getElementById("n28CycleTimer");
-  if (ce) ce.textContent = "0:00";
+  const ce = document.getElementById("n28CycleTimer"); const _ceVis = document.getElementById("n28CycleTimerDisplay");
+  if (ce) ce.textContent = "0:00"; if (_ceVis) _ceVis.textContent = "0:00";
   // Show unified Jap timer (same as main Jap tab)
   const teDisp = document.getElementById("n28TotalTimer");
   if (teDisp) teDisp.textContent = App.fmtTime(App.timerSeconds);
@@ -6620,8 +6754,10 @@ function renderSankalpas() {
         (pct >= 100 ? " full" : "") +
         '" style="width:' +
         Math.min(pct, 100) +
-        '%"></div></div>' +
-        '<div class="sk-prog-text">' +
+        '%;' +
+        (pct >= 100 ? 'background:linear-gradient(90deg,#FFD700,rgba(46,204,113,0.9),#FFD700);background-size:200% 100%;animation:barOverflow 1.8s ease-in-out infinite;box-shadow:0 0 10px rgba(255,215,0,0.6);' : '') +
+        '"></div></div>' +
+        '<div class="sk-prog-text" style="' + (pct >= 100 ? 'color:#FFD700;font-weight:700;' : '') + '">' +
         prog +
         " / " +
         sk.target +
@@ -6647,17 +6783,17 @@ function renderSankalpas() {
         '<input id="sk-adj-' +
         sk.id +
         '" type="number" min="1" placeholder="0" style="width:54px;background:rgba(0,0,0,0.35);border:1px solid rgba(232,51,109,0.3);border-radius:7px;padding:5px 8px;color:var(--tl);font-size:13px;text-align:center;font-family:Inter,sans-serif">' +
-        '<button class="sk-btn" style="color:#4f4;border-color:rgba(0,255,0,0.3);font-size:11px" onclick="adjustSankalpCycles(\'' +
+        '<button class="sk-btn" style="color:#4f4;border-color:rgba(0,255,0,0.4);font-size:11px;background:linear-gradient(180deg,rgba(46,204,113,0.22) 0%,rgba(30,160,80,0.08) 100%);box-shadow:0 2px 8px rgba(46,204,113,0.25)" onclick="adjustSankalpCycles(\'' +
         sk.id +
         "','add')\">＋</button>" +
-        '<button class="sk-btn" style="color:#f55;border-color:rgba(255,68,68,0.3);font-size:11px" onclick="adjustSankalpCycles(\'' +
+        '<button class="sk-btn" style="color:#f55;border-color:rgba(255,68,68,0.4);font-size:11px;background:linear-gradient(180deg,rgba(255,68,68,0.18) 0%,rgba(200,30,30,0.08) 100%);box-shadow:0 2px 8px rgba(255,68,68,0.2)" onclick="adjustSankalpCycles(\'' +
         sk.id +
         "','deduct')\">－</button>" +
         "</div>" +
         '<div class="sk-btns"><button class="sk-btn grn" onclick="fulfillSankalp(\'' +
         sk.id +
         "')\">✓ Fulfilled</button>" +
-        '<button class="sk-btn grey" style="color:#f55;border-color:rgba(255,68,68,0.45)" onclick="deleteSankalp(\'' +
+        '<button class="sk-btn" style="color:#f55;border-color:rgba(255,68,68,0.5);background:linear-gradient(180deg,rgba(255,68,68,0.18) 0%,rgba(200,30,30,0.08) 100%);box-shadow:0 2px 8px rgba(255,68,68,0.2)" onclick="deleteSankalp(\'' +
         sk.id +
         "')\">✕ Delete Wish</button></div>" +
         "</div>";
@@ -6678,7 +6814,9 @@ function renderSankalpas() {
         (qProg > 0
           ? '<div class="sk-bar-wrap"><div class="sk-bar" style="width:' +
             Math.min(qPct, 100) +
-            '%"></div></div><div class="sk-prog-text">' +
+            '%;' +
+            (qPct >= 100 ? 'background:linear-gradient(90deg,#FFD700,rgba(46,204,113,0.9),#FFD700);background-size:200% 100%;animation:barOverflow 1.8s ease-in-out infinite;box-shadow:0 0 10px rgba(255,215,0,0.6);' : '') +
+            '"></div></div><div class="sk-prog-text" style="' + (qPct >= 100 ? 'color:#FFD700;font-weight:700;' : '') + '">' +
             qProg +
             " / " +
             sk.target +
@@ -6703,10 +6841,10 @@ function renderSankalpas() {
         '<input id="sk-adj-' +
         sk.id +
         '" type="number" min="1" placeholder="0" style="width:54px;background:rgba(0,0,0,0.35);border:1px solid rgba(74,144,226,0.25);border-radius:7px;padding:5px 8px;color:var(--tl);font-size:13px;text-align:center;font-family:Inter,sans-serif">' +
-        '<button class="sk-btn" style="color:#4f4;border-color:rgba(0,255,0,0.3);font-size:11px" onclick="adjustSankalpCycles(\'' +
+        '<button class="sk-btn" style="color:#4f4;border-color:rgba(0,255,0,0.4);font-size:11px;background:linear-gradient(180deg,rgba(46,204,113,0.22) 0%,rgba(30,160,80,0.08) 100%);box-shadow:0 2px 8px rgba(46,204,113,0.25)" onclick="adjustSankalpCycles(\'' +
         sk.id +
         "','add')\">＋</button>" +
-        '<button class="sk-btn" style="color:#f55;border-color:rgba(255,68,68,0.3);font-size:11px" onclick="adjustSankalpCycles(\'' +
+        '<button class="sk-btn" style="color:#f55;border-color:rgba(255,68,68,0.4);font-size:11px;background:linear-gradient(180deg,rgba(255,68,68,0.18) 0%,rgba(200,30,30,0.08) 100%);box-shadow:0 2px 8px rgba(255,68,68,0.2)" onclick="adjustSankalpCycles(\'' +
         sk.id +
         "','deduct')\">－</button>" +
         "</div>" +
@@ -6716,7 +6854,7 @@ function renderSankalpas() {
             sk.id +
             "')\">⬆ Prioritize</button>"
           : "") +
-        '<button class="sk-btn grey" style="color:#f55;border-color:rgba(255,68,68,0.45)" onclick="deleteSankalp(\'' +
+        '<button class="sk-btn" style="color:#f55;border-color:rgba(255,68,68,0.5);background:linear-gradient(180deg,rgba(255,68,68,0.18) 0%,rgba(200,30,30,0.08) 100%);box-shadow:0 2px 8px rgba(255,68,68,0.2)" onclick="deleteSankalp(\'' +
         sk.id +
         "')\">✕ Delete Wish</button></div>" +
         "</div>";
@@ -6774,18 +6912,17 @@ function toggleSankalp() {
 // 28 NAMES STATS PANEL
 // ═══════════════════════════════════════════════════════
 function toggle28Stats() {
-  const panel = document.getElementById("n28StatsPanel");
+  const panel = document.getElementById("n28StatsCollapse");
   const chev = document.getElementById("n28StatsChev");
-  const open = panel.style.display === "block";
-  panel.style.display = open ? "none" : "block";
-  if (chev) chev.style.transform = open ? "rotate(0deg)" : "rotate(180deg)";
-  if (!open) render28StatsPanel();
+  const open = panel ? panel.classList.toggle("open") : false;
+  if (chev) chev.style.transform = open ? "rotate(180deg)" : "rotate(0deg)";
+  if (open) render28StatsPanel();
 }
 
 // Called from u28() to keep stats panel live when open
 function refresh28StatsIfOpen() {
-  const panel = document.getElementById("n28StatsPanel");
-  if (panel && panel.style.display === "block") render28StatsPanel();
+  const panel = document.getElementById("n28StatsCollapse");
+  if (panel && panel.classList.contains("open")) render28StatsPanel();
 }
 
 function fmt28Short(s) {
@@ -9814,7 +9951,8 @@ function _initSwipeHandler() {
   // Remove any previous swipe listeners
   card._swipeCleanup && card._swipeCleanup();
 
-  if (_AUDIO_STOTRAMS[_currentStotramId]) return; // audio stotrams use their own player arrows
+  // audio stotrams use player arrows — but hcj also supports swipe
+  if (_AUDIO_STOTRAMS[_currentStotramId] && _currentStotramId !== 'hcj') return;
 
   let startX = 0,
     startY = 0,
@@ -11886,7 +12024,7 @@ function _fmtDateDMY(dateStr) {
 // LEADERBOARD MODULE
 // ═══════════════════════════════════════════════════════
 
-window._lbPeriod = 'alltime';
+window._lbPeriod = 'today';
 window._lbUnsubscribe = null;
 
 /** Get the date key prefix for the current period filter */
@@ -11951,7 +12089,7 @@ function _lbFmtJap(n) {
 
 /** Load leaderboard from Firestore and render it */
 async function loadLeaderboard(period) {
-  window._lbPeriod = period || 'alltime';
+  window._lbPeriod = period || 'today';
 
   // Unsubscribe any previous listener
   if (window._lbUnsubscribe) { try { window._lbUnsubscribe(); } catch(_) {} }
@@ -12330,7 +12468,7 @@ async function toggleLbOptIn() {
   // Refresh if the leaderboard view is currently visible
   const vlb = document.getElementById('vlb');
   if (vlb && vlb.classList.contains('active')) {
-    loadLeaderboard(window._lbPeriod || 'alltime');
+    loadLeaderboard(window._lbPeriod || 'today');
   }
 }
 
@@ -13216,9 +13354,12 @@ function _showUserReplyPopup(text) {
     var tzRect = tz.getBoundingClientRect();
 
     // ── Coin and name travel as ONE unit ──
-    var COIN_SIZE = 180; // px — must be declared BEFORE COIN_HALF
+    // Android: scale the whole coin animation down by 20%
+    var isAndroid = /android/i.test(navigator.userAgent);
+    var COIN_SCALE = isAndroid ? 0.8 : 1.0;
+    var COIN_SIZE = Math.round(180 * COIN_SCALE); // px — must be declared BEFORE COIN_HALF
     var GAP = 8;         // px between coin bottom and name top
-    var COIN_HALF = COIN_SIZE / 2; // = 90
+    var COIN_HALF = COIN_SIZE / 2;
 
     // Use transform:translateX(-50%) so pod always centres regardless of its width
     var tapCX  = tapX || (tzRect.left + tzRect.width * 0.5);  // tap centre X
@@ -13271,6 +13412,7 @@ function _showUserReplyPopup(text) {
       "box-shadow:none"
     ].join(";");
 
+    var emojiFontSize = Math.round(72 * COIN_SCALE) + "px";
     if (coinImageOk) {
       var img = document.createElement("img");
       img.src = COIN_SRC;
@@ -13281,7 +13423,7 @@ function _showUserReplyPopup(text) {
         coinImageOk = false;
         coin.innerHTML = "";
         coin.textContent = "🪙";
-        coin.style.fontSize = "72px";
+        coin.style.fontSize = emojiFontSize;
         coin.style.lineHeight = "1";
         coin.style.background = "transparent";
         coin.style.boxShadow = "none";
@@ -13289,7 +13431,7 @@ function _showUserReplyPopup(text) {
       coin.appendChild(img);
     } else {
       coin.textContent = "🪙";
-      coin.style.fontSize = "72px";
+      coin.style.fontSize = emojiFontSize;
       coin.style.lineHeight = "1";
       coin.style.background = "transparent";
       coin.style.boxShadow = "none";
@@ -13309,11 +13451,27 @@ function _showUserReplyPopup(text) {
       "white-space:normal",
       "word-break:break-word",
       "text-align:center",
-      "width:" + Math.min(screenW - 32, 420) + "px",
       "max-width:" + Math.min(screenW - 32, 420) + "px",
+      "white-space:nowrap",
+      "overflow:visible",
       "text-shadow:0 0 25px rgba(255,217,61,0.85),0 0 50px rgba(255,200,40,0.4)"
     ].join(";");
     ghost.textContent = tappedName || nameEl.textContent;
+
+    // Auto-shrink font inside the pod so name stays on one line
+    (function fitGhostFont() {
+      var maxW = Math.min(screenW - 32, 420);
+      var baseFs = parseFloat(nameStyle.fontSize) || 120;
+      ghost.style.fontSize = baseFs + "px";
+      var sz = baseFs;
+      requestAnimationFrame(function check() {
+        if (ghost.scrollWidth > maxW && sz > 30) {
+          sz -= 3;
+          ghost.style.fontSize = sz + "px";
+          requestAnimationFrame(check);
+        }
+      });
+    })();
     pod.appendChild(ghost);
 
     // Bake the -COIN_SIZE/2 offset into left/top (margins ignored on position:fixed)
@@ -13324,12 +13482,12 @@ function _showUserReplyPopup(text) {
 
     requestAnimationFrame(function () {
       pod.style.opacity = "1";
-      pod.style.transform = "translateX(-50%) scale(1)";
+      pod.style.transform = "translateX(-50%) scale(" + COIN_SCALE + ")";
 
       requestAnimationFrame(function () {
         pod.style.left = endX + "px";
         pod.style.top  = endY + "px";
-        pod.style.transform = "translateX(-50%) scale(0.6)";
+        pod.style.transform = "translateX(-50%) scale(" + (0.6 * COIN_SCALE) + ")";
       });
     });
 

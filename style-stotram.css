@@ -54,13 +54,13 @@
   /* Portrait phones (aspect < 2/3): cover → image fills HEIGHT (100dvh)
      Flute is at ~10% from top → title below it at 10dvh               */
   @media (max-aspect-ratio: 2/3) {
-    .lmt { top: calc(env(safe-area-inset-top, 0px) + 8px); }
+    .lmt { top: calc(env(safe-area-inset-top, 0px) + 2px); }
   }
   /* iPad / wider (aspect > 2/3): cover → image fills WIDTH (100vw)
      image_height = 150.25vw, image_top = 50dvh - 75.125vw
      10% from image top = 50dvh - 75.125vw + 0.10×150.25vw = 50dvh - 60.1vw */
   @media (min-aspect-ratio: 2/3) {
-    .lmt { top: calc(env(safe-area-inset-top, 0px) + 8px); }
+    .lmt { top: calc(env(safe-area-inset-top, 0px) + 2px); }
   }
 
   /* ── Verse counter — hidden to maximise frame space ── */
@@ -153,7 +153,7 @@
     -webkit-overflow-scrolling: touch;
     background: transparent;
     /* padding-top guards first-line ascenders from frame border clip */
-    padding: 16px 8px 8px;
+    padding: 12px 2px 8px;
     z-index: 2;
   }
   /* Portrait phones (aspect < 2/3): cover → image fills HEIGHT (100dvh)
@@ -165,10 +165,10 @@
      left/right = 5vw (side ornaments are cropped off-screen by cover) */
   @media (max-aspect-ratio: 2/3) {
     .lm-card-inner {
-      top:    calc(env(safe-area-inset-top, 0px) + 40px);
+      top:    calc(env(safe-area-inset-top, 0px) + 36px);
       bottom: calc(env(safe-area-inset-bottom, 0px) + 48px);
-      left:   8px;
-      right:  8px;
+      left:   2px;
+      right:  2px;
     }
   }
   /* iPad / wider (aspect > 2/3): cover → image fills WIDTH (100vw)
@@ -178,10 +178,10 @@
      left/right = 9% of image width = 9vw                             */
   @media (min-aspect-ratio: 2/3) {
     .lm-card-inner {
-      top:    calc(env(safe-area-inset-top, 0px) + 40px);
+      top:    calc(env(safe-area-inset-top, 0px) + 36px);
       bottom: calc(env(safe-area-inset-bottom, 0px) + 48px);
-      left:   12px;
-      right:  12px;
+      left:   2px;
+      right:  2px;
     }
   }
 

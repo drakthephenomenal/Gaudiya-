@@ -1,8 +1,8 @@
 // ═══════════════════════════════════════════════════════
-// Radha Naam Jap — Service Worker  v155
+// Radha Naam Jap — Service Worker  v158
 // Push notifications & FCM removed.
 //
-// v155 fixes (vs v154):
+// v156 fixes (vs v154):
 //  • Promoted ./vedic-panchanga/panchanga.html, .css, .js to CORE_ASSETS so
 //    install BLOCKS on them. Fixes "Vedic Panchanga module failed to load"
 //    on first open / after update where the HTML fragment fetch failed
@@ -10,7 +10,7 @@
 //  • Bumped cache name to invalidate any stale v154 entry that may have
 //    cached a failed/empty panchanga.html response.
 // ═══════════════════════════════════════════════════════
-const CACHE = 'radha-jap-v155';
+const CACHE = 'radha-jap-v164';
 
 // Core assets — install BLOCKS on these. Anything the first paint needs
 // must live here, otherwise users see a network round-trip on first open.

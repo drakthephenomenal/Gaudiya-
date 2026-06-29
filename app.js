@@ -6021,7 +6021,7 @@ function fbDebouncedPush() {
   // and imprint the viewed user's data onto the developer's own profile.
   if (typeof isGhostMode === "function" && isGhostMode()) return;
   clearTimeout(_fbDeb);
-  _fbDeb = setTimeout(() => fbPushDelta(), 3000);
+  _fbDeb = setTimeout(() => fbPushDelta(), 800);
 }
 
 // ═══════════════════════════════════════════════════════
@@ -7223,10 +7223,11 @@ function renderSt() {
 
 // ─────────────────────────────────────────────────────────
 // DEVELOPER STOTRAM MANAGEMENT
-// Developer IDs: drakthephenomenal@gmail.com, akthephenomenal@zohomail.com, anupkumarpaulshuvo@gmail.com
+// Developer IDs: drakthephenomenal@gmail.com, drakthephenomenal@proton.me, akthephenomenal@zohomail.com, anupkumarpaulshuvo@gmail.com
 // ─────────────────────────────────────────────────────────
 const DEV_IDS = [
   "drakthephenomenal@gmail.com",
+  "drakthephenomenal@proton.me",
   "akthephenomenal@zohomail.com",
   "anupkumarpaulshuvo@gmail.com",
 ];
@@ -7384,10 +7385,12 @@ window.devEnterGhostMode = async function (uid, displayLabel) {
   //    don't trigger a push back to the dev's own account
   if (typeof fbListener === 'function') { try { fbListener(); } catch(_){} fbListener = null; }
 
-  // 5. Pull the viewed user's data from Firestore (read-only)
-  let snap;
+  // 5. Subscribe LIVE to the viewed user's data so ghost mode reflects
+  //    their japs in real time (instead of a frozen one-shot snapshot).
+  const _ghostDocRef = fbDb.collection('users').doc(uid).collection('data').doc('main');
+  let _ghostFirstSnap;
   try {
-    snap = await fbDb.collection('users').doc(uid).collection('data').doc('main').get();
+    _ghostFirstSnap = await _ghostDocRef.get();
   } catch (e) {
     toast('⚠️ Cannot read that user\'s data: ' + (e.message || e));
     _ghostViewingUid = null;
@@ -7395,7 +7398,7 @@ window.devEnterGhostMode = async function (uid, displayLabel) {
     return;
   }
 
-  if (!snap || !snap.exists) {
+  if (!_ghostFirstSnap || !_ghostFirstSnap.exists) {
     toast('⚠️ No data document found for that user.');
     _ghostViewingUid = null;
     _ghostOwnState   = null;
@@ -7404,8 +7407,30 @@ window.devEnterGhostMode = async function (uid, displayLabel) {
 
   // 6. Stamp viewed data into App.S without touching IDB / cloud
   App._cloudHydrated = false;          // block any accidental push trigger
-  fbApplyRemote(snap.data());
+  fbApplyRemote(_ghostFirstSnap.data());
   App._cloudHydrated = false;          // keep blocked
+
+  // 6b. Attach a live listener so subsequent jap taps by the real user
+  //     show up immediately in ghost mode — fixes the mismatch between
+  //     ghost view, leaderboard, history and jap counts.
+  try { if (window._ghostUnsub) { window._ghostUnsub(); } } catch(_){}
+  window._ghostUnsub = _ghostDocRef.onSnapshot(function(s){
+    if (!isGhostMode() || _ghostViewingUid !== uid) return;
+    if (!s || !s.exists) return;
+    App._cloudHydrated = false;
+    try { fbApplyRemote(s.data()); } catch(_){}
+    App._cloudHydrated = false;
+    // Re-render every panel so leaderboard / history / counts stay in lock-step
+    try { if (typeof switchJapMode === 'function') switchJapMode(App.S.japMode || 'radha'); } catch(_){}
+    try { App.ua(); } catch(_){}
+    try { if (typeof renderSt       === 'function') renderSt(); } catch(_){}
+    try { if (typeof u28            === 'function') u28(); } catch(_){}
+    try { if (typeof renderBcal     === 'function') renderBcal(); } catch(_){}
+    try { if (typeof renderCal      === 'function') renderCal(); } catch(_){}
+    try { if (typeof uStats         === 'function') uStats(); } catch(_){}
+    try { if (typeof renderSankalpas=== 'function') renderSankalpas(); } catch(_){}
+    try { if (typeof renderMalaLog  === 'function') renderMalaLog(); } catch(_){}
+  }, function(err){ console.warn('ghost onSnapshot:', err && err.message); });
 
   // 7. Re-render everything
   if (typeof switchJapMode === 'function') switchJapMode(App.S.japMode || 'radha');
@@ -7430,6 +7455,9 @@ window.devEnterGhostMode = async function (uid, displayLabel) {
 // ── Exit ghost mode — restore dev's own state ─────────────────
 window.devExitGhostMode = async function () {
   if (!isDeveloper()) return;
+
+  // 0. Detach the live listener attached when entering ghost mode
+  try { if (window._ghostUnsub) { window._ghostUnsub(); window._ghostUnsub = null; } } catch(_){}
 
   // 1. Clear ghost flag immediately so write guards lift
   _ghostViewingUid = null;
@@ -9230,16 +9258,62 @@ window.addEventListener("load", async () => {
     }
   }, 6000);
 
-  // Hide loading — guaranteed cleanup
-  setTimeout(() => {
+  // ── Hide splash only AFTER cloud hydration completes ───────────────────
+  // Tapping before cloud data arrives can cause merge mismatches (local
+  // values get overwritten by the authoritative cloud pull). The splash
+  // overlay (z-index 999) blocks all taps to the app underneath, so we
+  // keep it visible until `_cloudHydrated` is true. Guest/offline users
+  // are released after a short grace; a hard 15s cap prevents any wedge.
+  (function setupHydrationGatedSplash(){
     const ls = document.getElementById("ls");
-    if (ls) {
+    const status = document.getElementById("lsStatus");
+    if (!ls) return;
+    let hidden = false;
+    function doHide(reason){
+      if (hidden) return;
+      hidden = true;
       ls.classList.add("hide");
-      setTimeout(() => {
-        if (ls.parentNode) ls.parentNode.removeChild(ls);
-      }, 900);
+      setTimeout(() => { if (ls.parentNode) ls.parentNode.removeChild(ls); }, 900);
+      if (reason) console.log("[splash] hide:", reason);
     }
-  }, 5000);
+    window.__hideSplash = doHide;
+    const startedAt = Date.now();
+    const MIN_SHOW_MS  = 1200;  // let opening animation breathe
+    const HARD_CAP_MS  = 15000; // never wedge the UI
+
+    function tick(){
+      if (hidden) return;
+      const elapsed = Date.now() - startedAt;
+      // Cloud finished hydrating → release immediately (after min show)
+      if (window.App && App._cloudHydrated) {
+        const wait = Math.max(0, MIN_SHOW_MS - elapsed);
+        setTimeout(() => doHide("hydrated"), wait);
+        return;
+      }
+      // Auth resolved to NO user (guest mode) → no cloud to wait for
+      if (typeof fbAuth !== "undefined" && fbAuth && fbAuth.currentUser === null
+          && elapsed > 2500) {
+        if (status) status.textContent = "Tap to start your jap 🙏";
+        doHide("guest");
+        return;
+      }
+      // Update status messaging as time passes
+      if (status && elapsed > 4000) {
+        status.textContent = "Syncing your jap counts… please wait";
+      }
+      if (status && elapsed > 9000) {
+        status.textContent = "Almost there — fetching from cloud…";
+      }
+      // Hard safety cap — release even if cloud is unreachable
+      if (elapsed > HARD_CAP_MS) {
+        if (status) status.textContent = "Working offline — will sync later";
+        doHide("timeout");
+        return;
+      }
+      setTimeout(tick, 250);
+    }
+    tick();
+  })();
 });
 
 // ═══════════════════════════════════════════════════════

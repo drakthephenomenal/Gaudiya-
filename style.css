@@ -29,15 +29,6 @@ body::before{content:'';position:fixed;top:50%;left:50%;transform:translate(-50%
   text-shadow:0 0 20px rgba(255,215,0,0.8),0 2px 8px rgba(0,0,0,0.9);position:relative;z-index:20;text-align:center;line-height:1.5;}
 .ls-sub{font-size:14px;color:#D6E8FF;letter-spacing:2px;margin-top:10px;font-family:'Noto Sans Bengali','Noto Sans',sans-serif;
   text-shadow:0 2px 8px rgba(0,0,0,0.9);position:relative;z-index:20;}
-.ls-spinner{margin-top:28px;width:36px;height:36px;border-radius:50%;
-  border:3px solid rgba(255,215,0,0.18);border-top-color:var(--gold,#FFD700);
-  animation:ls-spin 0.9s linear infinite;position:relative;z-index:20;
-  box-shadow:0 0 18px rgba(255,215,0,0.35);}
-.ls-status{margin-top:14px;font-size:12.5px;letter-spacing:1.2px;color:#D6E8FF;
-  opacity:0.85;font-family:'Inter','Noto Sans',sans-serif;text-align:center;
-  text-shadow:0 2px 8px rgba(0,0,0,0.9);position:relative;z-index:20;padding:0 24px;
-  max-width:90vw;transition:opacity .25s;}
-@keyframes ls-spin{to{transform:rotate(360deg);}}
 /* Falling peacock feathers */
 .ls-feathers{position:fixed;inset:0;pointer-events:none;z-index:1000;overflow:hidden;}
 .feather{position:absolute;top:-80px;opacity:0;animation:featherFall linear infinite;}
@@ -1508,6 +1499,7 @@ body.gaudiya-mode #naamOptRadha,
 body.gaudiya-mode #naamOptRV { display: none !important; }
 /* Settings: HK targets block visible only in Gaudiya mode */
 body:not(.gaudiya-mode) .hk-only-block { display: none !important; }
+body.gaudiya-mode .naam-only-block { display: none !important; }
 
 /* ── Option C: Lotus Petals — Mahamantra Stats ── */
 .hkc-wrap{
@@ -1633,6 +1625,21 @@ body.hk-bn #hkLangBtnBn{
 /* Inactive button dimmed */
 body:not(.hk-bn) #hkLangBtnBn{opacity:0.55;}
 body.hk-bn #hkLangBtnHi{opacity:0.55;}
+
+/* ── Jap Text (Radha / Radha Vallabh) script picker buttons ── */
+#naamLangBtnSa, #naamLangBtnBn{transition:all 0.3s ease;}
+body:not(.naam-bn) #naamLangBtnSa{
+  border-color:rgba(255,215,0,0.85)!important;
+  background:rgba(255,215,0,0.15)!important;
+  box-shadow:0 0 20px rgba(255,215,0,0.25),inset 0 0 12px rgba(255,215,0,0.08)!important;
+}
+body.naam-bn #naamLangBtnBn{
+  border-color:rgba(109,184,255,0.85)!important;
+  background:rgba(109,184,255,0.15)!important;
+  box-shadow:0 0 20px rgba(109,184,255,0.25),inset 0 0 12px rgba(109,184,255,0.08)!important;
+}
+body:not(.naam-bn) #naamLangBtnBn{opacity:0.55;}
+body.naam-bn #naamLangBtnSa{opacity:0.55;}
 
 /* ═══════════════════════════════════════════════
    HCJ AUDIO PLAYER

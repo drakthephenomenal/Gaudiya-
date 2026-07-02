@@ -81,6 +81,7 @@ const App = {
     nameJapDeductHK: 0,
     gaudiyaMode: false,  // single mode for all — Gaudiya/ISKCON
     hkLang: "hi",
+    naamLang: "sa",  // Radha / Radha Vallabh jap text script: "sa" (Sanskrit/Devanagari) or "bn" (Bangla)
     lbOptIn: false,        // leaderboard opt-in
     lbDisplayName: "",     // leaderboard display name
     bgRadhaVallabh: 1,
@@ -245,6 +246,7 @@ const App = {
       dt28Cycles: this.S.dt28Cycles || 0,
       milestones: this.S.milestones || { reached: {}, lastChecked: 0 },
       hkLang: this.S.hkLang || "hi",
+      naamLang: this.S.naamLang || "sa",
       lastLat: this.S.lastLat ?? null,
       lastLng: this.S.lastLng ?? null,
     });
@@ -377,6 +379,7 @@ const App = {
     if (this.S.nameJapDeductHK === undefined) this.S.nameJapDeductHK = 0;
     if (this.S.gaudiyaMode === undefined) this.S.gaudiyaMode = false;
     if (!this.S.hkLang) this.S.hkLang = "hi";
+    if (!this.S.naamLang) this.S.naamLang = "sa";
     if (!this.S.historyHK[this.S.tk]) this.S.historyHK[this.S.tk] = 0;
     if (!this.S.timerHistoryHK[this.S.tk]) this.S.timerHistoryHK[this.S.tk] = 0;
     // Load malaLogHK — only keep if today has HK jap
@@ -1465,7 +1468,7 @@ function spawn(e, zone) {
   }
   const el = document.createElement("div");
   el.className = "fn";
-  el.textContent = "राधा";
+  el.textContent = naamText().radha;
   const fs = 110 + Math.random() * 60;
   el.style.left = x - fs * 0.6 + "px";
   el.style.top = y - fs * 0.4 + "px";
@@ -1492,12 +1495,13 @@ function spawnRV(e, zone) {
   const el = document.createElement("div");
   el.className = "fn-rv";
   const fs = 55 + Math.random() * 25;
+  const _nt = naamText();
   el.innerHTML =
     '<span style="font-size:' +
     fs +
-    'px">राधावल्लभ</span><span style="font-size:' +
+    'px">' + _nt.rv1 + '</span><span style="font-size:' +
     fs * 0.85 +
-    'px">श्री हरिवंश</span>';
+    'px">' + _nt.rv2 + '</span>';
   el.style.left = x - fs * 1.2 + "px";
   el.style.top = y - fs * 0.5 + "px";
   acf = !acf;
@@ -1898,6 +1902,7 @@ function initJapModeUI() {
   if (lblH) lblH.textContent = App.S.hkLang === "bn" ? "Bangla" : "Hindi";
   // Apply all language-sensitive labels on load
   applyHKLangLabels(App.S.hkLang || "hi");
+  applyNaamLangLabels(App.S.naamLang || "sa");
   try { populateSettingsUI(); } catch (_e) {}
 }
 
@@ -1925,6 +1930,37 @@ function closeNaamSelOutside(e) {
     document.removeEventListener("touchstart", closeNaamSelOutside);
   }
 }
+// ── Radha / Radha Vallabh jap-text script lookup (Sanskrit/Devanagari vs Bangla) ──
+const NAAM_TEXT = {
+  sa: { radha: "राधा", rv1: "राधावल्लभ", rv2: "श्री हरिवंश" },
+  bn: { radha: "রাধা", rv1: "রাধাবল্লভ", rv2: "শ্রী হরিবংশ" },
+};
+function naamText() {
+  const lang = (App.S && App.S.naamLang === "bn") ? "bn" : "sa";
+  return NAAM_TEXT[lang];
+}
+
+// Apply naamLang-sensitive labels: settings picker UI + live title/toast refresh
+function applyNaamLangLabels(lang) {
+  const isBn = lang === "bn";
+  document.body.classList.toggle("naam-bn", isBn);
+  const lbl = document.getElementById("naamLangLabel");
+  if (lbl) lbl.textContent = isBn ? "Bangla" : "Sanskrit";
+}
+
+function setNaamLangDirect(lang) {
+  if (!App || !App.S) return;
+  if (App.S.naamLang === lang) return; // already selected
+  App.S.naamLang = lang;
+  applyNaamLangLabels(lang);
+  // Refresh the header title live if currently on Radha or RV mode
+  if (App.S.japMode === "radha" || App.S.japMode === "rv") {
+    switchJapMode(App.S.japMode);
+  }
+  App.save();
+  if (typeof fbDebouncedPush === "function") fbDebouncedPush();
+}
+
 function switchJapMode(mode) {
   App.S.japMode = mode;
   const dd = document.getElementById("naamSelDd");
@@ -1954,8 +1990,12 @@ function switchJapMode(mode) {
       optRV.classList.add("active");
       optRV.querySelector(".ns-check").textContent = "✓";
     }
-    titleEl.innerHTML =
-      '<span style="font-size:clamp(18px,5vw,28px);line-height:1.1">राधावल्लभ</span><br><span style="font-size:clamp(16px,4.5vw,24px);line-height:1.1">श्री हरिवंश</span>';
+    {
+      const _nt = naamText();
+      titleEl.innerHTML =
+        '<span style="font-size:clamp(18px,5vw,28px);line-height:1.1">' + _nt.rv1 +
+        '</span><br><span style="font-size:clamp(16px,4.5vw,24px);line-height:1.1">' + _nt.rv2 + '</span>';
+    }
     titleEl.style.textAlign = "center";
     if (hkEl) {
       hkEl.classList.remove("hk-visible");
@@ -1990,7 +2030,7 @@ function switchJapMode(mode) {
       optR.classList.add("active");
       optR.querySelector(".ns-check").textContent = "✓";
     }
-    titleEl.textContent = "राधा";
+    titleEl.textContent = naamText().radha;
     titleEl.style.textAlign = "";
     if (hkEl) {
       hkEl.classList.remove("hk-visible");
@@ -2009,12 +2049,13 @@ function switchJapMode(mode) {
   App.ua();
   uStats();
   renderMalaLog();
+  const _nt = naamText();
   const toastMap = {
-    rv: "राधावल्लभ श्री हरिवंश 🙏",
+    rv: _nt.rv1 + " " + _nt.rv2 + " 🙏",
     hk: "हरे कृष्ण महामंत्र 🪷",
-    radha: "राधा 🙏",
+    radha: _nt.radha + " 🙏",
   };
-  toast(toastMap[mode] || "राधा 🙏");
+  toast(toastMap[mode] || _nt.radha + " 🙏");
 }
 
 function escHtml(t) {
@@ -5052,6 +5093,21 @@ function fbInit() {
         // guaranteed to fetch the latest cloud data before anything is rendered.
         fbClaimSession().then(async () => {
           fbWatchSession();
+          // ── Presence heartbeat: every signed-in user writes their own
+          // /presence/{uid} doc so developers can list ALL signed-in
+          // accounts in Ghost Mode (not just leaderboard opt-ins).
+          try {
+            const _pName  = user.displayName || '';
+            const _pEmail = user.email || '';
+            const _pPhone = user.phoneNumber || '';
+            await fbDb.collection('presence').doc(user.uid).set({
+              uid: user.uid,
+              name: _pName,
+              email: _pEmail,
+              phone: _pPhone,
+              lastSeen: firebase.firestore.FieldValue.serverTimestamp(),
+            }, { merge: true });
+          } catch (_e) {}
           // ── Sync device clock with Firebase server time ──
           // Corrects getTk() if local clock is wrong or in different timezone
           await fbSyncServerTime();
@@ -6014,15 +6070,55 @@ async function fbAutoSync() {
 }
 
 let _fbDeb = null;
+let _fbMaxWaitTimer = null;
+let _fbLastPushAt = 0;
+const FB_DEBOUNCE_MS = 3000;
+const FB_MAX_WAIT_MS = 5000; // force a push at least this often during continuous tapping
+
 function fbDebouncedPush() {
   if (!fbUser) return;
   // v154: hard belt-and-suspenders guard. Even if some future tap path forgets
   // its own isGhostMode() check, no ghost-mode write will ever reach Firestore
   // and imprint the viewed user's data onto the developer's own profile.
   if (typeof isGhostMode === "function" && isGhostMode()) return;
+
   clearTimeout(_fbDeb);
-  _fbDeb = setTimeout(() => fbPushDelta(), 800);
+  _fbDeb = setTimeout(() => _fbDoPush(), FB_DEBOUNCE_MS);
+
+  // Max-wait guarantee: during a long burst of rapid taps (e.g. 108 taps in
+  // under a minute), the short debounce above keeps getting reset and may
+  // never fire. This separate timer ensures a push still happens at least
+  // every FB_MAX_WAIT_MS, so ghost mode / leaderboard never fall far behind
+  // a live, fast-tapping session.
+  if (!_fbMaxWaitTimer) {
+    _fbMaxWaitTimer = setTimeout(() => _fbDoPush(), FB_MAX_WAIT_MS);
+  }
 }
+
+function _fbDoPush() {
+  clearTimeout(_fbDeb);
+  _fbDeb = null;
+  clearTimeout(_fbMaxWaitTimer);
+  _fbMaxWaitTimer = null;
+  _fbLastPushAt = Date.now();
+  if (typeof isGhostMode === "function" && isGhostMode()) return;
+  if (!fbUser) return;
+  fbPushDelta().catch(() => {});
+}
+
+// Force an immediate flush of any pending debounced push the moment the app
+// is backgrounded, tab-switched, or closed — otherwise a pending timer
+// can get silently dropped by the OS, leaving Firestore (and therefore
+// ghost mode + the leaderboard) stuck on stale data until the next tap.
+function _fbFlushPendingPush() {
+  if (!_fbDeb && !_fbMaxWaitTimer) return;
+  _fbDoPush();
+}
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "hidden") _fbFlushPendingPush();
+});
+window.addEventListener("pagehide", _fbFlushPendingPush);
+window.addEventListener("beforeunload", _fbFlushPendingPush);
 
 // ═══════════════════════════════════════════════════════
 // GOOGLE DRIVE — Silent Monk Auto Backup
@@ -6559,12 +6655,17 @@ function addSankalp() {
     return;
   }
   const hasActive = (App.S.sankalpas || []).some((s) => !s.done);
+  const isFirstEverWish = (App.S.sankalpas || []).length === 0;
   const sk = {
     id: "sk_" + Date.now(),
     wish,
     target,
     startDate: App.S.tk,
-    startCycles: hasActive ? null : getTotalCycles28(),
+    // v2: the very first sankalp ever created starts from 0, not from the
+    // current lifetime cycle count — otherwise jap done before the first
+    // wish existed would never be credited to any wish, leaving a permanent
+    // gap between lifetime total and sum-of-wishes progress.
+    startCycles: hasActive ? null : (isFirstEverWish ? 0 : getTotalCycles28()),
     done: false,
     doneDate: null,
     _savedProgress: 0,
@@ -7306,6 +7407,22 @@ async function _fetchAllKnownUsers() {
     });
   } catch (_) {}
 
+  try {
+    // 3. presence collection — every signed-in user writes a heartbeat here,
+    //    so this captures accounts that never opted into the leaderboard
+    //    and never submitted feedback.
+    const prSnap = await fbDb.collection('presence').get();
+    prSnap.forEach(doc => {
+      const d = doc.data() || {};
+      add(doc.id, {
+        name:  byUid[doc.id]?.name  || d.name  || d.displayName || '',
+        email: byUid[doc.id]?.email || d.email || '',
+        phone: byUid[doc.id]?.phone || d.phone || d.phoneNumber || '',
+        source: byUid[doc.id] ? byUid[doc.id].source : 'presence',
+      });
+    });
+  } catch (_) {}
+
   // Sort: users with names first, then by name alpha
   return Object.values(byUid).sort((a, b) => {
     const an = (a.name || a.email || '').toLowerCase();
@@ -7385,12 +7502,10 @@ window.devEnterGhostMode = async function (uid, displayLabel) {
   //    don't trigger a push back to the dev's own account
   if (typeof fbListener === 'function') { try { fbListener(); } catch(_){} fbListener = null; }
 
-  // 5. Subscribe LIVE to the viewed user's data so ghost mode reflects
-  //    their japs in real time (instead of a frozen one-shot snapshot).
-  const _ghostDocRef = fbDb.collection('users').doc(uid).collection('data').doc('main');
-  let _ghostFirstSnap;
+  // 5. Pull the viewed user's data from Firestore (read-only)
+  let snap;
   try {
-    _ghostFirstSnap = await _ghostDocRef.get();
+    snap = await fbDb.collection('users').doc(uid).collection('data').doc('main').get();
   } catch (e) {
     toast('⚠️ Cannot read that user\'s data: ' + (e.message || e));
     _ghostViewingUid = null;
@@ -7398,7 +7513,7 @@ window.devEnterGhostMode = async function (uid, displayLabel) {
     return;
   }
 
-  if (!_ghostFirstSnap || !_ghostFirstSnap.exists) {
+  if (!snap || !snap.exists) {
     toast('⚠️ No data document found for that user.');
     _ghostViewingUid = null;
     _ghostOwnState   = null;
@@ -7407,30 +7522,8 @@ window.devEnterGhostMode = async function (uid, displayLabel) {
 
   // 6. Stamp viewed data into App.S without touching IDB / cloud
   App._cloudHydrated = false;          // block any accidental push trigger
-  fbApplyRemote(_ghostFirstSnap.data());
+  fbApplyRemote(snap.data());
   App._cloudHydrated = false;          // keep blocked
-
-  // 6b. Attach a live listener so subsequent jap taps by the real user
-  //     show up immediately in ghost mode — fixes the mismatch between
-  //     ghost view, leaderboard, history and jap counts.
-  try { if (window._ghostUnsub) { window._ghostUnsub(); } } catch(_){}
-  window._ghostUnsub = _ghostDocRef.onSnapshot(function(s){
-    if (!isGhostMode() || _ghostViewingUid !== uid) return;
-    if (!s || !s.exists) return;
-    App._cloudHydrated = false;
-    try { fbApplyRemote(s.data()); } catch(_){}
-    App._cloudHydrated = false;
-    // Re-render every panel so leaderboard / history / counts stay in lock-step
-    try { if (typeof switchJapMode === 'function') switchJapMode(App.S.japMode || 'radha'); } catch(_){}
-    try { App.ua(); } catch(_){}
-    try { if (typeof renderSt       === 'function') renderSt(); } catch(_){}
-    try { if (typeof u28            === 'function') u28(); } catch(_){}
-    try { if (typeof renderBcal     === 'function') renderBcal(); } catch(_){}
-    try { if (typeof renderCal      === 'function') renderCal(); } catch(_){}
-    try { if (typeof uStats         === 'function') uStats(); } catch(_){}
-    try { if (typeof renderSankalpas=== 'function') renderSankalpas(); } catch(_){}
-    try { if (typeof renderMalaLog  === 'function') renderMalaLog(); } catch(_){}
-  }, function(err){ console.warn('ghost onSnapshot:', err && err.message); });
 
   // 7. Re-render everything
   if (typeof switchJapMode === 'function') switchJapMode(App.S.japMode || 'radha');
@@ -7455,9 +7548,6 @@ window.devEnterGhostMode = async function (uid, displayLabel) {
 // ── Exit ghost mode — restore dev's own state ─────────────────
 window.devExitGhostMode = async function () {
   if (!isDeveloper()) return;
-
-  // 0. Detach the live listener attached when entering ghost mode
-  try { if (window._ghostUnsub) { window._ghostUnsub(); window._ghostUnsub = null; } } catch(_){}
 
   // 1. Clear ghost flag immediately so write guards lift
   _ghostViewingUid = null;
@@ -9258,62 +9348,16 @@ window.addEventListener("load", async () => {
     }
   }, 6000);
 
-  // ── Hide splash only AFTER cloud hydration completes ───────────────────
-  // Tapping before cloud data arrives can cause merge mismatches (local
-  // values get overwritten by the authoritative cloud pull). The splash
-  // overlay (z-index 999) blocks all taps to the app underneath, so we
-  // keep it visible until `_cloudHydrated` is true. Guest/offline users
-  // are released after a short grace; a hard 15s cap prevents any wedge.
-  (function setupHydrationGatedSplash(){
+  // Hide loading — guaranteed cleanup
+  setTimeout(() => {
     const ls = document.getElementById("ls");
-    const status = document.getElementById("lsStatus");
-    if (!ls) return;
-    let hidden = false;
-    function doHide(reason){
-      if (hidden) return;
-      hidden = true;
+    if (ls) {
       ls.classList.add("hide");
-      setTimeout(() => { if (ls.parentNode) ls.parentNode.removeChild(ls); }, 900);
-      if (reason) console.log("[splash] hide:", reason);
+      setTimeout(() => {
+        if (ls.parentNode) ls.parentNode.removeChild(ls);
+      }, 900);
     }
-    window.__hideSplash = doHide;
-    const startedAt = Date.now();
-    const MIN_SHOW_MS  = 1200;  // let opening animation breathe
-    const HARD_CAP_MS  = 15000; // never wedge the UI
-
-    function tick(){
-      if (hidden) return;
-      const elapsed = Date.now() - startedAt;
-      // Cloud finished hydrating → release immediately (after min show)
-      if (window.App && App._cloudHydrated) {
-        const wait = Math.max(0, MIN_SHOW_MS - elapsed);
-        setTimeout(() => doHide("hydrated"), wait);
-        return;
-      }
-      // Auth resolved to NO user (guest mode) → no cloud to wait for
-      if (typeof fbAuth !== "undefined" && fbAuth && fbAuth.currentUser === null
-          && elapsed > 2500) {
-        if (status) status.textContent = "Tap to start your jap 🙏";
-        doHide("guest");
-        return;
-      }
-      // Update status messaging as time passes
-      if (status && elapsed > 4000) {
-        status.textContent = "Syncing your jap counts… please wait";
-      }
-      if (status && elapsed > 9000) {
-        status.textContent = "Almost there — fetching from cloud…";
-      }
-      // Hard safety cap — release even if cloud is unreachable
-      if (elapsed > HARD_CAP_MS) {
-        if (status) status.textContent = "Working offline — will sync later";
-        doHide("timeout");
-        return;
-      }
-      setTimeout(tick, 250);
-    }
-    tick();
-  })();
+  }, 5000);
 });
 
 // ═══════════════════════════════════════════════════════
@@ -12443,7 +12487,8 @@ async function pushLeaderboard() {
   const totalRadha = Object.values(hist).reduce((a,b)=>a+b,0);
   const totalRV    = Object.values(histRV).reduce((a,b)=>a+b,0);
   const totalHK    = Object.values(histHK).reduce((a,b)=>a+b,0);
-  const totalJap   = Math.max(0, totalRadha + totalRV + totalHK - (App.S.nameJapDeduct||0) - (App.S.nameJapDeductRV||0) - (App.S.nameJapDeductHK||0));
+  const total28    = Object.values(hist28).reduce((a,b)=>a+b,0);
+  const totalJap   = Math.max(0, totalRadha + totalRV + totalHK + total28 - (App.S.nameJapDeduct||0) - (App.S.nameJapDeductRV||0) - (App.S.nameJapDeductHK||0));
 
   // Build display name
   let displayName = (App.S.lbDisplayName || '').trim();

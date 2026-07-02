@@ -126,8 +126,6 @@
   </div>
   <div class="ls-title">जय जय श्री हरिवंश</div>
   <div class="ls-sub">জয় জয় শ্রী হরিবংশ</div>
-  <div class="ls-spinner" id="lsSpinner" aria-label="Loading"></div>
-  <div class="ls-status" id="lsStatus">Loading your jap from cloud…</div>
 </div>
 
 <!-- Falling Peacock Feathers -->
@@ -1214,6 +1212,25 @@
     </div>
   </div>
 
+  <!-- 🙏 Radha / Radha Vallabh Jap Text Language 🙏 -->
+  <div class="naam-only-block" style="margin-top:14px;padding-top:14px;border-top:1px solid rgba(255,215,0,0.15)">
+    <div style="font-size:9px;color:rgba(255,215,0,0.7);letter-spacing:2px;text-transform:uppercase;font-weight:700;margin-bottom:10px;">🙏 Jap Text Language</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+      <div onclick="setNaamLangDirect('sa')" id="naamLangBtnSa"
+        style="padding:9px 6px;border-radius:11px;text-align:center;cursor:pointer;border:1.5px solid rgba(255,215,0,0.3);background:rgba(255,215,0,0.06);transition:all 0.25s;box-sizing:border-box;">
+        <div style="font-size:17px;margin-bottom:3px;">🕉️</div>
+        <div style="font-size:13px;color:#FFD700;font-family:'Tiro Devanagari Hindi','Hind Siliguri',serif;font-weight:700;">संस्कृत</div>
+        <div style="font-size:9px;color:rgba(255,215,0,0.5);letter-spacing:1px;margin-top:2px;">SANSKRIT</div>
+      </div>
+      <div onclick="setNaamLangDirect('bn')" id="naamLangBtnBn"
+        style="padding:9px 6px;border-radius:11px;text-align:center;cursor:pointer;border:1.5px solid rgba(109,184,255,0.25);background:rgba(109,184,255,0.05);transition:all 0.25s;box-sizing:border-box;">
+        <div style="font-size:17px;margin-bottom:3px;">🪷</div>
+        <div style="font-size:14px;color:#6DB8FF;font-family:'Hind Siliguri',serif;font-weight:700;">বাংলা</div>
+        <div style="font-size:9px;color:rgba(109,184,255,0.5);letter-spacing:1px;margin-top:2px;">BANGLA</div>
+      </div>
+    </div>
+    <span id="naamLangLabel" style="display:none">Sanskrit</span>
+  </div>
 
   <!-- SINGLE SIGN-IN WITH GOOGLE -->
   <div class="sc" id="fbCard">

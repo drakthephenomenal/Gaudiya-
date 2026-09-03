@@ -685,7 +685,7 @@ const App = {
     syncBaselineTimer: {},
     syncBaselineTimer28: {},
     migrationV2Done: false,
-    japMode: "radha",
+    japMode: "rv",
     historyRV: {},
     timerHistoryRV: {},
     dtRV: 0,
@@ -768,6 +768,10 @@ const App = {
     // Efficiency and Quality calculations can subtract it back out.
     manualJapCount: { radha: {}, rv: {}, kv: {}, ss: {}, hk: {}, ram: {}, n28: {} },
     manualJapTime:  { radha: {}, rv: {}, kv: {}, ss: {}, hk: {}, ram: {}, n28: {} },
+    // User-created jap modes and independent history/target data for every
+    // extended mode. Built-in extended modes use the same shape.
+    customModes: [],
+    customModeData: {},
   },
   lmcRV: 0,
   lmcHK: 0,
@@ -976,6 +980,8 @@ const App = {
       stotramTimeHistory: this.S.stotramTimeHistory || {},
       manualJapCount: this.S.manualJapCount || { radha: {}, rv: {}, kv: {}, ss: {}, hk: {}, ram: {}, n28: {} },
       manualJapTime: this.S.manualJapTime || { radha: {}, rv: {}, kv: {}, ss: {}, hk: {}, ram: {}, n28: {} },
+      customModes: this.S.customModes || [],
+      customModeData: this.S.customModeData || {},
       lbDisplayName: this.S.lbDisplayName || "",
     });
     // Keep per-day stores updated for compatibility with existing offline data
@@ -1106,6 +1112,8 @@ const App = {
     if (!this.S.timer28History) this.S.timer28History = {};
     if (!this.S.sankalpas) this.S.sankalpas = [];
     if (!this.S.occasions) this.S.occasions = {};
+    if (!Array.isArray(this.S.customModes)) this.S.customModes = [];
+    if (!this.S.customModeData || typeof this.S.customModeData !== "object") this.S.customModeData = {};
     if (!this.S.historyRV) this.S.historyRV = {};
     if (!this.S.timerHistoryRV) this.S.timerHistoryRV = {};
     if (!this.S.japMode) this.S.japMode = "radha";
@@ -1231,6 +1239,10 @@ const App = {
   },
 
   gTod() {
+    if (isExtendedJapMode(this.S.japMode)) {
+      const d = getExtendedModeData(this.S.japMode);
+      return (d.history || {})[this.S.tk] || 0;
+    }
     if (this.S.japMode === "rv") return this.S.historyRV[this.S.tk] || 0;
     if (this.S.japMode === "hk") return this.S.historyHK[this.S.tk] || 0;
     if (this.S.japMode === "kv") return (this.S.historyKV || {})[this.S.tk] || 0;
@@ -1240,6 +1252,7 @@ const App = {
   },
   // Combined today: radha + RV + KV (or HK-only in gaudiyaMode, SS-only in trahimamMode [Gopeshwar Mahadev], Ram-only in ramanandiMode)
   gTodCombined() {
+    if (isExtendedJapMode(this.S.japMode)) return this.gTod();
     if (this.S.gaudiyaMode) return this.S.historyHK[this.S.tk] || 0;
     if (this.S.trahimamMode) return this.S.historySS[this.S.tk] || 0;
     if (this.S.ramanandiMode) return (this.S.historyRam || {})[this.S.tk] || 0;
@@ -1248,6 +1261,10 @@ const App = {
     );
   },
   gTot() {
+    if (isExtendedJapMode(this.S.japMode)) {
+      const d = getExtendedModeData(this.S.japMode);
+      return Math.max(0, Object.values(d.history || {}).reduce((a, b) => a + b, 0) - (d.nameJapDeduct || 0));
+    }
     // COMBINED lifetime total from radha+RV+KV (or HK-only in gaudiyaMode, SS-only in trahimamMode [Gopeshwar Mahadev], Ram-only in ramanandiMode)
     if (this.S.gaudiyaMode) {
       return Math.max(
@@ -1289,6 +1306,10 @@ const App = {
   },
   // Mode-specific total (for daily bar only)
   gTotMode() {
+    if (isExtendedJapMode(this.S.japMode)) {
+      const d = getExtendedModeData(this.S.japMode);
+      return Math.max(0, Object.values(d.history || {}).reduce((a, b) => a + b, 0) - (d.nameJapDeduct || 0));
+    }
     if (this.S.japMode === "rv")
       return Math.max(
         0,
@@ -1326,6 +1347,7 @@ const App = {
     );
   },
   getCurHistory() {
+    if (isExtendedJapMode(this.S.japMode)) return getExtendedModeData(this.S.japMode).history || {};
     if (this.S.japMode === "rv") return this.S.historyRV;
     if (this.S.japMode === "hk") return this.S.historyHK || {};
     if (this.S.japMode === "kv") return this.S.historyKV || {};
@@ -1334,6 +1356,7 @@ const App = {
     return this.S.history;
   },
   getCurTimerHistory() {
+    if (isExtendedJapMode(this.S.japMode)) return getExtendedModeData(this.S.japMode).timerHistory || {};
     if (this.S.japMode === "rv") return this.S.timerHistoryRV;
     if (this.S.japMode === "hk") return this.S.timerHistoryHK || {};
     if (this.S.japMode === "kv") return this.S.timerHistoryKV || {};
@@ -1343,6 +1366,8 @@ const App = {
   },
   // Combined history: merge radha + RV + KV counts per day (or HK-only in gaudiyaMode, SS-only in trahimamMode [Gopeshwar Mahadev], Ram-only in ramanandiMode)
   getCombinedHistory() {
+    if (isExtendedJapMode(this.S.japMode))
+      return JSON.parse(JSON.stringify(getExtendedModeData(this.S.japMode).history || {}));
     if (this.S.gaudiyaMode)
       return JSON.parse(JSON.stringify(this.S.historyHK || {}));
     if (this.S.trahimamMode)
@@ -1361,6 +1386,8 @@ const App = {
   },
   // Combined timer history: merge radha + RV + KV timer per day (or HK-only in gaudiyaMode, SS-only in trahimamMode [Gopeshwar Mahadev], Ram-only in ramanandiMode)
   getCombinedTimerHistory() {
+    if (isExtendedJapMode(this.S.japMode))
+      return JSON.parse(JSON.stringify(getExtendedModeData(this.S.japMode).timerHistory || {}));
     if (this.S.gaudiyaMode)
       return JSON.parse(JSON.stringify(this.S.timerHistoryHK || {}));
     if (this.S.trahimamMode)
@@ -1383,12 +1410,14 @@ const App = {
   // in-progress mala delta (currentMalaSeconds) should be added to a
   // Combined/Lifetime figure built from that group.
   isMainLiveInCombinedGroup() {
+    if (isExtendedJapMode(this.S.japMode)) return true;
     if (this.S.gaudiyaMode) return this.S.japMode === "hk";
     if (this.S.trahimamMode) return this.S.japMode === "ss";
     if (this.S.ramanandiMode) return this.S.japMode === "ram";
     return this.S.japMode !== "hk" && this.S.japMode !== "ss" && this.S.japMode !== "ram";
   },
   getCurDt() {
+    if (isExtendedJapMode(this.S.japMode)) return getExtendedModeData(this.S.japMode).dt || 0;
     if (this.S.japMode === "rv") return this.S.dtRV;
     if (this.S.japMode === "hk") return this.S.dtHK || 0;
     if (this.S.japMode === "kv") return this.S.dtKV || 0;
@@ -1397,6 +1426,7 @@ const App = {
     return this.S.dt;
   },
   getCurLt() {
+    if (isExtendedJapMode(this.S.japMode)) return getExtendedModeData(this.S.japMode).lt || 0;
     return this.S.lt;
   },
   // Combined Lifetime Target total: Radha + Radha Vallabh + Krishnay Vasudevay,
@@ -1624,6 +1654,9 @@ const App = {
     const kvSec    = (this.S.timerHistoryKV || {})[tk] || 0;
     const ssSec    = (this.S.timerHistorySS || {})[tk] || 0;
     const n28Sec   = (this.S.timer28History || {})[tk] || 0;
+    const customSec = Object.values(this.S.customModeData || {}).reduce(
+      (total, d) => total + ((d.timerHistory || {})[tk] || 0), 0
+    );
     // Live delta for the IN-PROGRESS mala only. timerHistory[tk] already holds
     // the sum of COMPLETED mala durations (kept in sync by syncTimerFromMalaLog),
     // so adding currentMalaSeconds gives today's true running total without
@@ -1631,14 +1664,17 @@ const App = {
     // Only count this live delta while main Jap is the actively-tapped mode —
     // otherwise (e.g. a main mala left incomplete while actively tapping 28
     // Names) it would double-count the same real seconds alongside live28.
-    const liveJap = this._activeJapMode === "n28" ? 0 : (this.currentMalaSeconds || 0);
+    const liveJap = this._activeJapMode === "n28" || isExtendedJapMode(this.S.japMode)
+      ? 0 : (this.currentMalaSeconds || 0);
     // live delta from the 28-Names timer (elapsed since session start − already flushed)
     let live28 = 0;
     if (this._activeJapMode !== "main" && this._n28TotalStart && !this._n28Paused) {
       const elapsed = Math.floor((Date.now() - this._n28TotalStart) / 1000);
       live28 = Math.max(0, elapsed - (this._n28SavedSecs || 0));
     }
-    return radhaSec + rvSec + hkSec + kvSec + ssSec + n28Sec + liveJap + live28;
+    const liveCustom = this._activeJapMode !== "n28" && isExtendedJapMode(this.S.japMode)
+      ? (this.currentMalaSeconds || 0) : 0;
+    return radhaSec + rvSec + hkSec + kvSec + ssSec + n28Sec + customSec + liveJap + liveCustom + live28;
   },
 
   updateTimerToday() {
@@ -1771,12 +1807,19 @@ const App = {
       this.S.timerHistorySS[this.S.tk] = ssSum;
     if (ramSum > 0 || (this.S.malaLogRam || []).length > 0)
       this.S.timerHistoryRam[this.S.tk] = ramSum;
+    if (isExtendedJapMode(this.S.japMode)) {
+      const d = getExtendedModeData(this.S.japMode);
+      const sum = (d.malaLog || []).reduce((a, b) => a + b, 0);
+      if (sum > 0 || (d.malaLog || []).length > 0) d.timerHistory[this.S.tk] = sum;
+    }
     // Re-anchor timerSavedSeconds so live delta is measured from current position
     this.timerSavedSeconds = this.timerSeconds;
   },
 
   // ── Get mala log sum for today (excludes live in-progress mala) ──
   getMalaLogSum() {
+    if (isExtendedJapMode(this.S.japMode))
+      return (getExtendedModeData(this.S.japMode).malaLog || []).reduce((a, b) => a + b, 0);
     const isRV = this.S.japMode === "rv";
     const isHK = this.S.japMode === "hk";
     const isKV = this.S.japMode === "kv";
@@ -1903,6 +1946,7 @@ const App = {
     const f = document.getElementById("mf");
     const isHKmala = this.S.japMode === "hk";
     const isRammala = this.S.japMode === "ram";
+    const isExtendedMala = isExtendedJapMode(this.S.japMode);
     // For HK mode: show Chaitanya verse overlay until next tap
     if (isHKmala) {
       const lang = this.S.hkLang || "hi";
@@ -1978,7 +2022,11 @@ const App = {
     const isKVm = this.S.japMode === "kv";
     const isSSm = this.S.japMode === "ss";
     const isRamm = this.S.japMode === "ram";
-    if (isRVm) {
+    if (isExtendedMala) {
+      const d = getExtendedModeData(this.S.japMode);
+      if (!d.malaLog) d.malaLog = [];
+      d.malaLog.push(malaDuration);
+    } else if (isRVm) {
       if (!this.S.malaLogRV) this.S.malaLogRV = [];
       this.S.malaLogRV.push(malaDuration);
     } else if (isHKm) {
@@ -1999,7 +2047,9 @@ const App = {
     }
     // Log mala completion with full timestamp
     // Use malaLog.length as the mala number — it's always the correct sequential count
-    const malaNum = isRVm
+    const malaNum = isExtendedMala
+      ? (getExtendedModeData(this.S.japMode).malaLog || []).length
+      : isRVm
       ? (this.S.malaLogRV || []).length
       : isHKm
         ? (this.S.malaLogHK || []).length
@@ -2007,7 +2057,7 @@ const App = {
           ? (this.S.malaLogKV || []).length
           : isSSm
             ? (this.S.malaLogSS || []).length
-            : isRamm
+              : isRamm
               ? (this.S.malaLogRam || []).length
               : (this.S.malaLog || []).length;
     // Store wall-clock start so the history detail can show accurate start time
@@ -2017,7 +2067,7 @@ const App = {
       t: "mala",
       ts: Date.now(),
       startTs: malaStartTs,
-      mode: this.S.japMode,
+        mode: this.S.japMode,
       n: malaNum,
       sec: malaDuration,
     });
@@ -2032,7 +2082,8 @@ const App = {
         const _ms = this.S.ms || 108;
         const _mode = this.S.malaStartMode || this.S.japMode;
         const _hist =
-          _mode === "rv" ? (this.S.historyRV = this.S.historyRV || {})
+          isExtendedJapMode(_mode) ? getExtendedModeData(_mode).history
+          : _mode === "rv" ? (this.S.historyRV = this.S.historyRV || {})
           : _mode === "hk" ? (this.S.historyHK = this.S.historyHK || {})
           : _mode === "kv" ? (this.S.historyKV = this.S.historyKV || {})
           : _mode === "ss" ? (this.S.historySS = this.S.historySS || {})
@@ -2045,7 +2096,8 @@ const App = {
         }
         // Move the mala's elapsed seconds from end-day bucket to start-day bucket.
         const _th =
-          _mode === "rv" ? (this.S.timerHistoryRV = this.S.timerHistoryRV || {})
+          isExtendedJapMode(_mode) ? getExtendedModeData(_mode).timerHistory
+          : _mode === "rv" ? (this.S.timerHistoryRV = this.S.timerHistoryRV || {})
           : _mode === "hk" ? (this.S.timerHistoryHK = this.S.timerHistoryHK || {})
           : _mode === "kv" ? (this.S.timerHistoryKV = this.S.timerHistoryKV || {})
           : _mode === "ss" ? (this.S.timerHistorySS = this.S.timerHistorySS || {})
@@ -2064,6 +2116,9 @@ const App = {
         this.lmcKV = Math.floor(((this.S.historyKV||{})[_endTk] || 0) / _ms);
         this.lmcSS = Math.floor(((this.S.historySS||{})[_endTk] || 0) / _ms);
         this.lmcRam = Math.floor(((this.S.historyRam||{})[_endTk] || 0) / _ms);
+        if (isExtendedJapMode(_mode)) {
+          setModeLmc(_mode, Math.floor((getExtendedModeData(_mode).history[_endTk] || 0) / _ms));
+        }
       }
     } catch (e) { console.warn("startTk credit:", e); }
     this.S.malaStartTk = "";
@@ -2148,7 +2203,11 @@ const App = {
     const isKV = this.S.japMode === "kv";
     const isSS = this.S.japMode === "ss";
     const isRam = this.S.japMode === "ram";
-    if (isRV) {
+    const isExtended = isExtendedJapMode(this.S.japMode);
+    if (isExtended) {
+      const d = getExtendedModeData(this.S.japMode);
+      d.history[this.S.tk] = (d.history[this.S.tk] || 0) + 1;
+    } else if (isRV) {
       this.S.historyRV[this.S.tk] = (this.S.historyRV[this.S.tk] || 0) + 1;
     } else if (isHK) {
       if (!this.S.historyHK) this.S.historyHK = {};
@@ -2186,7 +2245,12 @@ const App = {
       this._n28LastTapTs = Date.now();
       this._arm28AutoPause();
     }
-    if (isRV) {
+    if (isExtended) {
+      spawnExtended(e, document.getElementById("tz"), this.S.japMode);
+      // Nimbark has two yugal mantras; alternate them per tap.
+      const _ed = getExtendedModeData(this.S.japMode);
+      if (getExtendedModeDef(this.S.japMode).texts) _ed.textIndex = (_ed.textIndex || 0) + 1;
+    } else if (isRV) {
       spawnRV(e, document.getElementById("tz"));
     } else if (isHK) {
       spawnHK();
@@ -2201,8 +2265,10 @@ const App = {
     }
     const nm = Math.floor(this.gTod() / ms);
     const lmcKey = isRV ? "lmcRV" : isHK ? "lmcHK" : isKV ? "lmcKV" : isSS ? "lmcSS" : isRam ? "lmcRam" : "lmc";
-    if (nm > this[lmcKey]) {
-      this[lmcKey] = nm;
+    const previousLmc = isExtended ? getModeLmc(this.S.japMode) : this[lmcKey];
+    if (nm > previousLmc) {
+      if (isExtended) setModeLmc(this.S.japMode, nm);
+      else this[lmcKey] = nm;
       this.malaOk();
       App.silentMonkBackup();
     }
@@ -2235,6 +2301,18 @@ const App = {
     const isKV = this.S.japMode === "kv";
     const isSS = this.S.japMode === "ss";
     const isRam = this.S.japMode === "ram";
+    if (isExtendedJapMode(this.S.japMode)) {
+      const d = getExtendedModeData(this.S.japMode);
+      if ((d.history[this.S.tk] || 0) > 0) {
+        d.history[this.S.tk]--;
+        setModeLmc(this.S.japMode, Math.floor(this.gTod() / (this.S.ms || 108)));
+        this.save();
+        fbDebouncedPush();
+        this.ua();
+        this.vib([10]);
+      }
+      return;
+    }
     const hist = isRV
       ? this.S.historyRV
       : isHK
@@ -2531,6 +2609,247 @@ const App = {
 // ═══════════════════════════════════════════════════════
 // HELPERS & GLOBALS
 // ═══════════════════════════════════════════════════════
+
+// ── Sampraday / user-defined jap modes ────────────────────────────────────
+// The original app has dedicated stores for its first six jap types. These
+// helpers let newer built-in modes and user-created modes use one extensible
+// store without changing or invalidating existing users' data.
+const BUILTIN_EXTENDED_MODES = {
+  hd: {
+    id: "hd", title: "Haridashi Sampraday",
+    displayTitle: ["Radha", "Kunj Bihari Sri Haridas"],
+    text: "Radha\nKunj Bihari Sri Haridas", language: "en",
+    group: "Rashik Sampraday", icon: "🌸", color: "#ff7ab8"
+  },
+  nimbark: {
+    id: "nimbark", title: "Nimbark Sampraday",
+    displayTitle: ["যুগল মন্ত্র"], language: "mixed",
+    texts: [
+      "Radhe Krishna Radhe Krishna,\nKrishna Krishna Radhe Radhe",
+      "Radhe Shyam Radhe Shyam,\nShyam Shyam Radhe Radhe"
+    ],
+    group: "Vaishnav Sampraday", icon: "🪷", color: "#f5d17a"
+  },
+  vallabh: {
+    id: "vallabh", title: "Vallabh Sampraday",
+    displayTitle: ["শ্রী কৃষ্ণঃ", "শরণং মম"],
+    text: "শ্রী কৃষ্ণঃ শরণং মম", language: "bn",
+    group: "Vaishnav Sampraday", icon: "🪈", color: "#6db8ff"
+  },
+  narayana: {
+    id: "narayana", title: "Shree Sampraday · Ramanujacharya",
+    displayTitle: ["শ্রীমান নারায়ণ"],
+    text: "শ্রীমান নারায়ণ নারায়ণ নারায়ণ", language: "bn",
+    group: "Shree Sampraday", icon: "🕉️", color: "#ffd700"
+  }
+};
+
+function getExtendedModeDef(mode) {
+  if (BUILTIN_EXTENDED_MODES[mode]) return BUILTIN_EXTENDED_MODES[mode];
+  const list = (App.S && App.S.customModes) || [];
+  return list.find((m) => m && m.id === mode) || null;
+}
+function isExtendedJapMode(mode) {
+  return !!getExtendedModeDef(mode);
+}
+function getExtendedModeData(mode, create = true) {
+  if (!App.S.customModeData) App.S.customModeData = {};
+  if (!App.S.customModeData[mode] && create) {
+    App.S.customModeData[mode] = {
+      history: {}, timerHistory: {}, dt: 0, lt: 0,
+      nameJapDeduct: 0, malaLog: [], textIndex: 0
+    };
+  }
+  const d = App.S.customModeData[mode] || null;
+  if (d) {
+    d.history = d.history || {};
+    d.timerHistory = d.timerHistory || {};
+    d.malaLog = Array.isArray(d.malaLog) ? d.malaLog : [];
+  }
+  return d;
+}
+function getModeText(mode) {
+  const def = getExtendedModeDef(mode);
+  if (!def) return "";
+  const texts = Array.isArray(def.texts) && def.texts.length
+    ? def.texts : [def.text || (def.displayTitle || []).join("\n")];
+  const data = getExtendedModeData(mode);
+  const index = (data && data.textIndex) || 0;
+  return texts[index % texts.length] || "";
+}
+function getModeLabel(mode) {
+  const def = getExtendedModeDef(mode);
+  return def ? (def.title || def.name || "Custom Jap Mode") : mode;
+}
+function getModeLmc(mode) {
+  if (!App.lmcCustom) App.lmcCustom = {};
+  return App.lmcCustom[mode] || 0;
+}
+function setModeLmc(mode, value) {
+  if (!App.lmcCustom) App.lmcCustom = {};
+  App.lmcCustom[mode] = value;
+}
+
+function renderExtendedModeOptions() {
+  const host = document.getElementById("customNaamOptions");
+  if (!host) return;
+  host.innerHTML = "";
+  const defs = Object.values(BUILTIN_EXTENDED_MODES).concat(App.S.customModes || []);
+  defs.forEach((def) => {
+    if (!def || !def.id) return;
+    const opt = document.createElement("div");
+    opt.className = "naam-sel-opt custom-naam-opt";
+    opt.dataset.mode = def.id;
+    opt.innerHTML = '<span class="ns-check"></span> ' + escHtml(def.title || def.name || "Custom Jap");
+    opt.onclick = () => switchJapMode(def.id);
+    host.appendChild(opt);
+  });
+  const active = host.querySelector('.custom-naam-opt[data-mode="' + App.S.japMode + '"]');
+  if (active) {
+    active.classList.add("active");
+    const check = active.querySelector(".ns-check");
+    if (check) check.textContent = "✓";
+  }
+}
+
+function renderSampradaySelector() {
+  const activeMode = App.S.japMode;
+  document.querySelectorAll(".sampraday-option,.sampraday-suboption").forEach((el) => {
+    const mode = el.dataset.mode;
+    const on = mode === activeMode ||
+      (mode === "gaudiya" && App.S.gaudiyaMode) ||
+      (mode === "gopeshwar" && App.S.trahimamMode) ||
+      (mode === "shree" && (activeMode === "narayana" || activeMode === "ram"));
+    el.classList.toggle("active", !!on);
+  });
+  const sub = document.getElementById("shreeSubmode");
+  if (sub) sub.classList.toggle("show", activeMode === "narayana" || activeMode === "ram");
+}
+
+function selectSampradayMode(mode) {
+  if (mode === "shree") {
+    const sub = document.getElementById("shreeSubmode");
+    if (sub) sub.classList.add("show");
+    return;
+  }
+  if (mode === "gaudiya") {
+    if (!App.S.gaudiyaMode) tgs("gaudiyaMode");
+    else switchJapMode("hk");
+  } else if (mode === "gopeshwar") {
+    if (!App.S.trahimamMode) tgs("trahimamMode");
+    else switchJapMode("ss");
+  } else {
+    if (App.S.gaudiyaMode) tgs("gaudiyaMode");
+    if (App.S.trahimamMode) tgs("trahimamMode");
+    if (App.S.ramanandiMode && mode !== "ram") tgs("ramanandiMode");
+    if (mode === "ram") {
+      if (!App.S.ramanandiMode) tgs("ramanandiMode");
+      else switchJapMode("ram");
+    } else {
+      switchJapMode(mode);
+    }
+  }
+  renderSampradaySelector();
+}
+
+let _customModePhotoData = "";
+function previewCustomModePhoto(input) {
+  const file = input && input.files && input.files[0];
+  if (!file) return;
+  if (file.size > 8 * 1024 * 1024) {
+    toast("Please choose a photo under 8MB.");
+    input.value = "";
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = (event) => {
+    const img = new Image();
+    img.onload = () => {
+      const max = 900;
+      const scale = Math.min(1, max / Math.max(img.width, img.height));
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.max(1, Math.round(img.width * scale));
+      canvas.height = Math.max(1, Math.round(img.height * scale));
+      canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
+      _customModePhotoData = canvas.toDataURL("image/jpeg", 0.72);
+      const preview = document.getElementById("customModePhotoPreview");
+      if (preview) {
+        preview.src = _customModePhotoData;
+        preview.style.display = "block";
+      }
+    };
+    img.src = event.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+function createCustomJapMode() {
+  const titleEl = document.getElementById("customModeTitleIn");
+  const textEl = document.getElementById("customModeTextIn");
+  const langEl = document.getElementById("customModeLanguageIn");
+  const title = (titleEl && titleEl.value || "").trim();
+  const text = (textEl && textEl.value || "").trim();
+  if (!title || !text) {
+    toast("Enter a jap title and jap text first.");
+    return;
+  }
+  const id = "custom_" + Date.now() + "_" + Math.random().toString(36).slice(2, 7);
+  const mode = {
+    id, title, text, displayTitle: text.split("\n").slice(0, 3),
+    language: (langEl && langEl.value) || "other",
+    photoData: _customModePhotoData || "",
+    group: "Your Jap Modes", color: "#bd93f9", createdAt: Date.now()
+  };
+  App.S.customModes = Array.isArray(App.S.customModes) ? App.S.customModes : [];
+  App.S.customModes.push(mode);
+  getExtendedModeData(id);
+  App.save();
+  if (typeof fbDebouncedPush === "function") fbDebouncedPush();
+  if (titleEl) titleEl.value = "";
+  if (textEl) textEl.value = "";
+  if (langEl) langEl.value = "sa";
+  _customModePhotoData = "";
+  const preview = document.getElementById("customModePhotoPreview");
+  if (preview) { preview.src = ""; preview.style.display = "none"; }
+  renderCustomModeList();
+  renderExtendedModeOptions();
+  switchJapMode(id);
+  toast("New jap mode saved 🙏");
+}
+
+function useCustomJapMode(id) {
+  switchJapMode(id);
+  renderSampradaySelector();
+}
+function deleteCustomJapMode(id) {
+  const mode = (App.S.customModes || []).find((m) => m.id === id);
+  if (!mode) return;
+  if (!window.confirm('Delete "' + mode.title + '" and all of its jap history?')) return;
+  App.S.customModes = (App.S.customModes || []).filter((m) => m.id !== id);
+  delete App.S.customModeData[id];
+  if (App.S.japMode === id) switchJapMode("rv");
+  App.save();
+  if (typeof fbDebouncedPush === "function") fbDebouncedPush();
+  renderCustomModeList();
+  renderExtendedModeOptions();
+  toast("Jap mode deleted");
+}
+function renderCustomModeList() {
+  const host = document.getElementById("customModeList");
+  if (!host) return;
+  host.innerHTML = "";
+  (App.S.customModes || []).forEach((mode) => {
+    const row = document.createElement("div");
+    row.className = "custom-mode-row";
+    row.innerHTML =
+      '<button class="custom-mode-use">' +
+      '<b>' + escHtml(mode.title) + '</b><small>' + escHtml(mode.text.split("\n")[0]) + '</small></button>' +
+      '<button aria-label="Delete jap mode">🗑️</button>';
+    row.querySelector(".custom-mode-use").onclick = () => useCustomJapMode(mode.id);
+    row.querySelector("button:last-child").onclick = () => deleteCustomJapMode(mode.id);
+    host.appendChild(row);
+  });
+}
 // Bell sound — synthesized 3-tone chime
 function playSynthBell() {
   try {
@@ -2745,6 +3064,25 @@ function spawnKV(e, zone) {
   // fuKV fade/rise animation — gives time to recite the name before it
   // disappears, per request.
   setTimeout(() => el.remove(), 8000);
+}
+
+function spawnExtended(e, zone, mode) {
+  if (!zone) return;
+  const r = zone.getBoundingClientRect();
+  const point = e && e.touches && e.touches[0]
+    ? { x: e.touches[0].clientX - r.left, y: e.touches[0].clientY - r.top }
+    : { x: (e && e.clientX || r.left + r.width / 2) - r.left, y: (e && e.clientY || r.top + r.height / 2) - r.top };
+  const el = document.createElement("div");
+  el.className = "fn-custom";
+  const def = getExtendedModeDef(mode) || {};
+  const text = getModeText(mode);
+  el.innerHTML = escHtml(text).split("\n").map((line) => "<div>" + line + "</div>").join("");
+  el.style.left = Math.max(4, point.x - 115) + "px";
+  el.style.top = Math.max(8, point.y - 44) + "px";
+  el.style.color = def.color || "#FFD700";
+  el.style.textShadow = "0 0 30px " + (def.color || "#FFD700");
+  zone.appendChild(el);
+  setTimeout(() => el.remove(), 3200);
 }
 
 // HK Mahamantra — appears centered, rises upward, 7 cycling colors
@@ -3395,6 +3733,9 @@ function initJapModeUI() {
   // Apply all language-sensitive labels on load
   applyHKLangLabels(App.S.hkLang || "hi");
   applyNaamLangLabels(App.S.naamLang || "sa");
+  renderExtendedModeOptions();
+  renderCustomModeList();
+  renderSampradaySelector();
   try { populateSettingsUI(); } catch (_e) {}
 }
 
@@ -3458,7 +3799,7 @@ function setNaamLangDirect(lang) {
   App.S.naamLang = lang;
   applyNaamLangLabels(lang);
   // Refresh the header title live if currently on Radha, RV, KV, SS, or Ram mode
-  if (App.S.japMode === "radha" || App.S.japMode === "rv" || App.S.japMode === "kv" || App.S.japMode === "ss" || App.S.japMode === "ram") {
+  if (App.S.japMode === "radha" || App.S.japMode === "rv" || App.S.japMode === "kv" || App.S.japMode === "ss" || App.S.japMode === "ram" || isExtendedJapMode(App.S.japMode)) {
     switchJapMode(App.S.japMode);
   }
   App.save();
@@ -3550,7 +3891,31 @@ function switchJapMode(mode) {
       o.querySelector(".ns-check").textContent = "";
     }
   });
-  if (mode === "rv") {
+  document.querySelectorAll(".custom-naam-opt").forEach((o) => {
+    o.classList.remove("active");
+    const check = o.querySelector(".ns-check");
+    if (check) check.textContent = "";
+  });
+  titleEl.style.color = "";
+  const modePhoto = document.getElementById("customModePhoto");
+  if (modePhoto) modePhoto.style.display = "none";
+  if (isExtendedJapMode(mode)) {
+    _hkMalaBlocked = false;
+    const customOpt = document.querySelector('.custom-naam-opt[data-mode="' + mode + '"]');
+    if (customOpt) {
+      customOpt.classList.add("active");
+      const check = customOpt.querySelector(".ns-check");
+      if (check) check.textContent = "✓";
+    }
+    const def = getExtendedModeDef(mode);
+    titleEl.innerHTML = (def.displayTitle || [getModeText(mode)]).map(escHtml).join("<br>");
+    titleEl.style.textAlign = "center";
+    titleEl.style.color = def.color || "#FFD700";
+    if (modePhoto) {
+      modePhoto.src = def.photoData || "";
+      modePhoto.style.display = def.photoData ? "block" : "none";
+    }
+  } else if (mode === "rv") {
     _hkMalaBlocked = false;
     const _mcClr = document.getElementById("hkMalaComplete");
     if (_mcClr) _mcClr.classList.remove("hkmc-visible");
@@ -3661,7 +4026,9 @@ function switchJapMode(mode) {
   }
   // Reset mala counter for the mode
   const ms = App.S.ms || 108;
-  if (mode === "rv") {
+  if (isExtendedJapMode(mode)) {
+    setModeLmc(mode, Math.floor((getExtendedModeData(mode).history[App.S.tk] || 0) / ms));
+  } else if (mode === "rv") {
     App.lmcRV = Math.floor((App.S.historyRV[App.S.tk] || 0) / ms);
   } else if (mode === "hk") {
     App.lmcHK = Math.floor(((App.S.historyHK || {})[App.S.tk] || 0) / ms);
@@ -3687,7 +4054,9 @@ function switchJapMode(mode) {
     ram: _nt.ram1 + " " + _nt.ram2 + " 🚩",
     radha: _nt.radha + " 🙏",
   };
-  toast(toastMap[mode] || _nt.radha + " 🙏");
+  toast(toastMap[mode] || getModeLabel(mode) + " 🙏");
+  renderExtendedModeOptions();
+  renderSampradaySelector();
 
   // Title/target-box text just changed (can resize beadFrameWrap, e.g.
   // going into Ramanandi/Gaudiya/Trahimam mode). Re-sync the 108-bead
@@ -3826,6 +4195,9 @@ document.addEventListener("visibilitychange", () => {
 });
 
 function populateSettingsUI() {
+  renderExtendedModeOptions();
+  renderCustomModeList();
+  renderSampradaySelector();
   if (typeof renderPhotoPickers === 'function') renderPhotoPickers();
   const ms = App.S.ms || 108;
   // Radha Daily
@@ -4595,7 +4967,11 @@ function addManualJap() {
   const isKV = App.S.japMode === "kv";
   const isSS = App.S.japMode === "ss";
   const isRam = App.S.japMode === "ram";
-  if (isRV) {
+  const isExtended = isExtendedJapMode(App.S.japMode);
+  if (isExtended) {
+    const d = getExtendedModeData(App.S.japMode);
+    d.history[App.S.tk] = (d.history[App.S.tk] || 0) + n;
+  } else if (isRV) {
     App.S.historyRV[App.S.tk] = (App.S.historyRV[App.S.tk] || 0) + n;
   } else if (isHK) {
     App.S.historyHK[App.S.tk] = (App.S.historyHK[App.S.tk] || 0) + n;
@@ -4623,7 +4999,9 @@ function addManualJap() {
     const ms2 = App.S.ms || 108;
     const malasAdded = Math.max(1, Math.floor(n / ms2));
     avgPerMala = Math.round(timeSecs / malasAdded);
-    const log = isRV
+    const log = isExtended
+      ? getExtendedModeData(App.S.japMode).malaLog
+      : isRV
       ? App.S.malaLogRV || (App.S.malaLogRV = [])
       : isHK
         ? App.S.malaLogHK || (App.S.malaLogHK = [])
@@ -4635,7 +5013,7 @@ function addManualJap() {
               ? App.S.malaLogRam || (App.S.malaLogRam = [])
               : App.S.malaLog || (App.S.malaLog = []);
     const now = Date.now();
-    const modeStr = isRV ? "rv" : isHK ? "hk" : isKV ? "kv" : isSS ? "ss" : isRam ? "ram" : "radha";
+    const modeStr = isExtended ? App.S.japMode : isRV ? "rv" : isHK ? "hk" : isKV ? "kv" : isSS ? "ss" : isRam ? "ram" : "radha";
     for (let i = 0; i < malasAdded; i++) {
       log.push(avgPerMala);
       logActivity({
@@ -4659,12 +5037,13 @@ function addManualJap() {
   }
   // This entry was reported after the fact (e.g. chanted at a real mala,
   // off-screen) — mark it so Efficiency/Quality exclude it.
-  _recordManualJap(isRV ? "rv" : isHK ? "hk" : isKV ? "kv" : isSS ? "ss" : isRam ? "ram" : "radha", App.S.tk, n, timeSecs);
+  _recordManualJap(isExtended ? App.S.japMode : isRV ? "rv" : isHK ? "hk" : isKV ? "kv" : isSS ? "ss" : isRam ? "ram" : "radha", App.S.tk, n, timeSecs);
   App.ensureMalaWallStart();
   const nm = Math.floor(App.gTod() / (App.S.ms || 108));
-  const lmcKey = isRV ? "lmcRV" : isHK ? "lmcHK" : isKV ? "lmcKV" : isSS ? "lmcSS" : "lmc";
-  if (nm > (App[lmcKey] || 0)) {
-    App[lmcKey] = nm;
+  const lmcKey = isRV ? "lmcRV" : isHK ? "lmcHK" : isKV ? "lmcKV" : isSS ? "lmcSS" : isRam ? "lmcRam" : "lmc";
+  if (nm > (isExtended ? getModeLmc(App.S.japMode) : (App[lmcKey] || 0))) {
+    if (isExtended) setModeLmc(App.S.japMode, nm);
+    else App[lmcKey] = nm;
     // Celebrate the new mala milestone WITHOUT calling malaOk() —
     // malaOk() pushes a wall-clock duration into malaLog which creates a
     // ghost entry. We only want the visual/audio celebration here.
@@ -4774,7 +5153,9 @@ function addPrevJap() {
   const isKV = App.S.japMode === "kv";
   const isSS = App.S.japMode === "ss";
   const isRam = App.S.japMode === "ram";
-  if (isRV) {
+  if (isExtendedJapMode(App.S.japMode)) {
+    getExtendedModeData(App.S.japMode).history[prevKey] = n;
+  } else if (isRV) {
     App.S.historyRV[prevKey] = n;
   } else if (isHK) {
     if (!App.S.historyHK) App.S.historyHK = {};
@@ -5702,7 +6083,9 @@ function deductTodayJap() {
   const isKV = App.S.japMode === "kv";
   const isSS = App.S.japMode === "ss";
   const isRam = App.S.japMode === "ram";
-  const hist = isRV
+  const hist = isExtendedJapMode(App.S.japMode)
+    ? getExtendedModeData(App.S.japMode).history
+    : isRV
     ? App.S.historyRV
     : isHK
       ? App.S.historyHK || (App.S.historyHK = {})
@@ -5720,7 +6103,8 @@ function deductTodayJap() {
   }
   hist[App.S.tk] = cur - n;
   const lmcKey = isRV ? "lmcRV" : isHK ? "lmcHK" : isKV ? "lmcKV" : isSS ? "lmcSS" : isRam ? "lmcRam" : "lmc";
-  App[lmcKey] = Math.floor(App.gTod() / (App.S.ms || 108));
+  if (isExtendedJapMode(App.S.japMode)) setModeLmc(App.S.japMode, Math.floor(App.gTod() / (App.S.ms || 108)));
+  else App[lmcKey] = Math.floor(App.gTod() / (App.S.ms || 108));
 
   // Explicit time input wins; otherwise fall back to proportional removal from mala log
   const minEl = document.getElementById("deductTodayMin");
@@ -5728,7 +6112,9 @@ function deductTodayJap() {
   const explicitTime =
     (parseInt(minEl?.value) || 0) * 60 +
     Math.min(59, Math.max(0, parseInt(secEl?.value) || 0));
-  const log = isRV
+  const log = isExtendedJapMode(App.S.japMode)
+    ? getExtendedModeData(App.S.japMode).malaLog
+    : isRV
     ? App.S.malaLogRV || (App.S.malaLogRV = [])
     : isHK
       ? App.S.malaLogHK || (App.S.malaLogHK = [])
@@ -5803,7 +6189,9 @@ function deductOtherJap() {
   const isKV = App.S.japMode === "kv";
   const isSS = App.S.japMode === "ss";
   const isRam = App.S.japMode === "ram";
-  const hist = isRV
+  const hist = isExtendedJapMode(App.S.japMode)
+    ? getExtendedModeData(App.S.japMode).history
+    : isRV
     ? App.S.historyRV
     : isHK
       ? App.S.historyHK || (App.S.historyHK = {})
@@ -5828,7 +6216,9 @@ function deductOtherJap() {
     (parseInt(minEl?.value) || 0) * 60 +
     Math.min(59, Math.max(0, parseInt(secEl?.value) || 0));
   if (timeSecs > 0) {
-    const th = isRV
+    const th = isExtendedJapMode(App.S.japMode)
+      ? getExtendedModeData(App.S.japMode).timerHistory
+      : isRV
       ? App.S.timerHistoryRV || (App.S.timerHistoryRV = {})
       : isHK
         ? App.S.timerHistoryHK || (App.S.timerHistoryHK = {})
@@ -5915,7 +6305,7 @@ function addOtherDayJap() {
               : App.S.timerHistory || (App.S.timerHistory = {});
     th[date] = (th[date] || 0) + timeSecs;
   }
-  _recordManualJap(isRV ? "rv" : isHK ? "hk" : isKV ? "kv" : isSS ? "ss" : isRam ? "ram" : "radha", date, n, timeSecs);
+  _recordManualJap(isExtendedJapMode(App.S.japMode) ? App.S.japMode : isRV ? "rv" : isHK ? "hk" : isKV ? "kv" : isSS ? "ss" : isRam ? "ram" : "radha", date, n, timeSecs);
 
   App.ua();
   ghostAwareSave();
@@ -6053,7 +6443,8 @@ function deductJapTimeToday() {
   const isKV = App.S.japMode === "kv";
   const isSS = App.S.japMode === "ss";
   const isRam = App.S.japMode === "ram";
-  const log = isRV ? App.S.malaLogRV || [] : isKV ? App.S.malaLogKV || [] : isSS ? App.S.malaLogSS || [] : isRam ? App.S.malaLogRam || [] : App.S.malaLog || [];
+  const log = isExtendedJapMode(App.S.japMode) ? getExtendedModeData(App.S.japMode).malaLog
+    : isRV ? App.S.malaLogRV || [] : isKV ? App.S.malaLogKV || [] : isSS ? App.S.malaLogSS || [] : isRam ? App.S.malaLogRam || [] : App.S.malaLog || [];
   if (log.length > 0) {
     const total = log.reduce((a, b) => a + b, 0);
     if (total > 0) {
@@ -6790,7 +7181,9 @@ function uStats() {
   // ── Mode-aware helpers (Radha / RV / HK) for lifetime previews ──
   const _mode = App.S.gaudiyaMode ? "hk" : App.S.japMode;
   const _modeHist =
-    _mode === "rv"
+    isExtendedJapMode(_mode)
+      ? getExtendedModeData(_mode).history || {}
+      : _mode === "rv"
       ? App.S.historyRV || {}
       : _mode === "hk"
         ? App.S.historyHK || {}
@@ -6798,7 +7191,9 @@ function uStats() {
           ? App.S.historyKV || {}
           : App.S.history || {};
   const _modeDeduct =
-    _mode === "rv"
+    isExtendedJapMode(_mode)
+      ? getExtendedModeData(_mode).nameJapDeduct || 0
+      : _mode === "rv"
       ? App.S.nameJapDeductRV || 0
       : _mode === "hk"
         ? App.S.nameJapDeductHK || 0
@@ -6941,7 +7336,8 @@ function renderMalaLog() {
 
   // FIX: Reset type label fresh each time — no global carryover
   if (typeEl) {
-    if (isRV) typeEl.textContent = "(राधावल्लभ)";
+    if (isExtendedJapMode(App.S.japMode)) typeEl.textContent = "(" + getModeLabel(App.S.japMode) + ")";
+    else if (isRV) typeEl.textContent = "(राधावल्लभ)";
     else if (isHK) typeEl.textContent = "(हरे कृष्ण)";
     else if (isKV) typeEl.textContent = "(कृष्णाय वासुदेवाय)";
     else if (isSS) typeEl.textContent = "(साम्ब सदाशिव)";
@@ -6950,7 +7346,9 @@ function renderMalaLog() {
   }
 
   // FIX: Strict filtering — get the correct log for current mode only
-  const rawLog = isRV
+  const rawLog = isExtendedJapMode(App.S.japMode)
+    ? getExtendedModeData(App.S.japMode).malaLog || []
+    : isRV
     ? App.S.malaLogRV || []
     : isHK
       ? App.S.malaLogHK || []
@@ -7035,7 +7433,8 @@ function editMalaEntry(idx) {
   const isKV = App.S.japMode === "kv";
   const isSS = App.S.japMode === "ss";
   const isRam = App.S.japMode === "ram";
-  const log = isRV ? App.S.malaLogRV : isHK ? App.S.malaLogHK : isKV ? App.S.malaLogKV : isSS ? App.S.malaLogSS : isRam ? App.S.malaLogRam : App.S.malaLog;
+  const log = isExtendedJapMode(App.S.japMode) ? getExtendedModeData(App.S.japMode).malaLog
+    : isRV ? App.S.malaLogRV : isHK ? App.S.malaLogHK : isKV ? App.S.malaLogKV : isSS ? App.S.malaLogSS : isRam ? App.S.malaLogRam : App.S.malaLog;
   if (!log || idx >= log.length) return;
   const cur = log[idx];
   const curM = Math.floor(cur / 60),
@@ -7067,7 +7466,8 @@ function deleteMalaEntry(idx) {
   const isKV = App.S.japMode === "kv";
   const isSS = App.S.japMode === "ss";
   const isRam = App.S.japMode === "ram";
-  const log = isRV ? App.S.malaLogRV : isHK ? App.S.malaLogHK : isKV ? App.S.malaLogKV : isSS ? App.S.malaLogSS : isRam ? App.S.malaLogRam : App.S.malaLog;
+  const log = isExtendedJapMode(App.S.japMode) ? getExtendedModeData(App.S.japMode).malaLog
+    : isRV ? App.S.malaLogRV : isHK ? App.S.malaLogHK : isKV ? App.S.malaLogKV : isSS ? App.S.malaLogSS : isRam ? App.S.malaLogRam : App.S.malaLog;
   if (!log || idx >= log.length) return;
   if (!confirm("Delete Mala " + (idx + 1) + " entry?")) return;
   log.splice(idx, 1);
@@ -7531,6 +7931,8 @@ function _buildBackupPayload() {
     activityLog: App.S.activityLog || [],
     manualJapCount: App.S.manualJapCount || { radha: {}, rv: {}, kv: {}, ss: {}, hk: {}, ram: {}, n28: {} },
     manualJapTime: App.S.manualJapTime || { radha: {}, rv: {}, kv: {}, ss: {}, hk: {}, ram: {}, n28: {} },
+    customModes: App.S.customModes || [],
+    customModeData: App.S.customModeData || {},
   };
 }
 
@@ -7710,6 +8112,8 @@ function importAllData(input) {
       App.S.activityLog = Array.isArray(data.activityLog) ? data.activityLog : [];
       App.S.manualJapCount = data.manualJapCount || { radha: {}, rv: {}, kv: {}, ss: {}, hk: {}, ram: {}, n28: {} };
       App.S.manualJapTime = data.manualJapTime || { radha: {}, rv: {}, kv: {}, ss: {}, hk: {}, ram: {}, n28: {} };
+      App.S.customModes = Array.isArray(data.customModes) ? data.customModes : [];
+      App.S.customModeData = (data.customModeData && typeof data.customModeData === "object") ? data.customModeData : {};
       App.S.syncBaseline = JSON.parse(JSON.stringify(App.S.history));
       App.S.syncBaseline28 = JSON.parse(JSON.stringify(App.S.h28));
       App.S.syncBaselineTimer = JSON.parse(JSON.stringify(App.S.timerHistory));
@@ -8981,7 +9385,7 @@ function fbInit() {
             syncBaselineTimer: {},
             syncBaselineTimer28: {},
             migrationV2Done: false,
-            japMode: "radha",
+            japMode: "rv",
             historyRV: {},
             timerHistoryRV: {},
             dtRV: 0,
@@ -9195,7 +9599,7 @@ function fbInit() {
             syncBaselineTimer: {},
             syncBaselineTimer28: {},
             migrationV2Done: false,
-            japMode: "radha",
+            japMode: "rv",
             historyRV: {},
             timerHistoryRV: {},
             dtRV: 0,
@@ -10339,7 +10743,7 @@ async function fbSignOut() {
     history: {}, h28: {}, stotrams: {}, brahma: {}, customSt: [],
     timerHistory: {}, timer28History: {}, sankalpas: [], dedications: [], occasions: {},
     syncBaseline: {}, syncBaseline28: {}, syncBaselineTimer: {}, syncBaselineTimer28: {},
-    migrationV2Done: false, japMode: "radha",
+    migrationV2Done: false, japMode: "rv",
     historyRV: {}, timerHistoryRV: {}, dtRV: 0, ltRV: 0, nameJapDeductRV: 0,
     malaLogRV: [], activityLog: [], syncBaselineRV: {}, syncBaselineTimerRV: {},
     historyHK: {}, timerHistoryHK: {}, dtHK: 0, malaLogHK: [],
@@ -10351,10 +10755,11 @@ async function fbSignOut() {
     historyRam: {}, timerHistoryRam: {}, dtRam: 0, ltRam: 0, nameJapDeductRam: 0,
     malaLogRam: [], syncBaselineRam: {}, syncBaselineTimerRam: {},
     gaudiyaMode: false, trahimamMode: false, ramanandiMode: false, dt28Cycles: 0,
+    customModes: [], customModeData: {},
     milestones: { reached: {}, lastChecked: 0 },
     lastLat: _prevLat, lastLng: _prevLng,
   };
-  App.lmc = 0; App.lmcRV = 0; App.lmcHK = 0; App.lmcKV = 0; App.lmcSS = 0; App.lmcRam = 0; App.lm28 = 0;
+  App.lmc = 0; App.lmcRV = 0; App.lmcHK = 0; App.lmcKV = 0; App.lmcSS = 0; App.lmcRam = 0; App.lm28 = 0; App.lmcCustom = {};
   document.body.classList.remove("gaudiya-mode");
   document.body.classList.remove("trahimam-mode");
   document.body.classList.remove("ramanandi-mode");
@@ -10447,6 +10852,8 @@ async function fbPushToUid(targetUid, fullReplace) {
     gaudiyaMode: App.S.gaudiyaMode || false,
     trahimamMode: App.S.trahimamMode || false,
     ramanandiMode: App.S.ramanandiMode || false,
+    customModes: App.S.customModes || [],
+    customModeData: App.S.customModeData || {},
     dt28Cycles: App.S.dt28Cycles || 0,
     milestones: App.S.milestones || { reached: {}, lastChecked: 0 },
     msConsider: App.S.msConsider || { radha: true, rv: true, hk: true, kv: true, ss: true, ram: true, n28: true },
@@ -10571,6 +10978,8 @@ async function fbPushFull() {
     stotramTimeHistory: App.S.stotramTimeHistory || {},
     manualJapCount: App.S.manualJapCount || { radha: {}, rv: {}, kv: {}, ss: {}, hk: {}, ram: {}, n28: {} },
     manualJapTime: App.S.manualJapTime || { radha: {}, rv: {}, kv: {}, ss: {}, hk: {}, ram: {}, n28: {} },
+    customModes: App.S.customModes || [],
+    customModeData: App.S.customModeData || {},
     lastSync: firebase.firestore.FieldValue.serverTimestamp(),
     deviceId: fbDeviceId,
   };
@@ -10990,6 +11399,25 @@ function fbApplyRemote(d) {
       for (const k in remote) merged[k] = Math.max(remote[k] || 0, merged[k] || 0);
       App.S.manualJapTime[typeKey] = merged;
     }
+  }
+  if (Array.isArray(d.customModes)) {
+    const byId = {};
+    (App.S.customModes || []).forEach((m) => { if (m && m.id) byId[m.id] = m; });
+    d.customModes.forEach((m) => { if (m && m.id) byId[m.id] = { ...byId[m.id], ...m }; });
+    App.S.customModes = Object.values(byId);
+  }
+  if (d.customModeData && typeof d.customModeData === "object") {
+    if (!App.S.customModeData) App.S.customModeData = {};
+    Object.keys(d.customModeData).forEach((id) => {
+      const remote = d.customModeData[id] || {};
+      const local = App.S.customModeData[id] || {};
+      const history = { ...(local.history || {}) };
+      Object.keys(remote.history || {}).forEach((k) => { history[k] = Math.max(history[k] || 0, remote.history[k] || 0); });
+      const timers = { ...(local.timerHistory || {}) };
+      Object.keys(remote.timerHistory || {}).forEach((k) => { timers[k] = Math.max(timers[k] || 0, remote.timerHistory[k] || 0); });
+      App.S.customModeData[id] = { ...local, ...remote, history, timerHistory,
+        malaLog: (remote.malaLog || local.malaLog || []) };
+    });
   }
   App._suspendCloudSync = true;
   App.save().finally(() => {

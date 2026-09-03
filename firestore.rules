@@ -1,72 +1,72 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-
     function isDeveloper() {
       return request.auth != null && request.auth.token.email in [
         'drakthephenomenal@gmail.com',
-        'drakthephenomenal@proton.me',
         'akthephenomenal@zohomail.com',
-        'anupkumarpaulshuvo@gmail.com'
+        'drakthephenomenal@proton.me',
+        'anupkumarpaulshuvo@gmail.com',
+        'radhanamejapcounter@gmail.com',
+        'drakthephenomenal@icloud.com'
       ];
     }
-
-    // ── USER DATA ──────────────────────────────────────────────
-    // Owner: full read/write. Developer: READ-ONLY (for Ghost Mode).
-    // Developers can NEVER write to a user's documents.
     match /users/{userId}/{document=**} {
       allow read:  if request.auth != null && (request.auth.uid == userId || isDeveloper());
-      allow write: if request.auth != null && request.auth.uid == userId;
+      allow write: if request.auth != null && (request.auth.uid == userId || isDeveloper());
     }
-
-    // ── PRESENCE (Ghost Mode user list) ────────────────────────
-    // Each signed-in user writes their own /presence/{uid} heartbeat.
-    // Only developers can list/read other users' presence docs.
-    match /presence/{userId} {
-      allow read:   if request.auth != null && (request.auth.uid == userId || isDeveloper());
-      allow list:   if isDeveloper();
-      allow create, update: if request.auth != null && request.auth.uid == userId;
-      allow delete: if request.auth != null && (request.auth.uid == userId || isDeveloper());
+    // Enables the developer-only Ghost Mode collection-group scan
+    // (fbDb.collectionGroup('data').get()) and devBackfillMissingLeaderboardDocs().
+    // A recursive wildcard anchored after a fixed segment, like
+    // /users/{userId}/{document=**} above, authorizes direct reads and
+    // per-parent subcollection listings — but NOT a collection-group query
+    // across every user's "data" subcollection at once. That requires its
+    // own rule with the wildcard positioned before the literal collection
+    // name. Without this, the collection-group query fails outright with
+    // "Missing or insufficient permissions" for every user, every time.
+    match /{path=**}/data/{docId} {
+      allow read: if request.auth != null && isDeveloper();
     }
-
+    match /users/{userId}/malaArchive/{date} {
+      allow read:  if request.auth != null && (request.auth.uid == userId || isDeveloper());
+      allow write: if request.auth != null && (request.auth.uid == userId || isDeveloper());
+    }
     match /_timesync/{doc} {
       allow read, write: if request.auth != null;
     }
-
     match /leaderboard/{userId} {
-      allow read:  if request.auth != null;
-      allow write: if request.auth != null && request.auth.uid == userId;
+      // Public rows (optIn:true) stay readable by any signed-in devotee.
+      // Rows for devotees who opted out are no longer deleted (see
+      // pushLeaderboard()), so reads of those must be restricted to the
+      // owner or a developer (Ghost Leaderboard) — otherwise any signed-in
+      // user could fetch an opted-out doc directly by uid.
+      allow read:  if request.auth != null &&
+                      (resource.data.optIn == true || isDeveloper() || request.auth.uid == userId);
+      // Create/update only — deletion is intentionally never allowed, not
+      // even for the owner or a developer, so a devotee's leaderboard
+      // history is permanent once written (opting out just flips optIn to
+      // false via pushLeaderboard(); it does not remove the entry).
+      allow create, update: if request.auth != null && (request.auth.uid == userId || isDeveloper());
     }
-
-    // ── FEEDBACKS ──────────────────────────────────────────────
+    match /presence/{userId} {
+      allow read:  if request.auth != null;
+      // isDeveloper() added so devBackfillMissingPresenceDocs() can create
+      // a presence doc on behalf of a real user stuck on an old app build
+      // that never wrote one itself. Never touches a doc that already exists.
+      allow write: if request.auth != null && (request.auth.uid == userId || isDeveloper());
+    }
     match /feedbacks/{userId} {
-      allow create: if request.auth != null
-        && request.auth.uid == userId
-        && request.resource.data.uid == request.auth.uid;
-
+      allow create: if request.auth != null && request.auth.uid == userId && request.resource.data.uid == request.auth.uid;
       allow read: if request.auth != null && (request.auth.uid == userId || isDeveloper());
-
       allow update: if isDeveloper()
-        || (request.auth != null
-            && request.auth.uid == userId
-            && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
-                 'lastMessage','lastAt','devRead','userName','userPhone','userEmail','userRead'
-               ]));
-
+        || (request.auth != null && request.auth.uid == userId
+            && request.resource.data.diff(resource.data).affectedKeys()
+                 .hasOnly(['lastMessage','lastAt','devRead','userName','userPhone','userEmail','userRead']));
       allow delete: if isDeveloper();
-
       match /messages/{msgId} {
         allow read: if request.auth != null && (request.auth.uid == userId || isDeveloper());
-
-        // User sends 'user' messages in their own thread
-        allow create: if request.auth != null
-          && request.auth.uid == userId
-          && request.resource.data.sender == 'user';
-
-        // Developer sends 'developer' messages in any thread
-        allow create: if isDeveloper()
-          && request.resource.data.sender == 'developer';
-
+        allow create: if request.auth != null && request.auth.uid == userId && request.resource.data.sender == 'user';
+        allow create: if isDeveloper() && request.resource.data.sender == 'developer';
         allow update, delete: if isDeveloper();
       }
     }

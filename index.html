@@ -238,6 +238,7 @@
           <div class="naam-sel-opt" id="naamOptRam" onclick="switchJapMode('ram')">
             <span class="ns-check"></span> <span id="naamOptRamLabel">राम विजय मंत्र</span>
           </div>
+          <div id="customNaamOptions"></div>
         </div>
       </div>
       <div class="rn" id="rnTitle">राधा</div>
@@ -327,6 +328,7 @@
       <img class="cm-wm" id="bgCM" src="./iskcon_chaitanya/1.png" alt="" aria-hidden="true" draggable="false" loading="lazy" decoding="async">
       <img class="iskcon-acharya-wm" id="bgIskconAcharya" src="./iskcon_acharya/1.png" alt="" aria-hidden="true" draggable="false" loading="lazy" decoding="async">
       <img class="iskcon-gurudev-wm" id="bgIskconGurudev" src="./iskcon_gurudev/1.png" alt="" aria-hidden="true" draggable="false" loading="lazy" decoding="async">
+      <img id="customModePhoto" class="custom-mode-wm" alt="" aria-hidden="true" draggable="false">
       <div class="mf" id="mf">
         <div class="mf-line1">Radha Ballabh</div>
         <div class="mf-line2">Sri Harivansh</div>
@@ -1570,6 +1572,56 @@
         <div style="font-size:10px;color:rgba(255,255,255,0.4);margin-top:3px;" id="gpsLocationStatus">Auto-detect for accurate Brahma Muhurta &amp; Sandhya times 🙏</div>
       </div>
       <div class="tg" id="tgGpsLocation" onclick="tgs('gpsLocation')" style="flex-shrink:0;"></div>
+    </div>
+  </div>
+
+  <!-- Sampraday mode selector -->
+  <div class="sc sampraday-selector" id="sampradaySelector">
+    <div class="sampraday-heading">🪷 Jap Mode Selector</div>
+    <div class="sampraday-sub">Choose a devotional tradition, or create your own jap mode below.</div>
+    <div class="sampraday-group">
+      <div class="sampraday-group-title">Rashik Sampraday</div>
+      <div class="sampraday-grid">
+        <button class="sampraday-option" data-mode="rv" onclick="selectSampradayMode('rv')"><span>🌸</span><b>Harivangshi</b><small>Radha Vallabh Sri Harivangsa</small></button>
+        <button class="sampraday-option" data-mode="hd" onclick="selectSampradayMode('hd')"><span>🌺</span><b>Haridashi</b><small>Radha · Kunj Bihari Sri Haridas</small></button>
+      </div>
+    </div>
+    <div class="sampraday-group">
+      <div class="sampraday-group-title">Vaishnav Sampraday</div>
+      <div class="sampraday-grid">
+        <button class="sampraday-option" data-mode="gaudiya" onclick="selectSampradayMode('gaudiya')"><span>🪷</span><b>Gaudiya / ISKCON</b><small>Hare Krishna Mahamantra</small></button>
+        <button class="sampraday-option" data-mode="nimbark" onclick="selectSampradayMode('nimbark')"><span>🦚</span><b>Nimbark</b><small>Yugal Mantra</small></button>
+        <button class="sampraday-option" data-mode="vallabh" onclick="selectSampradayMode('vallabh')"><span>🪈</span><b>Vallabh</b><small>শ্রী কৃষ্ণঃ শরণং মম</small></button>
+        <button class="sampraday-option" data-mode="shree" onclick="selectSampradayMode('shree')"><span>🕉️</span><b>Shree</b><small>Ramanujacharya · Ramanandi</small></button>
+      </div>
+      <div class="shree-submode" id="shreeSubmode">
+        <button class="sampraday-suboption" data-mode="narayana" onclick="selectSampradayMode('narayana')">Sriman Narayana · Ramanujacharya</button>
+        <button class="sampraday-suboption" data-mode="ram" onclick="selectSampradayMode('ram')">Ram Vijay Mantra · Ramanandi</button>
+      </div>
+    </div>
+    <div class="sampraday-group sampraday-independent">
+      <div class="sampraday-group-title">Independent Mode</div>
+      <button class="sampraday-option sampraday-option-wide" data-mode="gopeshwar" onclick="selectSampradayMode('gopeshwar')"><span>🔱</span><b>Gopeswar Mahadev</b><small>Not classified under a Vaishnav Sampraday</small></button>
+    </div>
+    <div class="custom-mode-builder">
+      <div class="sampraday-group-title">Your Jap Modes</div>
+      <div id="customModeList" class="custom-mode-list"></div>
+      <div class="custom-mode-form">
+        <input id="customModeTitleIn" class="fi" placeholder="Jap title (e.g. My Ishta Mantra)">
+        <textarea id="customModeTextIn" class="fi" rows="3" placeholder="Jap text — one line or multiple lines"></textarea>
+        <div class="custom-mode-form-row">
+          <select id="customModeLanguageIn" class="fi">
+            <option value="sa">Sanskrit / Devanagari</option>
+            <option value="bn">বাংলা</option>
+            <option value="hi">हिन्दी</option>
+            <option value="en">English / Roman</option>
+            <option value="other">Other</option>
+          </select>
+          <label class="custom-photo-input">📷 Display photo<input id="customModePhotoIn" type="file" accept="image/*" onchange="previewCustomModePhoto(this)"></label>
+        </div>
+        <img id="customModePhotoPreview" class="custom-mode-photo-preview" alt="Selected jap display preview" style="display:none">
+        <button class="pb custom-mode-save-btn" onclick="createCustomJapMode()">＋ Save New Jap Mode</button>
+      </div>
     </div>
   </div>
 

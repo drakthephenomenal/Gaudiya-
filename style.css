@@ -1,3 +1,40 @@
+/* ── Sampraday mode selector + user jap mode builder ── */
+.sampraday-selector{border:1px solid rgba(245,209,122,.35);background:linear-gradient(155deg,rgba(34,26,72,.9),rgba(8,12,35,.92));}
+.sampraday-heading{font-family:'Cinzel Decorative','EB Garamond',serif;color:#f5d17a;font-size:18px;text-align:center;letter-spacing:.5px;}
+.sampraday-sub{font-size:10px;color:rgba(255,255,255,.5);text-align:center;margin:6px 0 16px;line-height:1.45;}
+.sampraday-group{border-top:1px solid rgba(245,209,122,.18);padding-top:12px;margin-top:12px;}
+.sampraday-group-title{font-size:10px;color:#f5d17a;letter-spacing:1.8px;text-transform:uppercase;font-weight:700;text-align:center;margin-bottom:9px;}
+.sampraday-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;}
+.sampraday-option,.sampraday-suboption{min-height:72px;border:1.5px solid rgba(74,144,226,.55);border-radius:10px;background:rgba(109,184,255,.07);color:#fff;cursor:pointer;padding:10px 7px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-family:'Hind Siliguri','Inter',sans-serif;transition:all .2s;}
+.sampraday-option span{font-size:18px;line-height:1;}
+.sampraday-option b{font-size:13px;color:#f2b2b2;font-weight:700;line-height:1.1;}
+.sampraday-option small{font-size:9px;color:rgba(255,255,255,.58);line-height:1.25;}
+.sampraday-option.active,.sampraday-suboption.active{border-color:#ffd700;background:linear-gradient(145deg,rgba(255,215,0,.18),rgba(109,184,255,.08));box-shadow:0 0 14px rgba(255,215,0,.16);}
+.sampraday-option:active,.sampraday-suboption:active{transform:scale(.97);}
+.sampraday-option-wide{width:100%;min-height:62px;flex-direction:row;gap:8px;box-sizing:border-box;}
+.sampraday-option-wide small{text-align:left;}
+.shree-submode{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:8px;}
+.shree-submode:not(.show){display:none;}
+.sampraday-suboption{min-height:42px;padding:7px 5px;font-size:10px;color:#f5d17a;}
+.sampraday-independent{padding-bottom:2px;}
+.custom-mode-builder{border-top:1px solid rgba(245,209,122,.18);margin-top:14px;padding-top:13px;}
+.custom-mode-list{display:flex;flex-direction:column;gap:7px;margin-bottom:10px;}
+.custom-mode-row{display:flex;align-items:center;gap:7px;border:1px solid rgba(189,147,249,.35);border-radius:9px;padding:7px 8px;background:rgba(189,147,249,.07);}
+.custom-mode-row button{border:0;background:transparent;color:#ff9b9b;cursor:pointer;font-size:12px;padding:2px 4px;}
+.custom-mode-row .custom-mode-use{flex:1;text-align:left;color:#fff;font-family:Inter,sans-serif;font-size:12px;cursor:pointer;background:none;border:0;}
+.custom-mode-row small{display:block;color:rgba(255,255,255,.45);font-size:9px;margin-top:2px;}
+.custom-mode-form{display:flex;flex-direction:column;gap:8px;}
+.custom-mode-form .fi{box-sizing:border-box;width:100%;}
+.custom-mode-form textarea{resize:vertical;font-family:'Hind Siliguri','Inter',sans-serif;line-height:1.4;}
+.custom-mode-form-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;align-items:center;}
+.custom-mode-form-row select{color:#fff!important;}
+.custom-photo-input{display:flex;align-items:center;justify-content:center;gap:5px;min-height:38px;border:1px dashed rgba(109,184,255,.42);border-radius:9px;color:#6db8ff;font-size:11px;cursor:pointer;padding:0 6px;box-sizing:border-box;}
+.custom-photo-input input{display:none;}
+.custom-mode-photo-preview{max-width:100%;max-height:120px;margin:0 auto;border-radius:10px;border:1px solid rgba(245,209,122,.35);object-fit:cover;}
+.custom-mode-save-btn{margin-top:2px;background:linear-gradient(135deg,rgba(189,147,249,.45),rgba(74,144,226,.28));color:#e0c7ff;}
+.custom-mode-wm{display:none;position:absolute;z-index:1;inset:18% 25% auto;width:50%;max-height:38%;object-fit:contain;opacity:.28;mix-blend-mode:screen;pointer-events:none;filter:drop-shadow(0 0 15px rgba(245,209,122,.5));}
+.fn-custom{position:absolute;z-index:10;max-width:92%;text-align:center;white-space:nowrap;font-family:'Hind Siliguri','EB Garamond',serif;font-size:clamp(20px,6vw,38px);font-weight:700;line-height:1.16;animation:customNaamFloat 3.2s ease-out forwards;pointer-events:none;}
+@keyframes customNaamFloat{0%{opacity:0;transform:translateY(20px) scale(.75)}15%{opacity:1;transform:translateY(0) scale(1)}75%{opacity:1;transform:translateY(-46px) scale(1.02)}100%{opacity:0;transform:translateY(-120px) scale(.92)}}
 :root{
   --bd:#070A1C;--bm:#0C1230;--bc:#131B40;
   --bg:#3B4FA8;--a:#7C8FE0;--a2:#B8C4F5;

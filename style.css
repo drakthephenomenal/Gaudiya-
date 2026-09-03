@@ -7,7 +7,7 @@
   --tl:#ECEEFB;--td:#8089B8;
 }
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
-html{scroll-behavior:smooth;}
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
 body{font-family:'Inter',sans-serif;background:var(--bd);color:var(--tl);min-height:100vh;min-height:100dvh;overflow-x:hidden;position:relative;width:100vw;max-width:100%;}
 body::before{content:'';position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:120vmax;height:120vmax;
   background:radial-gradient(circle at 50% 30%,rgba(34,85,204,0.18) 0%,transparent 50%),
@@ -89,12 +89,12 @@ html:has(#vj.active),body:has(#vj.active){overflow:hidden;height:100vh;height:10
 .rh-lbl{font-size:8px;color:var(--gold);opacity:0.8;white-space:nowrap;}
 .rh-val{font-family:'EB Garamond',serif;font-size:13px;color:var(--a2);letter-spacing:0.5px;filter:drop-shadow(0 0 6px rgba(109,184,255,0.4));line-height:1.15;white-space:nowrap;}
 
-.timer-row{display:flex;gap:8px;padding:3px 10px;flex-shrink:0;}
-.timer-box{flex:1;background:rgba(74,144,226,0.08);border:1px solid rgba(74,144,226,0.2);border-radius:10px;padding:3px 6px;display:flex;flex-direction:column;align-items:center;min-width:0;}
-.timer-box-lbl{font-size:8px;color:var(--td);letter-spacing:1.5px;text-transform:uppercase;font-weight:700;margin-bottom:1px;}
+.timer-row{display:flex;gap:6px;padding:3px 10px;flex-shrink:0;}
+.timer-box{flex:1;background:rgba(74,144,226,0.08);border:1px solid rgba(74,144,226,0.2);border-radius:10px;padding:3px 4px;display:flex;flex-direction:column;align-items:center;min-width:0;}
+.timer-box-lbl{font-size:7.5px;color:var(--td);letter-spacing:1px;text-transform:uppercase;font-weight:700;margin-bottom:1px;white-space:nowrap;}
 .timer-box-main{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;}
 .timer-box-main--solo{justify-content:center;}
-.timer-display{font-family:'EB Garamond',serif;font-size:18px;color:var(--a2);
+.timer-display{font-family:'EB Garamond',serif;font-size:16px;color:var(--a2);
   letter-spacing:1.5px;filter:drop-shadow(0 0 8px rgba(109,184,255,0.5));min-width:0;text-align:center;}
 .timer-display.running{color:var(--gold);filter:drop-shadow(0 0 10px rgba(255,215,0,0.6));}
 .timer-display--today{color:var(--gold);}
@@ -195,6 +195,31 @@ html:has(#vj.active),body:has(#vj.active){overflow:hidden;height:100vh;height:10
 .fr{display:flex;gap:10px;align-items:center;margin-bottom:8px;}
 .fu{color:var(--td);font-size:12px;min-width:55px;}
 .fn2{font-size:11px;color:var(--td);margin-bottom:6px;}
+/* ── Horizontal full-width Jap Target rows (Daily/Lifetime per naam type) ── */
+.target-row-card{
+  border-radius:16px;
+  border:1.5px solid;
+  padding:14px 14px;
+  margin-bottom:12px;
+  box-sizing:border-box;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,0.07);
+}
+.target-row-title{
+  font-size:11px;font-weight:700;letter-spacing:0.5px;margin-bottom:10px;
+}
+.target-row-inputs{
+  display:flex;flex-wrap:wrap;align-items:center;gap:8px;
+}
+.target-input-group{
+  display:flex;align-items:center;gap:4px;flex:1 1 118px;min-width:118px;
+}
+.target-input-group .fi{font-size:12px;padding:8px 10px;}
+.target-input-group .fu{font-size:10px;min-width:34px;}
+.target-row-sum{font-size:11px;color:var(--td);white-space:nowrap;flex:0 0 auto;}
+.target-row-btn{flex:1 1 100%;padding:10px 8px;font-size:12px;white-space:nowrap;margin-top:2px;}
+@media (min-width:480px){
+  .target-row-btn{flex:0 0 auto;margin-top:0;}
+}
 /* ── Premium Sapphire Export Button (.pb-export) ── */
 .pb.pb-export{
   background:
@@ -374,6 +399,10 @@ button.hpb.active{
 .sg-body{max-height:0;overflow:hidden;transition:max-height 0.38s ease,padding 0.3s ease;padding:0 8px;}
 .sg-body.open{max-height:5000px;padding:0 8px 12px;}
 
+.ded-type-pill{padding:9px 6px;border-radius:11px;text-align:center;cursor:pointer;
+  border:1.5px solid rgba(255,255,255,0.12);transition:all 0.2s;box-sizing:border-box;}
+.ded-type-pill.active{border-width:2px;box-shadow:0 0 12px rgba(255,255,255,0.08);}
+
 /* CALENDAR */
 #vc{background:radial-gradient(ellipse at top,#061228 0%,var(--bd) 60%);padding:22px 12px 80px;overflow-y:auto;overflow-x:hidden;}
 .ch{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
@@ -403,10 +432,12 @@ button.hpb.active{
   transition:all 0.15s ease;}
 .cc:active{transform:scale(0.88);}
 .cc.today{
-  border:2px solid rgba(109,184,255,0.75);
-  color:#B8D8FF;
-  background:linear-gradient(180deg,rgba(74,144,226,0.22) 0%,rgba(30,60,120,0.18) 100%);
-  box-shadow:inset 0 1px 0 rgba(109,184,255,0.22),0 0 10px rgba(74,144,226,0.30),0 2px 6px rgba(0,0,0,0.4);}
+  border:2px solid #F5D17A;
+  color:#3a2a06;
+  background:linear-gradient(180deg,#FCEBB0 0%,#E9C468 45%,#C79A3E 100%);
+  box-shadow:inset 0 1px 1px rgba(255,255,255,0.85),inset 0 -2px 3px rgba(120,80,10,0.35),0 0 10px rgba(245,209,122,0.55),0 2px 6px rgba(0,0,0,0.4);
+  text-shadow:0 1px 0 rgba(255,255,255,0.4);}
+.cc.today .ccc{color:#0d3d8f;}
 .cc.hd{
   background:linear-gradient(180deg,rgba(255,255,255,0.09) 0%,rgba(255,255,255,0.04) 100%);
   color:rgba(255,255,255,0.82);}
@@ -418,6 +449,15 @@ button.hpb.active{
 .cc.occ{
   border-bottom:3px solid var(--gold);
   box-shadow:inset 0 1px 0 rgba(255,255,255,0.10),0 0 8px rgba(255,215,0,0.22),0 1px 4px rgba(0,0,0,0.35);}
+.cc.today.hd .ccc,.cc.today.tm .ccc{color:#0d3d8f;}
+.cc.today.hd,.cc.today.tm{
+  border:2px solid #F5D17A;
+  color:#3a2a06;
+  background:linear-gradient(180deg,#FCEBB0 0%,#E9C468 45%,#C79A3E 100%);
+  box-shadow:inset 0 1px 1px rgba(255,255,255,0.85),inset 0 -2px 3px rgba(120,80,10,0.35),0 0 10px rgba(245,209,122,0.55),0 2px 6px rgba(0,0,0,0.4);}
+.cc.today.bc-m,.cc.today.bc-b{
+  border:2px solid #F5D17A;
+  box-shadow:inset 0 1px 1px rgba(255,255,255,0.85),inset 0 -2px 3px rgba(120,80,10,0.35),0 0 10px rgba(245,209,122,0.55),0 2px 6px rgba(0,0,0,0.4);}
 .ccc{font-size:8px;color:rgba(255,255,255,0.45);font-weight:700;letter-spacing:-0.2px;}
 
 /* Brahmacharya calendar cell coloring — no green for maintained; broken gets subtle red only */
@@ -639,24 +679,6 @@ button.hpb.active{
 /* 28 NAMES STATS PANEL */
 .n28sp-section{background:rgba(74,144,226,0.05);border:1px solid rgba(74,144,226,0.15);border-radius:14px;padding:12px;margin-bottom:8px;width:100%;box-sizing:border-box;}
 .n28sp-title{font-size:10px;color:var(--a2);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:10px;font-weight:600;}
-.n28sp-row{display:grid;grid-template-columns:1fr 1fr;gap:6px;align-items:center;}
-.n28sp-row .n28sp-btn{width:100%;}
-.n28sp-in{width:100%;box-sizing:border-box;background:rgba(0,0,0,0.3);border:1px solid rgba(74,144,226,0.25);border-radius:9px;padding:7px 10px;color:var(--tl);font-size:14px;font-family:'Inter',sans-serif;text-align:center;outline:none;}
-.n28sp-in:focus{border-color:var(--a2);}
-.n28sp-btn{border-radius:9px;border:none;padding:7px 12px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;white-space:nowrap;box-sizing:border-box;}
-.n28sp-btn.add{background:linear-gradient(135deg,rgba(39,174,96,0.25),rgba(46,204,113,0.15));color:var(--green);border:1px solid rgba(46,204,113,0.35);}
-.n28sp-btn.ded{background:linear-gradient(135deg,rgba(232,51,109,0.15),rgba(192,57,43,0.1));color:var(--rl);border:1px solid rgba(232,51,109,0.3);}
-/* Manual 28-Names time adjust block */
-.n28-adj{background:linear-gradient(180deg,rgba(74,144,226,0.05),rgba(74,144,226,0.02));border:1px solid rgba(124,143,224,0.22);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:10px;}
-.n28-adj-head{display:flex;flex-direction:column;gap:4px;}
-.n28-adj-title{font-size:12px;font-weight:700;color:var(--a2);letter-spacing:0.6px;}
-.n28-adj-desc{font-size:11px;line-height:1.5;color:var(--td);}
-.n28-adj-inputs{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
-.n28-adj-field{display:flex;flex-direction:column;gap:4px;}
-.n28-adj-lbl{font-size:10px;letter-spacing:1.2px;text-transform:uppercase;color:var(--td);font-weight:600;padding-left:2px;}
-.n28-adj-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
-.n28-adj-actions .n28sp-btn{padding:10px 12px;font-size:13px;}
-.n28-adj-preview{min-height:14px;font-size:11px;color:var(--a2);text-align:center;}
 
 /* Reset Options — golden plated buttons (force gold even if cached overrides exist) */
 .n28sp-reset{border-color:rgba(255,215,0,0.28) !important;background:linear-gradient(180deg,rgba(245,209,122,0.06),rgba(245,209,122,0.02)) !important;}
@@ -1199,6 +1221,22 @@ button.n28-gold-btn-danger,
 .fn-rv{position:absolute;pointer-events:none;z-index:10;animation:fu 2.4s ease-out forwards;
   display:flex;flex-direction:column;align-items:center;line-height:1.15;}
 .fn-rv span{font-family:'Tiro Devanagari Hindi',serif;display:block;}
+/* Two-line floating naam for KV mode — deliberately slower fade/rise than
+   RV/SS/Radha (fu, 2.4s) so there's time to recite the name before it
+   disappears, per request. */
+@keyframes fuKV{
+  0%{opacity:0.9;transform:translateY(0) scale(1);}
+  15%{opacity:1;transform:translateY(-40px) scale(1.12);}
+  70%{opacity:1;transform:translateY(-170px) scale(1.05);}
+  100%{opacity:0;transform:translateY(-280px) scale(0.9);}
+}
+.fn-kv{position:absolute;pointer-events:none;z-index:10;animation:fuKV 8s ease-out forwards;
+  display:flex;flex-direction:column;align-items:center;line-height:1.15;text-align:center;max-width:280px;}
+.fn-kv span{font-family:'Tiro Devanagari Hindi',serif;display:block;}
+/* Two-line floating naam for Samba Sadashiv (SS) mode */
+.fn-ss{position:absolute;pointer-events:none;z-index:10;animation:fu 2.4s ease-out forwards;
+  display:flex;flex-direction:column;align-items:center;line-height:1.15;}
+.fn-ss span{font-family:'Tiro Devanagari Hindi',serif;display:block;}
 
 /* MILESTONES VIEW — dedicated tab */
 #vms{background:radial-gradient(ellipse at top,#0A1535 0%,var(--bd) 60%);padding:0;overflow:hidden;}
@@ -1445,6 +1483,48 @@ button.n28-gold-btn-danger,
 }
 #hkPersist.hk-visible{opacity:1;}
 #hkPersist > div{display:block;width:100%;}
+/* New mantra color "arriving" pop — mirrors the old color's hkRise departure */
+@keyframes hkPulseIn{
+  0%{transform:scale(0.85);filter:brightness(1.7) saturate(1.3);}
+  55%{transform:scale(1.06);}
+  100%{transform:scale(1);filter:brightness(1) saturate(1);}
+}
+#hkPersist.hk-pulse{animation:hkPulseIn 0.32s cubic-bezier(0.34,1.56,0.64,1);}
+
+/* ── Ramanandi (Raam Vijay Mantra) persistent tap display (mirrors #hkPersist) ── */
+#ramPersist{
+  position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
+  pointer-events:none;z-index:10;
+  font-family:'Tiro Devanagari Hindi','Hind Siliguri',serif;
+  font-size:clamp(26px,7.5vw,44px);font-weight:700;line-height:1.6;text-align:center;
+  padding:16px;letter-spacing:1.5px;
+  opacity:0;
+  transition:opacity 0.22s ease;
+}
+#ramPersist.hk-visible{opacity:1;}
+#ramPersist > div{display:flex;flex-wrap:wrap;justify-content:center;gap:0.3em;width:100%;}
+/* Each word of the Raam Vijay mantra spins in from a random margin of
+   the jap display and settles into place, instead of the whole line
+   popping in at once. --wx/--wy/--wr are set per word in JS. */
+.ram-word{display:inline-block;opacity:0;animation:ramWordIn 0.6s cubic-bezier(0.16,1,0.3,1) forwards;}
+@keyframes ramWordIn{
+  0%{opacity:0;transform:translate(var(--wx,0px),var(--wy,0px)) rotate(var(--wr,0deg)) scale(0.5);}
+  70%{opacity:1;}
+  100%{opacity:1;transform:translate(0,0) rotate(0deg) scale(1);}
+}
+
+/* ── Krishnay Vasudevay persistent tap display (mirrors #hkPersist) ── */
+#kvPersist{
+  position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;
+  pointer-events:none;z-index:10;
+  font-family:'Tiro Devanagari Hindi','Hind Siliguri',serif;
+  font-weight:700;line-height:1.3;text-align:center;
+  padding:16px;letter-spacing:1px;
+  opacity:0;
+  transition:opacity 0.22s ease;
+}
+#kvPersist.kv-visible{opacity:1;}
+#kvPersist > div{display:block;width:100%;}
 
 /* HK floating name animation — rises upward from center */
 .hk-float-name{position:absolute;pointer-events:none;z-index:11;animation:hkRise 2.2s ease-out forwards;
@@ -1479,7 +1559,7 @@ body.gaudiya-mode .non-gaudiya-stat{display:none!important;}
 body.gaudiya-mode .hk-only-stat{display:flex!important;}
 body.gaudiya-mode .sb.hk-only-stat{display:block!important;}
 #nav28{transition:opacity 0.2s;}
-body.gaudiya-mode #nav28{display:none!important;}
+/* 28 Names tab stays visible in Gaudiya/ISKCON mode (Bhagavadik Bank switches its own background instead — see photo picker) */
 
 /* Gaudiya mode: plain stat rows (Total Count/Time) — no button look */
 body.gaudiya-mode .gaudiya-plain-stat{font-size:14px;color:var(--tl);padding:2px 0;}
@@ -1487,19 +1567,56 @@ body.gaudiya-mode .gaudiya-plain-stat .cdmo-stat-val{font-size:22px;}
 
 /* Hide RV settings section in Gaudiya mode */
 body.gaudiya-mode .non-gaudiya-setting{display:none!important;}
+body:not(.gaudiya-mode) .gaudiya-only-setting{display:none!important;}
+
+/* Gaudiya mode: no such thing as a "lifetime jap target" — hide the gold
+   Lifetime bar entirely; the Daily bar (flex:1, only child left in .ps)
+   automatically stretches to fill the full row width. */
+body.gaudiya-mode .lifetime-bar-block{display:none!important;}
+
+/* Gaudiya mode: 28 Names Daily Target stays visible (RV Daily hides next
+   to it), so let it expand across the full grid row instead of sitting
+   in a half-width column with empty space beside it. */
+body.gaudiya-mode .target28-card{grid-column:1/-1;}
 
 /* ── Gaudiya Mode: history table column visibility ── */
 .hist-hk-col{display:none;}
 body.gaudiya-mode .hist-hk-col{display:table-cell!important;}
+.hist-kv-col{display:none;}
+body.trahimam-mode .hist-kv-col{display:table-cell!important;}
+body.trahimam-mode .hist-radha-col{display:none!important;}
 body.gaudiya-mode .hist-radha-col{display:none!important;}
 
 /* Gaudiya-mode dropdown filtering: only show Mahamantra when ON; hide it when OFF */
 body:not(.gaudiya-mode) #naamOptHK { display: none !important; }
 body.gaudiya-mode #naamOptRadha,
-body.gaudiya-mode #naamOptRV { display: none !important; }
+body.gaudiya-mode #naamOptRV,
+body.gaudiya-mode #naamOptSS,
+body.gaudiya-mode #naamOptKV { display: none !important; }
 /* Settings: HK targets block visible only in Gaudiya mode */
 body:not(.gaudiya-mode) .hk-only-block { display: none !important; }
 body.gaudiya-mode .naam-only-block { display: none !important; }
+
+/* ── Gopeshwar Mahadev Mode (reuses Trahimam scaffolding): hide non-SS stat rows/settings, show SS-only ── */
+body.trahimam-mode .non-gaudiya-stat{display:none!important;}
+body.trahimam-mode .non-gaudiya-setting{display:none!important;}
+.kv-only-stat{display:none!important;}
+body.trahimam-mode .kv-only-stat{display:flex!important;}
+body.trahimam-mode .dc-wrap.kv-only-stat{display:block!important;}
+.kv-only-setting{display:none!important;}
+body.trahimam-mode .kv-only-setting{display:flex!important;}
+body.trahimam-mode .lifetime-bar-block{display:none!important;}
+/* 28 Names Daily Target isn't relevant in Gopeshwar Mahadev mode (SS-only) — hide it in Settings */
+body.trahimam-mode #target28Card{display:none!important;}
+
+/* Gopeshwar Mahadev-mode dropdown filtering: only show Samba Sadashiv when ON; hide it when OFF */
+body:not(.trahimam-mode) #naamOptSS { display: none !important; }
+body.trahimam-mode #naamOptRadha,
+body.trahimam-mode #naamOptRV,
+body.trahimam-mode #naamOptKV,
+body.trahimam-mode #naamOptHK { display: none !important; }
+/* RV Daily target card spans full width when Samba Sadashiv Daily card is hidden (i.e. outside Gopeshwar Mahadev mode) */
+body:not(.trahimam-mode) .rv-daily-target-card { grid-column: 1/-1; }
 
 /* ── Option C: Lotus Petals — Mahamantra Stats ── */
 .hkc-wrap{
@@ -1561,6 +1678,7 @@ body.gaudiya-mode .naam-only-block { display: none !important; }
 }
 .gmc-top{display:flex;align-items:center;gap:14px;margin-bottom:16px;}
 .gmc-icon{font-size:30px;line-height:1;flex-shrink:0;}
+.gmc-icon-img{width:34px;height:34px;object-fit:contain;filter:drop-shadow(0 0 4px rgba(255,215,0,0.35));}
 .gmc-text{flex:1;min-width:0;}
 .gmc-title{
   font-size:19px;font-weight:bold;letter-spacing:1px;
@@ -1609,6 +1727,141 @@ body.gaudiya-mode .gmc-switch-thumb{
 .gmc-switch-label-on{left:60px;color:#6DB8FF;opacity:0;text-shadow:0 0 10px rgba(109,184,255,0.6);}
 body.gaudiya-mode .gmc-switch-label-off{opacity:0;}
 body.gaudiya-mode .gmc-switch-label-on{opacity:1;}
+
+/* ── Trahimam Trahimam (KV) large switch card ── */
+.trahimam-mode-card{
+  background:linear-gradient(135deg,rgba(6,13,31,0.95) 0%,rgba(10,22,40,0.98) 100%) !important;
+  border:1px solid rgba(109,184,255,0.25) !important;
+  border-radius:20px !important;
+  overflow:visible !important;
+  position:relative;
+  padding-top:20px !important;
+}
+.trahimam-mode-card::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:2px;border-radius:20px 20px 0 0;
+  background:linear-gradient(90deg,transparent,#6DB8FF,#5eead4,#6DB8FF,transparent);
+}
+.tmc-switch-wrap{cursor:pointer;width:100%;}
+.tmc-switch{width:100%;}
+.tmc-switch-track{
+  position:relative;height:56px;border-radius:28px;
+  background:rgba(255,255,255,0.06);
+  border:1.5px solid rgba(109,184,255,0.2);
+  display:flex;align-items:center;width:100%;box-sizing:border-box;
+  transition:background 0.4s ease,border-color 0.4s ease,box-shadow 0.4s ease;
+  cursor:pointer;overflow:hidden;
+}
+body.trahimam-mode .tmc-switch-track{
+  background:linear-gradient(135deg,rgba(109,184,255,0.18),rgba(94,234,212,0.12));
+  border-color:rgba(109,184,255,0.5);
+  box-shadow:0 0 28px rgba(109,184,255,0.25);
+}
+.tmc-switch-thumb{
+  position:absolute;left:7px;
+  width:42px;height:42px;border-radius:50%;
+  background:rgba(255,255,255,0.18);
+  border:1px solid rgba(255,255,255,0.2);
+  transition:left 0.38s cubic-bezier(.4,.0,.2,1),background 0.38s ease,box-shadow 0.38s ease;
+  z-index:2;display:flex;align-items:center;justify-content:center;font-size:20px;
+}
+.tmc-switch-thumb::after{content:'🪈';}
+body.trahimam-mode .tmc-switch-thumb{
+  left:calc(100% - 49px);
+  background:linear-gradient(135deg,#3a7bd5,#6DB8FF);
+  border-color:rgba(109,184,255,0.7);
+  box-shadow:0 0 18px rgba(109,184,255,0.6);
+}
+.tmc-switch-label-off,.tmc-switch-label-on{
+  position:absolute;font-size:12px;letter-spacing:2.5px;font-weight:700;
+  font-family:'Inter',sans-serif;transition:opacity 0.3s ease;pointer-events:none;
+}
+.tmc-switch-label-off{right:18px;color:rgba(255,255,255,0.2);}
+.tmc-switch-label-on{left:60px;color:#6DB8FF;opacity:0;text-shadow:0 0 10px rgba(109,184,255,0.6);}
+body.trahimam-mode .tmc-switch-label-off{opacity:0;}
+body.trahimam-mode .tmc-switch-label-on{opacity:1;}
+
+/* ── Ramanandi (Raam Vijay Mantra) large switch card — mirrors Trahimam ── */
+.ramanandi-mode-card{
+  background:linear-gradient(135deg,rgba(6,13,31,0.95) 0%,rgba(10,22,40,0.98) 100%) !important;
+  border:1px solid rgba(255,153,51,0.25) !important;
+  border-radius:20px !important;
+  overflow:visible !important;
+  position:relative;
+  padding-top:20px !important;
+}
+.ramanandi-mode-card::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:2px;border-radius:20px 20px 0 0;
+  background:linear-gradient(90deg,transparent,#FF9933,#FFD700,#FF9933,transparent);
+}
+.rmc-switch-wrap{cursor:pointer;width:100%;}
+.rmc-switch{width:100%;}
+.rmc-switch-track{
+  position:relative;height:56px;border-radius:28px;
+  background:rgba(255,255,255,0.06);
+  border:1.5px solid rgba(255,153,51,0.2);
+  display:flex;align-items:center;width:100%;box-sizing:border-box;
+  transition:background 0.4s ease,border-color 0.4s ease,box-shadow 0.4s ease;
+  cursor:pointer;overflow:hidden;
+}
+body.ramanandi-mode .rmc-switch-track{
+  background:linear-gradient(135deg,rgba(255,153,51,0.18),rgba(255,215,0,0.12));
+  border-color:rgba(255,153,51,0.5);
+  box-shadow:0 0 28px rgba(255,153,51,0.25);
+}
+.rmc-switch-thumb{
+  position:absolute;left:7px;
+  width:42px;height:42px;border-radius:50%;
+  background:rgba(255,255,255,0.18);
+  border:1px solid rgba(255,255,255,0.2);
+  transition:left 0.38s cubic-bezier(.4,.0,.2,1),background 0.38s ease,box-shadow 0.38s ease;
+  z-index:2;display:flex;align-items:center;justify-content:center;font-size:20px;
+}
+.rmc-switch-thumb::after{content:'🚩';}
+body.ramanandi-mode .rmc-switch-thumb{
+  left:calc(100% - 49px);
+  background:linear-gradient(135deg,#e0781f,#FF9933);
+  border-color:rgba(255,153,51,0.7);
+  box-shadow:0 0 18px rgba(255,153,51,0.6);
+}
+.rmc-switch-label-off,.rmc-switch-label-on{
+  position:absolute;font-size:12px;letter-spacing:2.5px;font-weight:700;
+  font-family:'Inter',sans-serif;transition:opacity 0.3s ease;pointer-events:none;
+}
+.rmc-switch-label-off{right:18px;color:rgba(255,255,255,0.2);}
+.rmc-switch-label-on{left:60px;color:#FF9933;opacity:0;text-shadow:0 0 10px rgba(255,153,51,0.6);}
+body.ramanandi-mode .rmc-switch-label-off{opacity:0;}
+body.ramanandi-mode .rmc-switch-label-on{opacity:1;}
+
+/* ── Ramanandi Mode: hide non-Ram stat rows/settings, show Ram-only ── */
+body.ramanandi-mode .non-gaudiya-stat{display:none!important;}
+body.ramanandi-mode .non-gaudiya-setting{display:none!important;}
+.ram-only-stat{display:none!important;}
+body.ramanandi-mode .ram-only-stat{display:flex!important;}
+body.ramanandi-mode .dc-wrap.ram-only-stat{display:block!important;}
+.ram-only-setting{display:none!important;}
+body.ramanandi-mode .ram-only-setting{display:flex!important;}
+body.ramanandi-mode .lifetime-bar-block{display:none!important;}
+body.ramanandi-mode #target28Card{display:none!important;}
+
+/* ── Ramanandi Mode: history table column visibility ── */
+.hist-ram-col{display:none;}
+body.ramanandi-mode .hist-ram-col{display:table-cell!important;}
+body.ramanandi-mode .hist-radha-col{display:none!important;}
+body.ramanandi-mode .hist-kv-col{display:none!important;}
+body.ramanandi-mode .hist-hk-col{display:none!important;}
+body.gaudiya-mode .hist-ram-col{display:none!important;}
+body.trahimam-mode .hist-ram-col{display:none!important;}
+
+/* Ramanandi-mode dropdown filtering: only show Raam Vijay Mantra when ON; hide it when OFF */
+body:not(.ramanandi-mode) #naamOptRam { display: none !important; }
+body.ramanandi-mode #naamOptRadha,
+body.ramanandi-mode #naamOptRV,
+body.ramanandi-mode #naamOptSS,
+body.ramanandi-mode #naamOptKV,
+body.ramanandi-mode #naamOptHK { display: none !important; }
+/* Also hide Ram from the dropdown while Gaudiya/Trahimam are active */
+body.gaudiya-mode #naamOptRam,
+body.trahimam-mode #naamOptRam { display: none !important; }
 
 /* ── Mahamantra Language picker buttons ── */
 #hkLangBtnHi, #hkLangBtnBn{transition:all 0.3s ease;}
@@ -1682,6 +1935,20 @@ body.naam-bn #naamLangBtnSa{opacity:0.55;}
   background: rgba(255,180,50,0.3);
   border-color: #ffb432;
   color: #ffe08a;
+}
+/* Voice button shows a word ("Original"/"Ankit"/"Shuvam"), not an icon —
+   override the fixed 30px circle every other .hcj-mini-btn uses (across
+   every responsive breakpoint below) with a pill that fits its text.
+   #hcj-voice-btn's ID specificity wins over the repeated .hcj-mini-btn
+   class rules regardless of media query, so this one rule is enough. */
+#hcj-voice-btn {
+  width: auto;
+  min-width: 30px;
+  height: 30px;
+  padding: 0 10px;
+  border-radius: 15px;
+  font-size: 0.72rem;
+  white-space: nowrap;
 }
 .hcj-play-btn {
   background: linear-gradient(135deg, #e8952a, #c4601a);
@@ -2146,6 +2413,8 @@ body.naam-bn #naamLangBtnSa{opacity:0.55;}
 /* ALL cards: thick golden border (as requested) */
 .dc-radha,
 .dc-rv,
+.dc-ss,
+.dc-ram,
 .dc-28n,
 .dc-combo,
 .dc-all {
@@ -2160,6 +2429,8 @@ body.naam-bn #naamLangBtnSa{opacity:0.55;}
 /* Golden shimmer line at top of every card */
 .dc-radha::before,
 .dc-rv::before,
+.dc-ss::before,
+.dc-ram::before,
 .dc-28n::before,
 .dc-combo::before,
 .dc-all::before {
@@ -2180,6 +2451,9 @@ body.naam-bn #naamLangBtnSa{opacity:0.55;}
 /* Title colors — each deity keeps its identity colour */
 .dc-radha .dc-title { color:#f5c842; }
 .dc-rv    .dc-title { color:#5eead4; }
+.dc-kv    .dc-title { color:#6DB8FF; }
+.dc-ss    .dc-title { color:#ffb86c; }
+.dc-ram   .dc-title { color:#FF9933; }
 .dc-28n   .dc-title { color:#a78bfa; }
 .dc-title--combo    { color:#f5c842 !important; }
 .dc-title--all      { color:#f5d060 !important; }
@@ -2188,6 +2462,9 @@ body.naam-bn #naamLangBtnSa{opacity:0.55;}
 }
 .dc-dot--radha { background:#f5c842; box-shadow:0 0 7px #f5c84299; }
 .dc-dot--rv    { background:#5eead4; box-shadow:0 0 7px #5eead499; }
+.dc-dot--kv    { background:#6DB8FF; box-shadow:0 0 7px #6DB8FF99; }
+.dc-dot--ss    { background:#ffb86c; box-shadow:0 0 7px #ffb86c99; }
+.dc-dot--ram   { background:#FF9933; box-shadow:0 0 7px #FF993399; }
 .dc-dot--28n   { background:#a78bfa; box-shadow:0 0 7px #a78bfa99; }
 .dc-table { width:100%; border-collapse:collapse; }
 .dc-thead {
@@ -2213,8 +2490,14 @@ body.naam-bn #naamLangBtnSa{opacity:0.55;}
 }
 .dc-radha  .dc-row--life > div { color:#f5c842; }
 .dc-rv     .dc-row--life > div { color:#5eead4; }
+.dc-kv     .dc-row--life > div { color:#6DB8FF; }
+.dc-ss     .dc-row--life > div { color:#ffb86c; }
+.dc-ram    .dc-row--life > div { color:#FF9933; }
 .dc-28n    .dc-row--life > div { color:#a78bfa; }
 .dc-row--rv    > div { color:#5eead4; }
+.dc-row--kv    > div { color:#6DB8FF; }
+.dc-row--ss    > div { color:#ffb86c; }
+.dc-row--ram   > div { color:#FF9933; }
 .dc-row--28n   > div { color:#a78bfa; }
 .dc-row--combo > div { color:#f5c842; }
 .dc-row--all   > div { color:#f5d060; }
@@ -2268,6 +2551,9 @@ body.naam-bn #naamLangBtnSa{opacity:0.55;}
 .hist-dash{color:rgba(255,255,255,0.18);}
 .hist-c-gold{color:var(--gold);}
 .hist-c-rv{color:var(--a2);}
+.hist-c-kv{color:#6DB8FF;}
+.hist-c-ss{color:#ffb86c;}
+.hist-c-ram{color:#FF9933;}
 .hist-c-green{color:var(--green);}
 .hist-c-hk{color:#6DB8FF;}
 .hist-c-time{color:var(--td);font-size:11.5px;}
@@ -2312,8 +2598,10 @@ body.naam-bn #naamLangBtnSa{opacity:0.55;}
   background:rgba(245,209,122,0.12);border:1px solid rgba(245,209,122,0.25);border-radius:8px;padding:3px 8px;}
 .pt-grid{display:grid;gap:12px;position:relative;z-index:1;}
 .pt-grid-3{grid-template-columns:repeat(3,minmax(0,1fr));}
+.pt-grid-4{grid-template-columns:repeat(4,minmax(0,1fr));}
+.pt-grid-5{grid-template-columns:repeat(5,minmax(0,1fr));}
 .pt-grid-1{grid-template-columns:1fr;}
-@media (max-width:520px){.pt-grid-3{grid-template-columns:1fr;}}
+@media (max-width:520px){.pt-grid-3{grid-template-columns:1fr;} .pt-grid-4{grid-template-columns:1fr 1fr;} .pt-grid-5{grid-template-columns:1fr 1fr;}}
 .pt-card{
   position:relative;border-radius:16px;padding:14px 14px 12px;
   background:
@@ -2349,6 +2637,15 @@ body.naam-bn #naamLangBtnSa{opacity:0.55;}
 .pt-rv .pt-num{color:var(--a2);text-shadow:0 0 14px rgba(184,196,245,0.45);}
 .pt-rv{border-color:rgba(184,196,245,0.28);}
 .pt-rv .pt-card-icon{background:linear-gradient(160deg,rgba(184,196,245,0.20),rgba(184,196,245,0.04));border-color:rgba(184,196,245,0.45);box-shadow:0 0 16px rgba(184,196,245,0.30), inset 0 1px 0 rgba(255,255,255,0.10);}
+.pt-kv .pt-num{color:#6DB8FF;text-shadow:0 0 14px rgba(109,184,255,0.45);}
+.pt-kv{border-color:rgba(109,184,255,0.28);}
+.pt-kv .pt-card-icon{background:linear-gradient(160deg,rgba(109,184,255,0.20),rgba(109,184,255,0.04));border-color:rgba(109,184,255,0.45);box-shadow:0 0 16px rgba(109,184,255,0.30), inset 0 1px 0 rgba(255,255,255,0.10);}
+.pt-ss .pt-num{color:#ffb86c;text-shadow:0 0 14px rgba(255,184,108,0.45);}
+.pt-ss{border-color:rgba(255,184,108,0.28);}
+.pt-ss .pt-card-icon{background:linear-gradient(160deg,rgba(255,184,108,0.20),rgba(255,184,108,0.04));border-color:rgba(255,184,108,0.45);box-shadow:0 0 16px rgba(255,184,108,0.30), inset 0 1px 0 rgba(255,255,255,0.10);}
+.pt-ram .pt-num{color:#FF9933;text-shadow:0 0 14px rgba(255,153,51,0.45);}
+.pt-ram{border-color:rgba(255,153,51,0.28);}
+.pt-ram .pt-card-icon{background:linear-gradient(160deg,rgba(255,153,51,0.20),rgba(255,153,51,0.04));border-color:rgba(255,153,51,0.45);box-shadow:0 0 16px rgba(255,153,51,0.30), inset 0 1px 0 rgba(255,255,255,0.10);}
 .pt-28 .pt-num{color:var(--green);text-shadow:0 0 14px rgba(57,201,151,0.45);}
 .pt-28{border-color:rgba(57,201,151,0.28);}
 .pt-28 .pt-card-icon{background:linear-gradient(160deg,rgba(57,201,151,0.20),rgba(57,201,151,0.04));border-color:rgba(57,201,151,0.50);box-shadow:0 0 16px rgba(57,201,151,0.30), inset 0 1px 0 rgba(255,255,255,0.10);}
@@ -2801,19 +3098,46 @@ body.gaudiya-mode .tz .hitju-wm,
 body.gaudiya-mode .tz .gurudev-wm{display:none !important;animation:none !important;}
 
 
-/* Sri Chaitanya Mahaprabhu — Jap hero for Gaudiya / ISKCON mode */
+/* Sri Chaitanya Mahaprabhu (default) / user-chosen Gaudiya deity — Jap hero
+   for Gaudiya/ISKCON mode, top-center, same slot as Radha Vallabh in default
+   mode. Visibility is controlled from JS (applyBgPhotos), not CSS, since it
+   must also respect the per-photo Blank option — so no display:none!important here. */
 .tz .cm-wm{
   position:absolute; top:var(--rv-top); left:50%; transform:translateX(-50%);
-  width:var(--rv-w); height:auto;
-  opacity:0;
+  width:var(--rv-w); height:auto; max-height:78%;
+  opacity:.6;
   filter:drop-shadow(0 0 22px rgba(245,209,122,.45));
   pointer-events:none; user-select:none; z-index:1;
   display:none;
+  animation: divineBreathGlowStrong 10s ease-in-out infinite;
 }
-body.gaudiya-mode .tz .cm-wm{
-  display:block !important;
-  opacity:.6;
-  animation:tzGoldPulseStrong 4.5s ease-in-out infinite;
+
+/* Gaudiya/ISKCON Acharya — bottom-left, same plane as Hitju in default mode.
+   Visibility is controlled from JS (applyBgPhotos), not CSS, since it must
+   also respect the per-photo Blank option — so no display:none!important here. */
+.tz .iskcon-acharya-wm{
+  position:absolute;
+  top: min(var(--rv-bottom), calc(100% - var(--side-w) * var(--rv-aspect)));
+  left:8px;
+  width:var(--side-w); height:auto;
+  opacity:.45;
+  filter:none;
+  pointer-events:none; user-select:none; z-index:1;
+  display:none;
+  animation: divineBreathGlow 10s ease-in-out infinite;
+}
+
+/* Gaudiya/ISKCON Gurudev — bottom-right, same plane as Gurudev in default mode */
+.tz .iskcon-gurudev-wm{
+  position:absolute;
+  top: min(var(--rv-bottom), calc(100% - var(--side-w) * var(--rv-aspect)));
+  right:8px;
+  width:var(--side-w); height:auto;
+  opacity:.45;
+  filter:none;
+  pointer-events:none; user-select:none; z-index:1;
+  display:none;
+  animation: divineBreathGlow 10s ease-in-out infinite;
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -2942,6 +3266,9 @@ body.gaudiya-mode .tz .cm-wm{
   background:linear-gradient(135deg,rgba(255,215,0,0.10),rgba(255,165,0,0.04));
   border-color:rgba(255,215,0,0.28);
 }
+/* Ghost Leaderboard: devotees who opted out of the public Family Board,
+   visible only to developers with the toggle on — faded, not hidden. */
+.lb-row.lb-row-ghost{opacity:0.5;}
 
 /* Rank badge */
 .lb-badge{
@@ -3002,9 +3329,9 @@ body.gaudiya-mode .tz .cm-wm{
 
 
 /* ═══════════════════════════════════════════════════════
-   COMMUNITY nav tab update — people icon fits 8-tab nav
+   FAMILY nav tab update — people icon fits 8-tab nav
    ═══════════════════════════════════════════════════════ */
-/* Ensure community tab icon matches the others */
+/* Ensure family tab icon matches the others */
 #navLb svg{
   width:18px;height:18px;
 }
@@ -3364,3 +3691,205 @@ body.gaudiya-mode .tz .cm-wm{
   }
 }
 
+
+/* ── Hit Chaurasi Ji player: prev/next arrows ────────────────────────────
+   Fix for invisible-but-clickable arrows: four separate .hcj-mini-btn
+   definitions exist above (added at different times), and depending on
+   which one wins the cascade on a given build, the arrow glyph can end up
+   low-contrast or blended into its own background. This rule is placed
+   last and targets the IDs directly (higher specificity than any of the
+   class-only rules above), so the arrows are always clearly visible
+   regardless of that older cascade. */
+#hcj-prev-btn,
+#hcj-next-btn {
+  background: rgba(255, 215, 0, 0.14) !important;
+  border: 1px solid rgba(255, 215, 0, 0.45) !important;
+  color: #FFD700 !important;
+  opacity: 1 !important;
+}
+#hcj-prev-btn:disabled,
+#hcj-next-btn:disabled {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  color: rgba(255, 255, 255, 0.25) !important;
+  opacity: 1 !important;
+}
+
+/* ── Hit Chaurasi Ji player: prev/next arrows pushed off-screen on narrow
+   phones ──────────────────────────────────────────────────────────────
+   The player row (.hcj-player) never resets flex-wrap back from the
+   original "nowrap" rule, and up to 9 buttons at ~46px + gaps need
+   ~520-600px of width. body{overflow-x:hidden;width:100vw} then clips
+   the row's overflowing edges — which, since the row is centered, are
+   exactly the prev/next arrows. On a wide screen (iPad) the row simply
+   never overflows, so nothing gets clipped and the arrows show fine.
+
+   Fix: shrink buttons/gaps under ~480px so the whole row fits, and add
+   a scroll fallback in case a voice-switch button (which adds one more
+   46px button only for some stotrams) still pushes it over budget. */
+@media (max-width: 480px) {
+  .hcj-player { gap: 4px; }
+  .hcj-mini-btn { width: 32px; height: 32px; font-size: 14px; border-radius: 9px; }
+  .hcj-play-btn,
+  .hcj-play-btn.hcj-playing { width: 36px; height: 36px; font-size: 15px; }
+  .hcj-arrow-btn { font-size: 16px; }
+  .hcj-seek-input { width: 32px; height: 30px; font-size: 11px; margin-left: 2px; }
+  .hcj-seek-total { font-size: 10px; margin-left: 1px; }
+}
+
+/* Safety net: if the row is still a few px too wide (extra-narrow device,
+   or the voice-switch button present), scroll instead of silently
+   clipping the edge buttons off-screen. Scrollbar hidden — this is only
+   a fallback, not meant to be a visible/expected interaction. */
+.hcj-player {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.hcj-player::-webkit-scrollbar { display: none; }
+
+/* ── Notification bell + inbox ───────────────────────────────────────── */
+.rjap-badge {
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  border-radius: 10px;
+  background: #E74C3C;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.35);
+}
+.rjap-badge, .rjap-nav-badge { display: flex; }
+.rjap-nav-badge {
+  position: absolute;
+  top: 2px;
+  right: 14px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 8px;
+  background: #E74C3C;
+  color: #fff;
+  font-size: 9px;
+  font-weight: 700;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.4);
+  line-height: 1;
+}
+
+/* Inbox modal — deliberately plain white/black, unlike the gold parchment
+   scripture reader. This is a functional inbox, not a devotional artifact,
+   so it reads like a normal email list. */
+.notif-inbox-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.55);
+  z-index: 500;
+  display: none;
+  align-items: flex-start;
+  justify-content: center;
+}
+.notif-inbox-overlay.show { display: flex; }
+.notif-inbox-page {
+  background: #ffffff;
+  color: #111111;
+  width: 100%;
+  max-width: 480px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 0 30px rgba(0,0,0,0.4);
+}
+.notif-inbox-header {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 16px;
+  font-size: 17px;
+  font-weight: 700;
+  color: #111111;
+  background: #ffffff;
+  border-bottom: 1px solid #e5e5e5;
+}
+.notif-inbox-close {
+  background: none;
+  border: none;
+  font-size: 18px;
+  color: #555555;
+  cursor: pointer;
+  padding: 4px 8px;
+}
+.notif-inbox-list {
+  flex: 1;
+  overflow-y: auto;
+  background: #ffffff;
+}
+.notif-hist-row {
+  padding: 14px 16px;
+  border-bottom: 1px solid #ececec;
+  background: #ffffff;
+}
+.notif-hist-row:last-child { border-bottom: none; }
+.notif-hist-unread { background: #f5f9ff; }
+.notif-hist-unread .notif-hist-title { color: #111111; }
+.notif-hist-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #111111;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.notif-hist-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: #1a73e8;
+  flex-shrink: 0;
+}
+.notif-hist-body {
+  font-size: 13px;
+  color: #444444;
+  margin-top: 4px;
+  line-height: 1.4;
+}
+.notif-hist-time {
+  font-size: 11px;
+  color: #888888;
+  margin-top: 6px;
+}
+.notif-hist-empty {
+  padding: 40px 16px;
+  text-align: center;
+  color: #888888;
+  font-size: 13px;
+}
+
+/* ── Update App card: glowing blue "update available" state ──
+   Default look stays the quiet gold-outline card. When a newer version
+   IS available, .update-available takes over: the whole card shifts to a
+   blue gradient and pulses with a soft glow, so it's unmistakable without
+   needing to read the status text. Nothing changes when no update is
+   available or the check hasn't run yet — no glow, no extra attention. */
+#appUpdateCard.update-available {
+  background: linear-gradient(135deg, rgba(28, 92, 224, 0.4), rgba(10, 40, 120, 0.6)) !important;
+  border: 1px solid rgba(90, 170, 255, 0.9) !important;
+  animation: appUpdateGlow 1.8s ease-in-out infinite;
+}
+#appUpdateCard.update-available #appUpdateTitle {
+  color: #bfe0ff !important;
+}
+#appUpdateCard.update-available #appUpdateStatus {
+  color: #dcecff !important;
+  font-weight: 600;
+}
+#appUpdateCard.update-available #appUpdateChev {
+  color: rgba(180, 215, 255, 0.9) !important;
+}
+@keyframes appUpdateGlow {
+  0%, 100% { box-shadow: 0 0 8px 0 rgba(70, 150, 255, 0.35); }
+  50% { box-shadow: 0 0 22px 5px rgba(70, 150, 255, 0.8); }
+}

@@ -1,6 +1,6 @@
 /* ════════════════════════════════════════════════════════════
      style-stotram.css  v86 — transparent player buttons, even sizing
-     Frame image referenced as external file (base64 stripped).
+     Frame image EMBEDDED as base64 — no external image file.
      Frame fills the FULL SCREEN edge-to-edge.
      Title / nav / close overlaid on the dark frame edges.
      Short lyrics: centred in the golden area.
@@ -10,7 +10,7 @@
   /* ── Full-screen modal overlay ── */
   .lmo {
     position: fixed; inset: 0;
-    background: #030a14;
+    background: #ffffff;
     z-index: 400; display: none;
     align-items: center; justify-content: center;
     overflow: hidden;
@@ -39,29 +39,22 @@
   }
   .lmx:active { background: rgba(255,215,0,0.20); }
 
-  /* ── Title — immediately below Krishna's flute ── */
+  /* ── Title — fixed top-left, in the blank space beside the ✕ button ── */
   .lmt {
     position: absolute;
-    left: 50%; transform: translateX(-50%);
-    white-space: nowrap;
+    top: max(env(safe-area-inset-top), 10px);
+    left: 12px;
+    right: 54px; /* keeps clear of the 34px ✕ button + gap */
+    height: 34px;
+    display: flex; align-items: center;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     font-family: 'Hind Siliguri','Tiro Devanagari Hindi',serif;
     font-size: 14px; font-weight: 700;
     color: rgba(255,215,0,0.97);
     letter-spacing: 1.5px; text-transform: uppercase;
     text-shadow: 0 2px 10px rgba(0,0,0,1);
     z-index: 20;
-    height: 34px;
-    line-height: 34px;
-    display: flex; align-items: center;
   }
-  /* Align title vertically with the close (×) button on the same horizontal line */
-  @media (max-aspect-ratio: 2/3) {
-    .lmt { top: max(env(safe-area-inset-top, 0px), 10px); }
-  }
-  @media (min-aspect-ratio: 2/3) {
-    .lmt { top: max(env(safe-area-inset-top, 0px), 10px); }
-  }
-
 
   /* ── Verse counter — hidden to maximise frame space ── */
   .lm-vctr { display: none; }
@@ -85,7 +78,7 @@
     height: 100dvh;
 
     /* Embedded frame image */
-    background-image: none;
+    /* background-image removed: plain white background per request */
     background-size: cover;
     background-position: center center;
     background-repeat: no-repeat;
@@ -153,8 +146,7 @@
     -webkit-overflow-scrolling: touch;
     background: transparent;
     /* padding-top guards first-line ascenders from frame border clip */
-    padding: 8px 0px 8px;
-
+    padding: 16px 8px 8px;
     z-index: 2;
   }
   /* Portrait phones (aspect < 2/3): cover → image fills HEIGHT (100dvh)
@@ -166,21 +158,25 @@
      left/right = 5vw (side ornaments are cropped off-screen by cover) */
   @media (max-aspect-ratio: 2/3) {
     .lm-card-inner {
-      top:    calc(env(safe-area-inset-top, 0px) + 48px);
-      bottom: calc(env(safe-area-inset-bottom, 0px) + 48px);
-      left:   0px;
-      right:  0px;
+      top:    11dvh;
+      bottom: 12dvh;
+      left:   5vw;
+      right:  5vw;
     }
   }
+  /* iPad / wider (aspect > 2/3): cover → image fills WIDTH (100vw)
+     image_height = 150.25vw, image_top = 50dvh - 75.125vw
+     top    = image_top + 11% × 150.25vw = 50dvh - 58.6vw
+     bottom = 100dvh − (image_top + 88% × 150.25vw) = 50dvh - 57.1vw
+     left/right = 9% of image width = 9vw                             */
   @media (min-aspect-ratio: 2/3) {
     .lm-card-inner {
-      top:    calc(env(safe-area-inset-top, 0px) + 48px);
-      bottom: calc(env(safe-area-inset-bottom, 0px) + 48px);
-      left:   0px;
-      right:  0px;
+      top:    calc(50dvh - 58.6vw);
+      bottom: calc(50dvh - 57.1vw);
+      left:   9vw;
+      right:  9vw;
     }
   }
-
 
   /* Spacer BEFORE lyrics — grows when there's free space,
      compresses to 0 when content overflows (long lyrics) */
@@ -213,7 +209,7 @@
   /* ── Lyrics text — warm brown on parchment ── */
   .lyr {
     font-family: 'Hind Siliguri','Tiro Devanagari Hindi',serif;
-    color: #000000;
+    color: #1a0800;
     text-align: center;
     width: 100%;
     display: flex; flex-direction: column; align-items: center;
@@ -227,16 +223,16 @@
     /* 3.6vw = 14px on 390px phone, caps at 20px on large screens */
     font-size: clamp(12px, 3.6vw, 20px);
     line-height: 1.9;
-    width: 100%; text-align: center; color: #000000;
+    width: 100%; text-align: center; color: #1a0800;
   }
   .lyr-prose {
     display: block; white-space: pre-wrap;
     overflow-wrap: break-word; word-break: break-word;
     font-size: clamp(11px, 3.2vw, 17px);
-    line-height: 1.75; width: 100%; text-align: left; color: #000000;
+    line-height: 1.75; width: 100%; text-align: left; color: #1a0800;
   }
   .lyr-artha {
-    color: #000000 !important; font-style: italic;
+    color: #780000 !important; font-style: italic;
     margin: 3px 0; text-align: center !important;
     white-space: normal; overflow-wrap: break-word; word-break: break-word;
   }
@@ -245,14 +241,22 @@
     display: flex; align-items: center; justify-content: center;
     gap: 8px; padding: 10px 0 2px; width: 100%;
     opacity: 0.45; font-size: 14px; letter-spacing: 5px;
-    color: #000000; user-select: none; flex-shrink: 0;
+    color: #5a2800; user-select: none; flex-shrink: 0;
   }
 
   /* Override any old theme text colours */
-  .lm-water-card[data-theme] .lyr-line   { color: #000000 !important; }
-  .lm-water-card[data-theme] .lyr-artha  { color: #000000 !important; }
-  .lm-water-card[data-theme] .lyr-footer { color: #000000 !important; }
-  .lm-water-card[data-theme] .lyr-prose  { color: #000000 !important; }
+  .lm-water-card[data-theme] .lyr-line   { color: #1a0800 !important; }
+  .lm-water-card[data-theme] .lyr-artha  { color: #780000 !important; }
+  .lm-water-card[data-theme] .lyr-footer { color: #5a2800 !important; }
+  .lm-water-card[data-theme] .lyr-prose  { color: #1a0800 !important; }
+
+  /* Single manually-highlighted verse line (⟦RED⟧ marker in LYRICS source —
+     e.g. the inserted Bhagavatam verse in Ardhanarishwar Stotram). Placed
+     after the theme override above so it always wins regardless of theme. */
+  .lyr-line-red,
+  .lm-water-card[data-theme] .lyr-line-red {
+    color: #c0132b !important;
+  }
 
   /* ── Translation toggle — pinned top-right of reader, clear of close X & Sudarshan Chakra ── */
   .lm-translate-wrap {
@@ -391,6 +395,14 @@
     opacity: 0.35;
   }
 
+  /* Seek total ("/15") — left out of the button/input gold-text fix above,
+     so it kept its default near-white color, invisible on this view's
+     white background. Same gold + shadow treatment as the seek input. */
+  #hcj-player-wrap .hcj-seek-total {
+    color: rgba(255,215,0,0.85) !important;
+    text-shadow: 0 1px 4px rgba(0,0,0,0.7);
+  }
+
   /* ── Even sizing: stop the verse-entry input from being giant
        while the other buttons stay congested ── */
   #hcj-player-wrap .hcj-player > * {
@@ -439,7 +451,7 @@
   ════════════════════════════════════════════════════════════ */
   @media (max-aspect-ratio: 3/5) {
     .lm-water-card {
-      background-image: none;
+      /* background-image removed: plain white background per request */
     }
     /* New image frame anatomy (% of 578×1280):
          top band:    ~12%
@@ -478,7 +490,6 @@
 
 /* Portrait phones (aspect < 2/3) */
 @media (max-aspect-ratio: 2/3) {
-  .lmt { top: calc(50dvh - 60vw); }
   .lm-card-inner {
     top:    calc(50dvh - 58.5vw);
     bottom: calc(50dvh - 57vw);
@@ -500,7 +511,6 @@
 
 /* iPad / desktop (aspect >= 2/3) */
 @media (min-aspect-ratio: 2/3) {
-  .lmt { top: 10dvh; }
   .lm-card-inner {
     top:    11dvh;
     bottom: 12dvh;
@@ -712,18 +722,16 @@
   transform: scale(0.96) !important;
 }
 
-/* ── Text-size pill  #lyr-fs-ctrl  (right edge of stotram modal, vertical) ── */
+/* ── Text-size pill  #lyr-fs-ctrl  (top-left, below the title, horizontal) ── */
 #lyr-fs-ctrl {
   position:  absolute;
-  top:       50%;
-  right:     max(env(safe-area-inset-right, 0px) + 1px, 2px);
-
-  transform: translateY(-50%);
-  z-index:   30;
+  top:       calc(max(env(safe-area-inset-top), 10px) + 40px);
+  left:      12px;
+  z-index:   60;
   display:   flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
-  gap:       2px;
+  gap:       6px;
 
   background:          transparent;
   backdrop-filter:     none;
@@ -792,15 +800,6 @@
   font-size:   13px !important;
   font-weight: 400 !important;
 }
-/* On wide screens (iPad/desktop, aspect ≥ 2/3) the card inner has
-   right: calc(50vw − 27.33dvh). Shift the control inward so it sits
-   on the golden parchment rather than the dark frame border. */
-@media (min-aspect-ratio: 2/3) {
-  #lyr-fs-ctrl {
-    right: calc(50vw - 27.33dvh + 4px);
-  }
-}
-
 /* ═══════════════════════════════════════════════════════════
    SECTIONED-STOTRAM PICKER (svb, blv, …)
    Styles for the section-picker grid shown when opening a
@@ -934,30 +933,267 @@
   font-weight: 600;
   letter-spacing: 0.5px;
 }
-.sts-btn-name { display: inline-block; }
+.sts-btn-name { display: inline-block; overflow-wrap: break-word; word-break: break-word; }
 
 /* Back-to-sections button */
 .sts-back-btn {
   position: absolute;
   top: max(env(safe-area-inset-top), 10px);
   left: 10px;
+  width: 36px;
+  height: 36px;
   background: rgba(4,10,30,0.70);
   border: 1px solid rgba(255,215,0,0.50);
-  border-radius: 999px;
-  padding: 6px 12px;
+  border-radius: 50%;
+  padding: 0;
   color: #ffd700;
-  font-size: 12px;
+  font-size: 22px;
   cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 5px;
+  justify-content: center;
   z-index: 20;
   font-family: "Hind Siliguri", sans-serif;
+  line-height: 1;
+  -webkit-tap-highlight-color: transparent;
 }
 
-/* Back button inside picker (not absolute) */
+/* Keep the chapter/sloka back arrow at the same top-left position inside
+   the picker instead of putting a text pill into the scrolling list. */
 .sts-picker .sts-back-btn {
-  position: static;
-  margin-bottom: 8px;
-  align-self: flex-start;
+  position: absolute;
+  margin: 0;
 }
+
+/* ════════════════════════════════════════════════════════════
+   v88 — plain white full-screen reader (no frame artwork,
+   no side "safe zone" guard). Overrides every earlier
+   .lm-card-inner inset rule above, regardless of aspect ratio.
+   ════════════════════════════════════════════════════════════ */
+.lmo,
+.lm-water-card {
+  background: #ffffff !important;
+  background-image: none !important;
+  box-shadow: none !important;
+}
+.lm-card-inner {
+  top:    max(env(safe-area-inset-top), 54px)    !important;
+  bottom: max(env(safe-area-inset-bottom), 64px) !important;
+  left:   12px  !important;
+  right:  12px  !important;
+}
+.lyr-line, .lyr-prose, .lyr-artha, .lyr-footer {
+  color: #1a0800 !important;
+}
+.lmx {
+  background: rgba(0,0,0,0.55) !important;
+}
+.lmt {
+  color: #7a3b00 !important;
+  text-shadow: none !important;
+}
+
+/* ── Reliable, obviously-tappable Next/Prev buttons ──
+   Bigger hit target + visible press glow on every tap, on every
+   stotram (not just the audio ones). Pure CSS :active feedback so
+   it works even if a click is briefly swallowed by JS. */
+.lm-nav-btn {
+  min-width: 52px;
+  min-height: 52px;
+  border-radius: 50%;
+  color: #7a3b00 !important;
+  background: rgba(122,59,0,0.08) !important;
+  text-shadow: none !important;
+  transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+.lm-nav-btn:active {
+  background: rgba(255,180,0,0.35) !important;
+  box-shadow: 0 0 0 8px rgba(255,180,0,0.25) !important;
+  transform: scale(0.90) !important;
+  color: #7a3b00 !important;
+}
+.lm-nav-btn.lm-nav-glow {
+  animation: lmNavGlow 0.35s ease;
+}
+@keyframes lmNavGlow {
+  0%   { box-shadow: 0 0 0 0 rgba(255,180,0,0.55); }
+  100% { box-shadow: 0 0 0 14px rgba(255,180,0,0); }
+}
+
+/* v89 — Nav arrows: proper fixed footer strip, not floating in lyrics */
+.lm-nav {
+  position: fixed !important;
+  bottom: 0 !important; left: 0 !important; right: 0 !important;
+  top: auto !important; transform: none !important;
+  width: 100%;
+  justify-content: center;
+  gap: 60px;
+  padding: 12px 0 max(env(safe-area-inset-bottom), 14px);
+  background: linear-gradient(to top, rgba(255,255,255,0.97), rgba(255,255,255,0.85) 70%, transparent);
+  z-index: 25;
+}
+.lm-card-inner {
+  bottom: max(env(safe-area-inset-bottom) + 78px, 92px) !important;
+}
+
+/* Title — back to top-center, slightly larger */
+.lmt {
+  left: 50% !important;
+  right: auto !important;
+  transform: translateX(-50%) !important;
+  max-width: calc(100% - 110px);
+  font-size: 16px !important;
+}
+
+/* v90 — Root fix: translation toggle row separation */
+.lm-translate-wrap {
+}
+
+/* v90 - Root fix: translation toggle row separation */
+.lm-translate-wrap {
+  top: calc(max(env(safe-area-inset-top), 10px) + 40px) !important;
+  right: 12px !important;
+  left: auto !important;
+  bottom: auto !important;
+  transform: none !important;
+}
+
+/* v91 - Back arrow: keep it opposite the close button in the top-left
+   corner instead of adding a text row below the reader controls. */
+.sts-back-btn {
+  top: max(env(safe-area-inset-top), 10px) !important;
+  left: 10px !important;
+}
+
+/* The arrow occupies the existing top chrome; do not push the verse text
+   down as if a second control row had been added. */
+#lmo.has-sts-back .lm-card-inner {
+  top: max(env(safe-area-inset-top), 54px) !important;
+}
+
+/* Audio reader can be collapsed without stopping the HTMLAudioElement. */
+.lm-minimize-btn {
+  position: absolute;
+  top: max(env(safe-area-inset-top), 10px);
+  right: 52px;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 1px solid rgba(255,215,0,0.50);
+  border-radius: 50%;
+  background: rgba(4,10,30,0.70);
+  color: #ffd700;
+  font-size: 20px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 20;
+  -webkit-tap-highlight-color: transparent;
+}
+.lm-minimize-btn:active {
+  background: rgba(255,215,0,0.20);
+  transform: scale(0.94);
+}
+
+/* Persistent in-app player shown after the reader is minimized. */
+#hcj-mini-player {
+  position: fixed;
+  left: 10px;
+  right: 10px;
+  bottom: max(calc(env(safe-area-inset-bottom) + 70px), 70px);
+  z-index: 550;
+  min-height: 48px;
+  max-width: 620px;
+  margin: 0 auto;
+  padding: 10px 10px 8px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  border: 1px solid rgba(139,94,0,0.38);
+  border-radius: 15px;
+  background: rgba(255,252,244,0.97);
+  box-shadow: 0 5px 22px rgba(55,32,0,0.24);
+  color: #5b3108;
+  font-family: "Hind Siliguri", sans-serif;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+#hcj-mini-player::before {
+  content: "";
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  top: 0;
+  height: 2px;
+  overflow: hidden;
+  border-radius: 2px;
+  background: rgba(139,94,0,0.13);
+}
+.hcj-mini-progress {
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  top: 0;
+  height: 2px;
+  overflow: hidden;
+  border-radius: 2px;
+  pointer-events: none;
+}
+.hcj-mini-progress-fill {
+  width: 0;
+  height: 100%;
+  background: #b97816;
+  transition: width 0.15s linear;
+}
+.hcj-mini-label {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 14px;
+  font-weight: 600;
+}
+.hcj-mini-action {
+  flex: 0 0 auto;
+  width: 31px;
+  height: 31px;
+  padding: 0;
+  border: 1px solid rgba(139,94,0,0.30);
+  border-radius: 50%;
+  background: rgba(139,94,0,0.08);
+  color: #70400b;
+  font: 600 17px/1 Inter, sans-serif;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  -webkit-tap-highlight-color: transparent;
+}
+.hcj-mini-action:active {
+  background: rgba(139,94,0,0.20);
+  transform: scale(0.94);
+}
+.hcj-mini-stop {
+  color: #8b3500;
+}
+
+
+/* ── Stotram folders (5 categories) ── */
+.st-folder-tile{display:flex;align-items:center;gap:12px;padding:16px 14px;margin-bottom:10px;background:rgba(0,0,0,0.42);border:1px solid rgba(255,215,0,0.25);border-radius:14px;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:transform 0.15s,border-color 0.15s;}
+.st-folder-tile:active{transform:scale(0.98);border-color:rgba(255,215,0,0.55);}
+.st-folder-tile-icon{font-size:22px;flex-shrink:0;}
+.st-folder-tile-icon-img{width:30px;height:30px;object-fit:contain;flex-shrink:0;filter:drop-shadow(0 0 4px rgba(255,215,0,0.35));}
+.st-folder-tile-title{font-family:"Hind Siliguri",serif;font-size:15px;font-weight:700;color:#ffd700;letter-spacing:0.3px;flex:1;line-height:1.35;}
+.st-folder-tile-count{font-size:11px;color:rgba(255,215,0,0.55);background:rgba(255,215,0,0.08);border:1px solid rgba(255,215,0,0.25);border-radius:999px;padding:2px 9px;flex-shrink:0;}
+.st-folder-tile-arrow{font-size:20px;color:rgba(255,215,0,0.45);flex-shrink:0;}
+.st-back-row{display:flex;align-items:center;gap:10px;padding:2px 2px 14px;}
+.st-back-btn{background:rgba(255,215,0,0.08);border:1px solid rgba(255,215,0,0.30);color:#ffd700;font-family:"Hind Siliguri",serif;font-size:13px;font-weight:600;border-radius:10px;padding:8px 14px;cursor:pointer;-webkit-tap-highlight-color:transparent;flex-shrink:0;}
+.st-back-btn:active{background:rgba(255,215,0,0.20);}
+.st-back-title{font-family:"Hind Siliguri",serif;font-size:15px;font-weight:700;color:#ffd700;letter-spacing:0.3px;flex:1;text-align:right;}
+.st-folder-empty{font-family:"Hind Siliguri",serif;font-size:13px;color:rgba(255,215,0,0.45);text-align:center;padding:14px 0 18px;}
